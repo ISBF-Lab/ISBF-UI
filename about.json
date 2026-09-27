@@ -2,7 +2,7 @@
   "name": "ISBF Campus Feed V3",
   "authors": "ISBF Platform",
   "license_url": "https://opensource.org/licenses/MIT",
-  "theme_version": "3.0.0",
+  "theme_version": "3.0.1",
   "modifiers": {
     "serialize_topic_excerpts": true,
     "svg_icons": ["house", "magnifying-glass", "bell", "bookmark", "plus", "user", "chevron-right", "arrow-left", "briefcase"]

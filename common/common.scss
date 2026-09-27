@@ -61,8 +61,10 @@ body:has(.isbf-v2-shell) {
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
-  &:has(.isbf-v2-shell--feed) #main-outlet {
-    padding-top: 200px;
+  @media (min-width: 601px) {
+    &:has(.isbf-v2-shell--feed) #main-outlet {
+      padding-top: 200px;
+    }
   }
 
   &:has(.isbf-v2-shell--feed) .navigation-container {
@@ -732,12 +734,15 @@ body:has(.isbf-v2-shell--topic) {
     max-width: 100%;
   }
 
-  #main-outlet .topic-title {
+  #main-outlet #topic-title {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
     padding: 12px 16px;
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
-  #main-outlet .topic-title h1 {
+  #main-outlet #topic-title h1 {
     margin: 0;
     font-size: 20px;
     line-height: 1.35;
@@ -748,6 +753,8 @@ body:has(.isbf-v2-shell--topic) {
   }
 
   #main-outlet .topic-post .cooked {
+    box-sizing: border-box;
+    padding-inline: 16px;
     font-size: 16px;
     line-height: 1.5;
   }
@@ -773,9 +780,19 @@ body:has(.isbf-v2-shell--topic) {
     width: calc(100% - 32px);
     min-height: 42px;
     border-radius: 999px;
-    background: var(--isbf-v2-hover);
+    border: 1px solid var(--isbf-v2-border);
+    background: var(--isbf-v2-surface);
     color: var(--isbf-v2-muted);
     justify-content: flex-start;
+  }
+
+  body:has(.isbf-v2-shell--topic) #topic-footer-buttons .topic-footer-main-buttons .btn-primary.create .d-button-label {
+    display: inline;
+  }
+
+  body:has(.isbf-v2-shell--topic) #topic-footer-buttons .btn-primary.create .d-icon {
+    margin-left: auto;
+    color: var(--isbf-v2-accent);
   }
 
   body:has(.isbf-v2-shell) #reply-control.open.topic {
