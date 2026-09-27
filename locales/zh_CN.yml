@@ -9,7 +9,7 @@ zh_CN:
     profile: "个人资料"
     compose: "发布"
     compose_prompt: "有什么新鲜事？"
-    recommended: "为你推荐"
+    recommended: "热门"
     latest: "最新"
     search: "搜索"
     search_placeholder: "搜索国金社区"

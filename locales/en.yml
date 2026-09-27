@@ -9,7 +9,7 @@ en:
     profile: "Profile"
     compose: "Post"
     compose_prompt: "What's happening on campus?"
-    recommended: "For you"
+    recommended: "Popular"
     latest: "Latest"
     search: "Search"
     search_placeholder: "Search ISBF"
