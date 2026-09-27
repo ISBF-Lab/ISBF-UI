@@ -21,3 +21,7 @@ en:
     navigation_label: "Main navigation"
     feed_label: "Feed filters"
     quick_label: "Quick navigation"
+    topic: "Post"
+    back_home: "Back to home"
+    workbench: "Workbench"
+    workbench_pending: "Workbench coming soon"

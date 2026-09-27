@@ -1,13 +1,14 @@
-# ISBF Campus Feed V2
+# ISBF Campus Feed V3
 
-从 Discourse 原版页面重新设计的独立预览主题。旧的 `isbf-theme` 保留作为历史快照；本主题使用不同名称和独立 Theme ID。
+在 V2 话题流基础上扩展用户端页面的独立主题。服务器当前默认主题仍是 V2（ID 2）；V3 需要作为独立预览主题验证，通过后再讨论全站切换。
 
 ## 实现
 
-- `api.renderInOutlet("above-main-container", ...)` 渲染导航、顶部筛选、发布入口和右栏。
+- `api.renderInOutlet("before-main-outlet", ...)` 在用户端话题、搜索、通知、个人页等路由渲染共享导航；管理员页面不渲染。
 - `topic-list-item-mobile-layout`、`topic-list-item-class` 与 `topic-list-item-expand-pinned` Transformers 继续渲染 Discourse 原生话题列表。
 - `serialize_topic_excerpts` Theme Modifier 提供真实话题摘要。
-- `body:has(.isbf-v2-shell)` 将布局样式限制在发现页与标签页；没有全局路由初始化代码。
+- `body:has(.isbf-v2-shell)` 将布局样式限制在主题覆盖的用户端页面；没有全局路由初始化代码。
+- 移动端发布框和话题回复保留 Discourse 原生 Composer 与权限判定，并按参考录屏调整视觉和位置。
 - 发布、搜索、通知、书签、分类、用户资料均链接到 Discourse 原生功能。
 
 “为你推荐”当前映射到 Discourse `/hot`，没有推荐算法。右栏只链接真实的热门、精华和分类页，不展示伪造数据。
@@ -18,4 +19,4 @@
 
 ## 验证状态
 
-已对静态布局做桌面与窄屏截图检查。主题 ID 2 的真实桌面页面显示三栏与原生话题流，用户确认 Console 无主题错误，站点切换 `zh_CN` 后导航显示中文。团队开发站点已将 ID 2 设为全站默认；未登录浏览器直接打开 `/` 的桌面截图确认中文三栏与真实话题流，首页 HTTP `200`。真实移动端、明暗模式、话题导航、Composer 和通知仍需验收。未修改 Discourse Core。
+V2 已在团队开发站点作为 ID 2 全站默认运行。V3 本分支目前只完成静态检查，真实移动端、明暗模式、话题导航、Composer 和通知仍需在独立预览主题上验收。未修改 Discourse Core。

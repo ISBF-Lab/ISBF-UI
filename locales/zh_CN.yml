@@ -21,3 +21,7 @@ zh_CN:
     navigation_label: "主导航"
     feed_label: "信息流筛选"
     quick_label: "快捷导航"
+    topic: "帖子"
+    back_home: "返回首页"
+    workbench: "工作台"
+    workbench_pending: "工作台即将开放"

@@ -12,69 +12,117 @@ export default class ISBFV2Shell extends Component {
   @service currentUser;
   @service router;
 
-  get routeName() {
-    return this.router.currentRouteName ?? "";
+  get path() {
+    return (this.router.currentURL ?? "").split("?")[0];
   }
 
-  get isDiscovery() {
-    return (
-      this.routeName === "discovery" ||
-      this.routeName.startsWith("discovery.") ||
-      this.routeName.startsWith("tag.")
-    );
+  get pageKind() {
+    const path = this.path;
+
+    if (/^\/(admin|login|signup|session)(\/|$)/.test(path)) {
+      return null;
+    }
+    if (/^\/t\//.test(path)) {
+      return "topic";
+    }
+    if (/^\/u\/[^/]+\/notifications(\/|$)/.test(path)) {
+      return "notifications";
+    }
+    if (/^\/u\/[^/]+\/activity\/bookmarks(\/|$)/.test(path)) {
+      return "bookmarks";
+    }
+    if (/^\/u\//.test(path)) {
+      return "profile";
+    }
+    if (/^\/(search|categories|c|tag|tags)(\/|$)/.test(path)) {
+      return "explore";
+    }
+    if (/^\/(|latest|hot|top|new|unread|following|filter)(\/|$)/.test(path)) {
+      return "feed";
+    }
+
+    return null;
   }
 
-  get isHome() {
-    return this.isDiscovery && !this.routeName.includes("category") && !this.routeName.startsWith("tag.");
+  get isFeed() {
+    return this.pageKind === "feed";
+  }
+
+  get isNotifications() {
+    return this.pageKind === "notifications";
+  }
+
+  get pageTitle() {
+    const titles = {
+      bookmarks: "bookmarks",
+      explore: "explore",
+      notifications: "notifications",
+      profile: "profile",
+      topic: "topic",
+    };
+
+    return i18n(themePrefix("isbf_v2." + titles[this.pageKind]));
   }
 
   get recommendedActive() {
-    return (this.router.currentURL ?? "").startsWith(settings.recommended_path);
+    return this.path.startsWith(settings.recommended_path);
   }
 
   get latestActive() {
-    const path = this.router.currentURL ?? "";
-    return path === "/" || path.startsWith("/latest");
+    return this.path === "/" || this.path.startsWith("/latest");
   }
 
   get profileHref() {
-    return this.currentUser ? `/u/${this.currentUser.username}` : "/login";
+    return this.currentUser ? "/u/" + this.currentUser.username : "/login";
   }
 
   get notificationsHref() {
     return this.currentUser
-      ? `/u/${this.currentUser.username}/notifications`
+      ? "/u/" + this.currentUser.username + "/notifications"
       : "/login";
   }
 
   <template>
-    {{#if this.isDiscovery}}
-      <div class="isbf-v2-shell {{if this.isHome 'isbf-v2-shell--home'}}">
+    {{#if this.pageKind}}
+      <div class="isbf-v2-shell isbf-v2-shell--{{this.pageKind}}">
         <ISBFV2SideNav />
         {{#if settings.show_right_rail}}<ISBFV2RightRail />{{/if}}
 
-        <header class="isbf-v2-feed-header">
-          <div class="isbf-v2-feed-header__title">{{i18n (themePrefix "isbf_v2.home")}}</div>
-          <nav aria-label={{i18n (themePrefix "isbf_v2.feed_label")}}>
-            <a class={{if this.recommendedActive "is-active"}} href={{settings.recommended_path}} aria-current={{if this.recommendedActive "page"}}>{{i18n (themePrefix "isbf_v2.recommended")}}</a>
-            <a class={{if this.latestActive "is-active"}} href="/latest" aria-current={{if this.latestActive "page"}}>{{i18n (themePrefix "isbf_v2.latest")}}</a>
-          </nav>
-        </header>
+        {{#if this.isFeed}}
+          <header class="isbf-v2-feed-header">
+            <div class="isbf-v2-feed-header__title">
+              {{#if this.currentUser}}
+                <a aria-label={{i18n (themePrefix "isbf_v2.profile")}} class="isbf-v2-feed-header__avatar" href={{this.profileHref}}>{{dAvatar this.currentUser imageSize="small"}}</a>
+              {{/if}}
+              <span>{{i18n (themePrefix "isbf_v2.home")}}</span>
+              <a aria-label={{i18n (themePrefix "isbf_v2.search")}} class="isbf-v2-feed-header__search" href="/search">{{dIcon "magnifying-glass"}}</a>
+            </div>
+            <nav aria-label={{i18n (themePrefix "isbf_v2.feed_label")}}>
+              <a aria-current={{if this.recommendedActive "page"}} class={{if this.recommendedActive "is-active"}} href={{settings.recommended_path}}>{{i18n (themePrefix "isbf_v2.recommended")}}</a>
+              <a aria-current={{if this.latestActive "page"}} class={{if this.latestActive "is-active"}} href="/latest">{{i18n (themePrefix "isbf_v2.latest")}}</a>
+            </nav>
+          </header>
 
-        <div class="isbf-v2-compose">
-          {{#if this.currentUser}}
-            <a href={{this.profileHref}} class="isbf-v2-compose__avatar" aria-label={{this.currentUser.username}}>{{dAvatar this.currentUser imageSize="large"}}</a>
-          {{/if}}
-          <a class="isbf-v2-compose__prompt" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose_prompt")}}</a>
-          <a class="isbf-v2-compose__button" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose")}}</a>
-        </div>
+          <div class="isbf-v2-compose">
+            {{#if this.currentUser}}
+              <a aria-label={{this.currentUser.username}} class="isbf-v2-compose__avatar" href={{this.profileHref}}>{{dAvatar this.currentUser imageSize="large"}}</a>
+            {{/if}}
+            <a class="isbf-v2-compose__prompt" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose_prompt")}}</a>
+            <a class="isbf-v2-compose__button" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose")}}</a>
+          </div>
+        {{else}}
+          <header class="isbf-v2-page-header">
+            <a aria-label={{i18n (themePrefix "isbf_v2.back_home")}} class="isbf-v2-page-header__back" href="/latest">{{dIcon "arrow-left"}}</a>
+            <span>{{this.pageTitle}}</span>
+          </header>
+        {{/if}}
+
+        <a aria-label={{i18n (themePrefix "isbf_v2.compose")}} class="isbf-v2-mobile-compose" href="/new-topic">{{dIcon "plus"}}</a>
 
         <nav class="isbf-v2-mobile-nav" aria-label={{i18n (themePrefix "isbf_v2.quick_label")}}>
-          <a href="/latest">{{dIcon "house"}}<span>{{i18n (themePrefix "isbf_v2.home")}}</span></a>
-          <a href="/categories">{{dIcon "magnifying-glass"}}<span>{{i18n (themePrefix "isbf_v2.explore")}}</span></a>
-          <a href="/new-topic" class="isbf-v2-mobile-nav__compose">{{dIcon "plus"}}<span>{{i18n (themePrefix "isbf_v2.compose")}}</span></a>
-          <a href={{this.notificationsHref}}>{{dIcon "bell"}}<span>{{i18n (themePrefix "isbf_v2.notifications")}}</span></a>
-          <a href={{this.profileHref}}>{{dIcon "user"}}<span>{{i18n (themePrefix "isbf_v2.profile")}}</span></a>
+          <a aria-current={{if this.isFeed "page"}} class={{if this.isFeed "is-active"}} href="/latest">{{dIcon "house"}}<span>{{i18n (themePrefix "isbf_v2.home")}}</span></a>
+          <a aria-current={{if this.isNotifications "page"}} class={{if this.isNotifications "is-active"}} href={{this.notificationsHref}}>{{dIcon "bell"}}<span>{{i18n (themePrefix "isbf_v2.notifications")}}</span></a>
+          <button disabled title={{i18n (themePrefix "isbf_v2.workbench_pending")}} type="button">{{dIcon "briefcase"}}<span>{{i18n (themePrefix "isbf_v2.workbench")}}</span></button>
         </nav>
       </div>
     {{/if}}

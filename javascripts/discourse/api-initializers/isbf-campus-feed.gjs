@@ -3,7 +3,7 @@ import { apiInitializer } from "discourse/lib/api";
 import ISBFV2Shell from "../components/isbf-v2-shell";
 
 export default apiInitializer((api) => {
-  api.renderInOutlet("above-main-container", ISBFV2Shell);
+  api.renderInOutlet("before-main-outlet", ISBFV2Shell);
 
   // Discourse's own mobile topic renderer already has an avatar, title,
   // excerpt, categories, tags, reply count and activity time.
