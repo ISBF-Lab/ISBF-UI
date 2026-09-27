@@ -6,24 +6,24 @@ Discourse 官方 `discourse_theme watch` 在保存主题文件时同步到站点
 
 - WSL Ubuntu 已安装 Ruby 3.2 与 `discourse_theme` 2.1.6；无需本地完整 Discourse 环境。
 - 本机 Theme CLI 的非敏感配置已绑定此主题目录、`http://localhost:3000` 和现有预览主题 ID 3；`~/.discourse_theme` 权限为 `600`，其中没有 API key。
-- 保持 VS Code 对团队开发站点的 `localhost:3000` 端口转发打开。
+- 启动脚本会在需要时建立本机 `localhost:3000` SSH 转发，并在退出时关闭它；若 VS Code 已提供该端口转发，脚本会复用。
 - 在团队开发站点 Admin → API Keys 创建一个关联本人管理员账户的 **Single User / Global** API key。只在下述脚本的终端提示中输入，不发到聊天或提交到 Git。Theme CLI 官方文档要求此权限范围：[Theme CLI 使用说明](https://meta.discourse.org/t/install-the-discourse-theme-cli-console-app-to-help-you-build-themes/82950)。
 
 ## 启动
 
-在 PowerShell 中进入本主题仓库，先检查连接：
+在 PowerShell 中进入本主题仓库，运行一个命令：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\watch-v3-preview.ps1 -Check
+.\dev-theme.ps1
 ```
 
-然后启动监听：
+需要单独检查环境时可运行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\watch-v3-preview.ps1
+.\scripts\watch-v3-preview.ps1 -Check
 ```
 
-首次运行时，脚本会无回显地询问 API key，并保存到 WSL 用户目录 `~/.config/isbf/discourse-theme-api-key`，权限为 `600`。Theme CLI 的 `~/.discourse_theme` 仅记录本目录、`http://localhost:3000` 与主题 ID 3，不保存 API key。CLI 出现主题选择时，选 **Sync with existing theme: ISBF Campus Feed V3 (id:3)**；不要创建新主题。首次启动会完整上传当前 Git 工作目录中的主题文件，以后保存 SCSS/GJS 会自动同步。保持终端运行，在浏览器以管理员身份打开 <http://localhost:3000/?preview_theme_id=3>；停止时按 Ctrl+C。
+首次运行时，脚本会无回显地询问 API key，并保存到 WSL 用户目录 `~/.config/isbf/discourse-theme-api-key`，权限为 `600`。Theme CLI 的 `~/.discourse_theme` 仅记录本目录、`http://localhost:3000` 与主题 ID 3，不保存 API key。上传前脚本会通过管理员 API 核对 ID 3 的名称和主题类型。CLI 出现主题选择时，选 **Sync with existing theme: ISBF Campus Feed V3 (id:3)**；不要创建新主题。首次启动会完整上传当前 Git 工作目录中的主题文件，以后保存 SCSS/GJS 会自动同步。保持终端运行，在浏览器以管理员身份打开 <http://localhost:3000/?preview_theme_id=3>；停止时按 Ctrl+C。
 
 如果重建本机配置，可运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\watch-v3-preview.ps1 -Configure`；它只写入非敏感的主题 ID 和站点 URL，不连接 Admin API。
 

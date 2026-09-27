@@ -55,7 +55,7 @@ if [[ ! -s "$key_file" ]]; then
     exit 1
   fi
   echo "Create a single-user Global API key in the development site's Admin > API Keys page."
-  read -r -s -p "Paste the API key here (it will not be echoed): " api_key
+  read -r -s -p "请只在终端中粘贴 Discourse API Key，然后按 Enter。 " api_key
   echo
   [[ -n "$api_key" ]] || { echo "API key is empty" >&2; exit 1; }
   printf '%s' "$api_key" > "$key_file"
@@ -67,6 +67,7 @@ chmod 600 "$key_file"
 
 export DISCOURSE_URL="$site_url"
 export DISCOURSE_API_KEY="$(cat "$key_file")"
+ruby "$repo_dir/scripts/check-v3-target.rb"
 echo "Select the existing ISBF Campus Feed V3 theme (id:3) when prompted."
 echo "Keep this terminal open while editing; press Ctrl+C to stop syncing."
 exec ruby -r "$repo_dir/scripts/force-polling.rb" "$cli_bin" watch "$repo_dir"
