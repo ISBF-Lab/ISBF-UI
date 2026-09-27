@@ -8,11 +8,14 @@ host_archive=${1:?archive path is required}
 expected_sha=${2:?archive SHA-256 is required}
 host_importer=/home/tangency/update-v3-preview.rb
 container=discourse_dev
-container_archive=/tmp/isbf-desktop-ui-preview-20260927.zip
-container_importer=/tmp/isbf-update-v3-preview-20260927.rb
 
 [[ "$expected_sha" =~ ^[0-9a-f]{64}$ ]]
-test "$host_archive" = /home/tangency/isbf-desktop-ui.zip
+case "$host_archive" in
+  /home/tangency/isbf-desktop-ui.zip|/home/tangency/isbf-v3-a814e7e.zip) ;;
+  *) echo "Unexpected archive path" >&2; exit 1 ;;
+esac
+container_archive="/tmp/isbf-v3-preview-${expected_sha:0:12}.zip"
+container_importer="/tmp/isbf-update-v3-${expected_sha:0:12}.rb"
 test -f "$host_archive"
 test -f "$host_importer"
 test "$(sha256sum "$host_archive" | cut -d ' ' -f 1)" = "$expected_sha"
