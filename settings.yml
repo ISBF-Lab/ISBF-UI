@@ -1,0 +1,14 @@
+brand_name:
+  default: "国金综合平台"
+  type: string
+  description: "导航中显示的平台名称。"
+
+recommended_path:
+  default: "/hot"
+  type: string
+  description: "推荐标签使用的现有 Discourse 列表路由。"
+
+show_right_rail:
+  default: true
+  type: bool
+  description: "宽屏显示搜索与热门话题入口。"

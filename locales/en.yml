@@ -1,0 +1,23 @@
+en:
+  theme_metadata:
+    description: "ISBF campus community theme built on Discourse's native topic feed."
+  isbf_v2:
+    home: "Home"
+    explore: "Explore"
+    notifications: "Notifications"
+    bookmarks: "Bookmarks"
+    profile: "Profile"
+    compose: "Post"
+    compose_prompt: "What's happening on campus?"
+    recommended: "For you"
+    latest: "Latest"
+    search: "Search"
+    search_placeholder: "Search ISBF"
+    popular: "Campus discussions"
+    hot: "Popular topics"
+    top: "Top topics"
+    categories: "Browse categories"
+    rail_description: "Real topics from this community"
+    navigation_label: "Main navigation"
+    feed_label: "Feed filters"
+    quick_label: "Quick navigation"
