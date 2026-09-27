@@ -91,6 +91,10 @@ body:has(.isbf-v2-shell) {
     &:has(.isbf-v2-shell--feed) #main-outlet {
       padding-top: 200px;
     }
+
+    &:has(.isbf-v2-shell--no-compose) #main-outlet {
+      padding-top: 108px;
+    }
   }
 
   &:has(.isbf-v2-shell--feed) .navigation-container {

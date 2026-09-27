@@ -3,10 +3,10 @@ brand_name:
   type: string
   description: "导航中显示的平台名称。"
 
-recommended_path:
-  default: "/hot"
+official_path:
+  default: "/c/staff/3/l/latest"
   type: string
-  description: "推荐标签使用的现有 Discourse 列表路由。"
+  description: "官方信息标签使用的现有 Discourse 分类列表路由。"
 
 show_right_rail:
   default: true

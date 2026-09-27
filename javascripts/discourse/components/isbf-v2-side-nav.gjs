@@ -34,7 +34,14 @@ export default class ISBFV2SideNav extends Component {
 
   get homeActive() {
     const path = this.router.currentURL ?? "";
-    return path === "/" || path.startsWith("/latest") || path.startsWith("/hot");
+    const officialPath = settings.official_path.split("/l/")[0];
+
+    return (
+      path === "/" ||
+      path.startsWith("/latest") ||
+      path === officialPath ||
+      path.startsWith(`${officialPath}/`)
+    );
   }
 
   <template>

@@ -34,6 +34,9 @@ export default class ISBFV2Shell extends Component {
     if (/^\/u\//.test(path)) {
       return "profile";
     }
+    if (this.#isOfficialPath(path)) {
+      return "feed";
+    }
     if (/^\/(search|categories|c|tag|tags)(\/|$)/.test(path)) {
       return "explore";
     }
@@ -64,12 +67,33 @@ export default class ISBFV2Shell extends Component {
     return i18n(themePrefix("isbf_v2." + titles[this.pageKind]));
   }
 
-  get recommendedActive() {
-    return this.path.startsWith(settings.recommended_path);
-  }
-
   get latestActive() {
     return this.path === "/" || this.path.startsWith("/latest");
+  }
+
+  get officialActive() {
+    return this.#isOfficialPath(this.path);
+  }
+
+  get canCompose() {
+    return !this.officialActive || Boolean(this.currentUser?.staff);
+  }
+
+  get composeHref() {
+    const categorySlug = settings.official_path.split("/")[2];
+    return this.officialActive
+      ? `/new-topic?category=${encodeURIComponent(categorySlug)}`
+      : "/new-topic";
+  }
+
+  get shellClass() {
+    const classes = ["isbf-v2-shell", `isbf-v2-shell--${this.pageKind}`];
+
+    if (!this.canCompose) {
+      classes.push("isbf-v2-shell--no-compose");
+    }
+
+    return classes.join(" ");
   }
 
   get profileHref() {
@@ -82,9 +106,14 @@ export default class ISBFV2Shell extends Component {
       : "/login";
   }
 
+  #isOfficialPath(path) {
+    const categoryPath = settings.official_path.split("/l/")[0];
+    return path === categoryPath || path.startsWith(`${categoryPath}/`);
+  }
+
   <template>
     {{#if this.pageKind}}
-      <div class="isbf-v2-shell isbf-v2-shell--{{this.pageKind}}">
+      <div class={{this.shellClass}}>
         <ISBFV2SideNav />
         {{#if settings.show_right_rail}}<ISBFV2RightRail />{{/if}}
 
@@ -98,18 +127,20 @@ export default class ISBFV2Shell extends Component {
               <a aria-label={{i18n (themePrefix "isbf_v2.search")}} class="isbf-v2-feed-header__search" href="/search">{{dIcon "magnifying-glass"}}</a>
             </div>
             <nav aria-label={{i18n (themePrefix "isbf_v2.feed_label")}}>
-              <a aria-current={{if this.recommendedActive "page"}} class={{if this.recommendedActive "is-active"}} href={{settings.recommended_path}}>{{i18n (themePrefix "isbf_v2.recommended")}}</a>
               <a aria-current={{if this.latestActive "page"}} class={{if this.latestActive "is-active"}} href="/latest">{{i18n (themePrefix "isbf_v2.latest")}}</a>
+              <a aria-current={{if this.officialActive "page"}} class={{if this.officialActive "is-active"}} href={{settings.official_path}}>{{i18n (themePrefix "isbf_v2.official")}}</a>
             </nav>
           </header>
 
-          <div class="isbf-v2-compose">
-            {{#if this.currentUser}}
-              <a aria-label={{this.currentUser.username}} class="isbf-v2-compose__avatar" href={{this.profileHref}}>{{dAvatar this.currentUser imageSize="large"}}</a>
-            {{/if}}
-            <a class="isbf-v2-compose__prompt" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose_prompt")}}</a>
-            <a class="isbf-v2-compose__button" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose")}}</a>
-          </div>
+          {{#if this.canCompose}}
+            <div class="isbf-v2-compose">
+              {{#if this.currentUser}}
+                <a aria-label={{this.currentUser.username}} class="isbf-v2-compose__avatar" href={{this.profileHref}}>{{dAvatar this.currentUser imageSize="large"}}</a>
+              {{/if}}
+              <a class="isbf-v2-compose__prompt" href={{this.composeHref}}>{{i18n (themePrefix "isbf_v2.compose_prompt")}}</a>
+              <a class="isbf-v2-compose__button" href={{this.composeHref}}>{{i18n (themePrefix "isbf_v2.compose")}}</a>
+            </div>
+          {{/if}}
         {{else}}
           <header class="isbf-v2-page-header">
             <a aria-label={{i18n (themePrefix "isbf_v2.back_home")}} class="isbf-v2-page-header__back" href="/latest">{{dIcon "arrow-left"}}</a>
@@ -117,7 +148,9 @@ export default class ISBFV2Shell extends Component {
           </header>
         {{/if}}
 
-        <a aria-label={{i18n (themePrefix "isbf_v2.compose")}} class="isbf-v2-mobile-compose" href="/new-topic">{{dIcon "plus"}}</a>
+        {{#if this.canCompose}}
+          <a aria-label={{i18n (themePrefix "isbf_v2.compose")}} class="isbf-v2-mobile-compose" href={{this.composeHref}}>{{dIcon "plus"}}</a>
+        {{/if}}
 
         <nav class="isbf-v2-mobile-nav" aria-label={{i18n (themePrefix "isbf_v2.quick_label")}}>
           <a aria-current={{if this.isFeed "page"}} class={{if this.isFeed "is-active"}} href="/latest">{{dIcon "house"}}<span>{{i18n (themePrefix "isbf_v2.home")}}</span></a>
