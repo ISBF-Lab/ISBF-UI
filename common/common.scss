@@ -795,7 +795,7 @@ body:has(.isbf-v2-shell--topic) {
     color: var(--isbf-v2-accent);
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic {
+  html.composer-open #reply-control.open.topic {
     height: 100dvh;
     max-height: 100dvh;
     border-radius: 0;
@@ -803,15 +803,15 @@ body:has(.isbf-v2-shell--topic) {
     background: var(--isbf-v2-surface);
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .reply-area {
-    padding-top: calc(58px + env(safe-area-inset-top));
+  html.composer-open #reply-control.open.topic .reply-area {
+    padding: calc(58px + env(safe-area-inset-top)) 16px 0;
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .reply-to {
+  html.composer-open #reply-control.open.topic .reply-to {
     display: none;
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .save-or-cancel {
+  html.composer-open #reply-control.open.topic .save-or-cancel {
     display: flex;
     position: fixed;
     top: 0;
@@ -828,26 +828,47 @@ body:has(.isbf-v2-shell--topic) {
     background: var(--isbf-v2-surface);
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .save-or-cancel .discard-button {
+  html.composer-open #reply-control.open.topic .save-or-cancel .discard-button {
     order: -1;
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .save-or-cancel .btn-primary {
+  html.composer-open #reply-control.open.topic .save-or-cancel .btn-primary {
     min-width: 68px;
     border-radius: 999px;
     background: var(--isbf-v2-accent);
     color: var(--isbf-v2-accent-contrast);
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .grippie {
+  html.composer-open #reply-control.open.topic .grippie {
     display: none;
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .title-and-category {
+  html.composer-open #reply-control.open.topic .title-and-category {
+    gap: 8px;
+    margin-bottom: 4px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
-  body:has(.isbf-v2-shell) #reply-control.open.topic .d-editor-input {
+  html.composer-open #reply-control.open.topic .title-input input {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 18px;
+  }
+
+  html.composer-open #reply-control.open.topic .d-editor-textarea-wrapper {
+    border: 0;
+  }
+
+  html.composer-open #reply-control.open.topic .d-editor-button-bar__wrap {
+    order: 2;
+    border-top: 1px solid var(--isbf-v2-border);
+  }
+
+  html.composer-open #reply-control.open.topic .d-editor-input {
+    order: 1;
+    padding: 16px 0;
     font-size: 17px;
     line-height: 1.5;
   }
