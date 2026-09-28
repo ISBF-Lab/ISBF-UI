@@ -10,6 +10,8 @@ en:
     compose: "Post"
     quick_post: "New post"
     compose_prompt: "What's happening on campus?"
+    compose_cancel: "Cancel"
+    compose_options: "Post options"
     latest: "Latest"
     official: "Official"
     search: "Search"

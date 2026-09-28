@@ -1,19 +1,13 @@
 import { scheduleOnce } from "@ember/runloop";
 import { apiInitializer } from "discourse/lib/api";
 import { i18n } from "discourse-i18n";
-import { settings, themePrefix } from "virtual:theme";
+import { themePrefix } from "virtual:theme";
 
+import ISBFV2ComposerCancel from "../components/isbf-v2-composer-cancel";
+import ISBFV2ComposerOptions from "../components/isbf-v2-composer-options";
 import ISBFV2Shell from "../components/isbf-v2-shell";
+import { isQuickPost } from "../lib/quick-post-scope";
 import { quickPostTitle } from "../lib/quick-post-title";
-
-function isQuickPost(model) {
-  return (
-    model?.action === "createTopic" &&
-    !model.creatingEvent &&
-    Number(model.categoryId) !== Number(settings.calendar_category_id) &&
-    Boolean(document.querySelector(".isbf-v2-shell"))
-  );
-}
 
 function syncQuickPostTitle(model) {
   if (!isQuickPost(model)) {
@@ -33,17 +27,8 @@ function syncQuickPostTitle(model) {
 
 export default apiInitializer((api) => {
   api.renderInOutlet("before-main-outlet", ISBFV2Shell);
-  const composer = api.container.lookup("service:composer");
-
-  function syncEventComposerClass(model) {
-    scheduleOnce("afterRender", () => {
-      document.querySelector("#reply-control")?.classList.toggle(
-        "isbf-event-composer",
-        Number(model?.categoryId) === Number(settings.calendar_category_id) &&
-          Number(settings.calendar_category_id) > 0
-      );
-    });
-  }
+  api.renderInOutlet("before-composer-controls", ISBFV2ComposerCancel);
+  api.renderInOutlet("before-composer-fields", ISBFV2ComposerOptions);
 
   api.customizeComposerText({
     actionTitle: (model) =>
@@ -53,7 +38,6 @@ export default apiInitializer((api) => {
   });
 
   api.onAppEvent("composer:opened", () => {
-    syncEventComposerClass(composer.model);
     scheduleOnce("afterRender", () => {
       document
         .querySelector(
@@ -62,8 +46,6 @@ export default apiInitializer((api) => {
         ?.focus();
     });
   });
-
-  api.onAppEvent("composer:category-changed", syncEventComposerClass);
 
   api.registerValueTransformer(
     "composer-editor-reply-placeholder",
