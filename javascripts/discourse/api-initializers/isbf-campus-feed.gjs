@@ -33,6 +33,7 @@ function syncQuickPostTitle(model) {
 
 export default apiInitializer((api) => {
   api.renderInOutlet("before-main-outlet", ISBFV2Shell);
+  const composer = api.container.lookup("service:composer");
 
   function syncEventComposerClass(model) {
     scheduleOnce("afterRender", () => {
@@ -51,8 +52,8 @@ export default apiInitializer((api) => {
       isQuickPost(model) ? themePrefix("isbf_v2.compose") : null,
   });
 
-  api.onAppEvent("composer:opened", (model) => {
-    syncEventComposerClass(model);
+  api.onAppEvent("composer:opened", () => {
+    syncEventComposerClass(composer.model);
     scheduleOnce("afterRender", () => {
       document
         .querySelector(
