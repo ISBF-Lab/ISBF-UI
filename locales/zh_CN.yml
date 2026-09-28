@@ -10,6 +10,8 @@ zh_CN:
     compose: "发布"
     quick_post: "发布动态"
     compose_prompt: "有什么新鲜事？"
+    compose_cancel: "取消"
+    compose_options: "发布选项"
     latest: "最新"
     official: "官方"
     search: "搜索"
