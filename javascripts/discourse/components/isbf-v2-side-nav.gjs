@@ -4,17 +4,11 @@ import { settings, themePrefix } from "virtual:theme";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 
+import ISBFV2AccountMenu from "./isbf-v2-account-menu";
+
 export default class ISBFV2SideNav extends Component {
   @service currentUser;
   @service router;
-
-  get avatarUrl() {
-    return this.currentUser?.avatar_template?.replace("{size}", "96");
-  }
-
-  get displayName() {
-    return this.currentUser?.name || this.currentUser?.username;
-  }
 
   get bookmarksHref() {
     return this.currentUser
@@ -89,10 +83,7 @@ export default class ISBFV2SideNav extends Component {
       <a class="isbf-v2-side__compose" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose")}}</a>
 
       {{#if this.currentUser}}
-        <a class="isbf-v2-side__account" href={{this.profileHref}}>
-          <img src={{this.avatarUrl}} alt="" width="40" height="40" />
-          <span><b>{{this.displayName}}</b><small>@{{this.currentUser.username}}</small></span>
-        </a>
+        <ISBFV2AccountMenu />
       {{/if}}
     </aside>
   </template>

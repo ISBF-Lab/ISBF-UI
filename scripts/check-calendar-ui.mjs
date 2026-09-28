@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const about = JSON.parse(readFileSync(new URL("about.json", root), "utf8"));
-for (const icon of ["calendar-days", "table-cells-large", "chevron-left", "xmark"]) {
+for (const icon of ["calendar-days", "table-cells-large", "chevron-left", "xmark", "ellipsis"]) {
   if (!about.modifiers.svg_icons.includes(icon)) {
     throw new Error(`Missing sprite icon: ${icon}`);
   }
@@ -13,7 +13,16 @@ for (const icon of ["calendar-days", "table-cells-large", "chevron-left", "xmark
 
 for (const locale of ["zh_CN", "en"]) {
   const yaml = readFileSync(new URL(`locales/${locale}.yml`, root), "utf8");
-  for (const key of ["calendar", "workbench", "calendar_add_personal", "calendar_publish_event"]) {
+  for (const key of [
+    "calendar",
+    "workbench",
+    "calendar_add_personal",
+    "calendar_publish_event",
+    "account_actions",
+    "switch_account",
+    "logout",
+    "logout_confirm",
+  ]) {
     if (!new RegExp(`^    ${key}:`, "m").test(yaml)) {
       throw new Error(`${locale} is missing ${key}`);
     }
