@@ -1,25 +1,16 @@
-# ISBF Campus Feed V3
+# ISBF Campus Feed
 
-在 V2 话题流基础上扩展用户端页面的独立主题。服务器当前默认主题仍是 V2（ID 2）；V3 需要作为独立预览主题验证，通过后再讨论全站切换。
+国金综合平台当前用户端主题。源码以服务器主题导出包为基线，复用 Discourse 原生话题、用户、通知和 Composer；不修改 Core。
 
-桌面端对照基准、设计 token 和逐页验收顺序见 [桌面端 UI 基准与设计系统](docs/DESKTOP_UI.md)。
-本机 V3 预览的文件监听与启动方法见 [Theme CLI 近实时预览](docs/THEME_CLI_PREVIEW.md)。
+## 本次功能
 
-## 实现
+- 左侧导航新增“日历 / 工作台”，手机底栏增加日历并启用工作台入口。
+- 日历提供月视图、每日列表、个人行程与社区活动筛选。个人行程依赖独立的 [ISBF-Calendar](https://github.com/ISBF-Lab/ISBF-Calendar) 插件；社区活动读取 Discourse Events 的活动话题。
+- 工作台以组件网格展示规划中的校园服务，所有卡片均标记“即将开放”且不可点击。
+- 普通动态仍使用正文优先的 Discourse Composer；“校园活动”分类的活动发布保留原生事件 Composer 的标题与活动字段。
 
-- `api.renderInOutlet("before-main-outlet", ...)` 在用户端话题、搜索、通知、个人页等路由渲染共享导航；管理员页面不渲染。
-- `topic-list-item-mobile-layout`、`topic-list-item-class` 与 `topic-list-item-expand-pinned` Transformers 继续渲染 Discourse 原生话题列表。
-- `serialize_topic_excerpts` Theme Modifier 提供真实话题摘要。
-- `body:has(.isbf-v2-shell)` 将布局样式限制在主题覆盖的用户端页面；没有全局路由初始化代码。
-- 移动端发布框和话题回复保留 Discourse 原生 Composer 与权限判定，并按参考录屏调整视觉和位置。
-- 发布、搜索、通知、书签、分类、用户资料均链接到 Discourse 原生功能。
+## 部署顺序
 
-“最新”映射到 Discourse `/latest`；“官方”映射到现有 Staff 分类。该分类由 Discourse 原生权限控制：普通用户可查看和回复，staff 可创建主题。右栏只链接真实的热门、精华和分类页，不展示伪造数据。
+先安装 `ISBF-Calendar` 插件并迁移数据库，再启用站点已有的 Discourse Events 插件、创建“校园活动”分类并设置其发布权限。随后导入此主题，并把分类 ID、分类路径写入 `calendar_category_id`、`calendar_category_path` 主题设置。功能部署前不要把带日历导航的主题单独设为默认主题。
 
-主题已提供简体中文与英文文案，显示语言跟随 Discourse 的 `default_locale` 或用户个人语言偏好。开发站点现已将 `default_locale` 设为 `zh_CN`；部署到其他环境时需单独配置，GitHub 主题源码不会同步站点语言设置。
-
-布局参考 X 的公开网页截图：桌面三栏、窄屏单栏、清晰边框和蓝色操作按钮。保留 ISBF 名称和校园社区内容，不使用 X 商标。
-
-## 验证状态
-
-V2 已在团队开发站点作为 ID 2 全站默认运行。V3 已作为 ID 3 独立管理员预览导入；移动首页、话题详情和发布框已做首轮截图检查，未见主题 JavaScript 错误。本次移动端布局修复尚待重新导入后复验。明暗模式、通知及其他页面仍需验收。未修改 Discourse Core。
+主题的简体中文和英文文案随 Discourse 站点或用户语言切换。首页“最新”映射 `/latest`，“官方”映射现有官方分类；工作台不展示虚构数据。

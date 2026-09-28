@@ -7,6 +7,8 @@ import { i18n } from "discourse-i18n";
 
 import ISBFV2RightRail from "./isbf-v2-right-rail";
 import ISBFV2SideNav from "./isbf-v2-side-nav";
+import ISBFV2Calendar from "./isbf-v2-calendar";
+import ISBFV2Workbench from "./isbf-v2-workbench";
 
 export default class ISBFV2Shell extends Component {
   @service currentUser;
@@ -24,6 +26,12 @@ export default class ISBFV2Shell extends Component {
     }
     if (/^\/t\//.test(path)) {
       return "topic";
+    }
+    if (path === "/isbf/calendar") {
+      return "calendar";
+    }
+    if (path === "/isbf/workbench") {
+      return "workbench";
     }
     if (/^\/u\/[^/]+\/notifications(\/|$)/.test(path)) {
       return "notifications";
@@ -55,13 +63,23 @@ export default class ISBFV2Shell extends Component {
     return this.pageKind === "notifications";
   }
 
+  get isCalendar() {
+    return this.pageKind === "calendar";
+  }
+
+  get isWorkbench() {
+    return this.pageKind === "workbench";
+  }
+
   get pageTitle() {
     const titles = {
       bookmarks: "bookmarks",
+      calendar: "calendar",
       explore: "explore",
       notifications: "notifications",
       profile: "profile",
       topic: "topic",
+      workbench: "workbench",
     };
 
     return i18n(themePrefix("isbf_v2." + titles[this.pageKind]));
@@ -115,7 +133,11 @@ export default class ISBFV2Shell extends Component {
     {{#if this.pageKind}}
       <div class={{this.shellClass}}>
         <ISBFV2SideNav />
-        {{#if settings.show_right_rail}}<ISBFV2RightRail />{{/if}}
+        {{#if settings.show_right_rail}}
+          {{#unless this.isCalendar}}
+            {{#unless this.isWorkbench}}<ISBFV2RightRail />{{/unless}}
+          {{/unless}}
+        {{/if}}
 
         {{#if this.isFeed}}
           <header class="isbf-v2-feed-header">
@@ -148,6 +170,9 @@ export default class ISBFV2Shell extends Component {
           </header>
         {{/if}}
 
+        {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
+        {{#if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
+
         {{#if this.canCompose}}
           <a aria-label={{i18n (themePrefix "isbf_v2.compose")}} class="isbf-v2-mobile-compose" href={{this.composeHref}}>{{dIcon "plus"}}</a>
         {{/if}}
@@ -155,7 +180,8 @@ export default class ISBFV2Shell extends Component {
         <nav class="isbf-v2-mobile-nav" aria-label={{i18n (themePrefix "isbf_v2.quick_label")}}>
           <a aria-current={{if this.isFeed "page"}} class={{if this.isFeed "is-active"}} href="/latest">{{dIcon "house"}}<span>{{i18n (themePrefix "isbf_v2.home")}}</span></a>
           <a aria-current={{if this.isNotifications "page"}} class={{if this.isNotifications "is-active"}} href={{this.notificationsHref}}>{{dIcon "bell"}}<span>{{i18n (themePrefix "isbf_v2.notifications")}}</span></a>
-          <button disabled title={{i18n (themePrefix "isbf_v2.workbench_pending")}} type="button">{{dIcon "briefcase"}}<span>{{i18n (themePrefix "isbf_v2.workbench")}}</span></button>
+          <a aria-current={{if this.isCalendar "page"}} class={{if this.isCalendar "is-active"}} href="/isbf/calendar">{{dIcon "calendar-days"}}<span>{{i18n (themePrefix "isbf_v2.calendar")}}</span></a>
+          <a aria-current={{if this.isWorkbench "page"}} class={{if this.isWorkbench "is-active"}} href="/isbf/workbench">{{dIcon "table-cells-large"}}<span>{{i18n (themePrefix "isbf_v2.workbench")}}</span></a>
         </nav>
       </div>
     {{/if}}

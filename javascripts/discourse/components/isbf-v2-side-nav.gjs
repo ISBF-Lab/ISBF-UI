@@ -44,6 +44,31 @@ export default class ISBFV2SideNav extends Component {
     );
   }
 
+  get exploreActive() {
+    return /^\/(search|categories|c|tag|tags)(\/|\?|$)/.test(this.router.currentURL ?? "");
+  }
+
+  get notificationsActive() {
+    return /\/notifications(\/|\?|$)/.test(this.router.currentURL ?? "");
+  }
+
+  get calendarActive() {
+    return (this.router.currentURL ?? "").startsWith("/isbf/calendar");
+  }
+
+  get workbenchActive() {
+    return (this.router.currentURL ?? "").startsWith("/isbf/workbench");
+  }
+
+  get bookmarksActive() {
+    return /\/activity\/bookmarks(\/|\?|$)/.test(this.router.currentURL ?? "");
+  }
+
+  get profileActive() {
+    const path = this.router.currentURL ?? "";
+    return /^\/u\//.test(path) && !this.notificationsActive && !this.bookmarksActive;
+  }
+
   <template>
     <aside class="isbf-v2-side" aria-label={{i18n (themePrefix "isbf_v2.navigation_label")}}>
       <a class="isbf-v2-brand" href="/latest" aria-label={{settings.brand_name}}>
@@ -52,11 +77,13 @@ export default class ISBFV2SideNav extends Component {
       </a>
 
       <nav class="isbf-v2-side__links">
-        <a class={{if this.homeActive "is-active"}} href="/latest">{{dIcon "house"}}<span>{{i18n (themePrefix "isbf_v2.home")}}</span></a>
-        <a href="/categories">{{dIcon "magnifying-glass"}}<span>{{i18n (themePrefix "isbf_v2.explore")}}</span></a>
-        <a href={{this.notificationsHref}}>{{dIcon "bell"}}<span>{{i18n (themePrefix "isbf_v2.notifications")}}</span></a>
-        <a href={{this.bookmarksHref}}>{{dIcon "bookmark"}}<span>{{i18n (themePrefix "isbf_v2.bookmarks")}}</span></a>
-        <a href={{this.profileHref}}>{{dIcon "user"}}<span>{{i18n (themePrefix "isbf_v2.profile")}}</span></a>
+        <a aria-current={{if this.homeActive "page"}} class={{if this.homeActive "is-active"}} href="/latest">{{dIcon "house"}}<span>{{i18n (themePrefix "isbf_v2.home")}}</span></a>
+        <a aria-current={{if this.exploreActive "page"}} class={{if this.exploreActive "is-active"}} href="/categories">{{dIcon "magnifying-glass"}}<span>{{i18n (themePrefix "isbf_v2.explore")}}</span></a>
+        <a aria-current={{if this.notificationsActive "page"}} class={{if this.notificationsActive "is-active"}} href={{this.notificationsHref}}>{{dIcon "bell"}}<span>{{i18n (themePrefix "isbf_v2.notifications")}}</span></a>
+        <a aria-current={{if this.calendarActive "page"}} class={{if this.calendarActive "is-active"}} href="/isbf/calendar">{{dIcon "calendar-days"}}<span>{{i18n (themePrefix "isbf_v2.calendar")}}</span></a>
+        <a aria-current={{if this.workbenchActive "page"}} class={{if this.workbenchActive "is-active"}} href="/isbf/workbench">{{dIcon "table-cells-large"}}<span>{{i18n (themePrefix "isbf_v2.workbench")}}</span></a>
+        <a aria-current={{if this.bookmarksActive "page"}} class={{if this.bookmarksActive "is-active"}} href={{this.bookmarksHref}}>{{dIcon "bookmark"}}<span>{{i18n (themePrefix "isbf_v2.bookmarks")}}</span></a>
+        <a aria-current={{if this.profileActive "page"}} class={{if this.profileActive "is-active"}} href={{this.profileHref}}>{{dIcon "user"}}<span>{{i18n (themePrefix "isbf_v2.profile")}}</span></a>
       </nav>
 
       <a class="isbf-v2-side__compose" href="/new-topic">{{i18n (themePrefix "isbf_v2.compose")}}</a>

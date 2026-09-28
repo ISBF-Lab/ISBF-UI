@@ -12,3 +12,13 @@ show_right_rail:
   default: true
   type: bool
   description: "宽屏显示搜索与热门话题入口。"
+
+calendar_category_id:
+  default: 0
+  type: integer
+  description: "校园活动分类 ID；日历仅展示该分类的活动。"
+
+calendar_category_path:
+  default: "/c/campus-events"
+  type: string
+  description: "校园活动分类页面路径，用于发布活动入口。"
