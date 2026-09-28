@@ -821,7 +821,7 @@ html.composer-open body:has(.isbf-v2-shell) #topic-footer-buttons .btn-primary.c
   display: none;
 }
 
-html.composer-open body:has(.isbf-v2-shell) #reply-control.open.isbf-quick-post-composer {
+html.composer-open body:has(.isbf-v2-shell) #reply-control.open:has(.isbf-v2-composer-options) {
   .title-input {
     display: none;
   }
@@ -848,7 +848,7 @@ html.composer-open body:has(.isbf-v2-shell) #reply-control.open.isbf-quick-post-
 }
 
 @media (min-width: 601px) {
-  html.composer-open body:has(.isbf-v2-shell):has(#reply-control.open.isbf-quick-post-composer)::before {
+  html.composer-open body:has(.isbf-v2-shell):has(#reply-control.open .isbf-v2-composer-options)::before {
     position: fixed;
     inset: 0;
     z-index: 399;
@@ -856,7 +856,7 @@ html.composer-open body:has(.isbf-v2-shell) #reply-control.open.isbf-quick-post-
     content: "";
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open.isbf-quick-post-composer {
+  html.composer-open body:has(.isbf-v2-shell) #reply-control.open:has(.isbf-v2-composer-options) {
     position: fixed;
     top: var(--isbf-v2-composer-top);
     right: auto;
@@ -1808,7 +1808,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 }
 
 @media (max-width: 600px) {
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open.isbf-quick-post-composer {
+  html.composer-open body:has(.isbf-v2-shell) #reply-control.open:has(.isbf-v2-composer-options) {
     top: 0;
     right: 0;
     bottom: auto;
@@ -1863,6 +1863,10 @@ body:has(.isbf-v2-shell--bookmarks) {
       min-height: 40px;
     }
 
+    .save-or-cancel .btn-primary .d-icon {
+      display: none;
+    }
+
     .d-editor-container,
     .d-editor-textarea-column {
       min-height: 0;
@@ -1879,8 +1883,9 @@ body:has(.isbf-v2-shell--bookmarks) {
 
     .isbf-v2-composer-options__avatar {
       position: absolute;
-      top: calc(76px + env(safe-area-inset-top));
+      top: 12px;
       left: 16px;
+      z-index: 2;
       width: 44px;
       height: 44px;
     }
@@ -2006,7 +2011,7 @@ body:has(.isbf-v2-shell--bookmarks) {
     }
   }
 
-  html.keyboard-visible body:has(.isbf-v2-shell) #reply-control.open.isbf-quick-post-composer {
+  html.keyboard-visible body:has(.isbf-v2-shell) #reply-control.open:has(.isbf-v2-composer-options) {
     .isbf-v2-composer-options__toggle {
       bottom: 64px;
     }

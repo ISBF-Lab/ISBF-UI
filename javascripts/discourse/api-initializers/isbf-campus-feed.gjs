@@ -1,7 +1,7 @@
 import { scheduleOnce } from "@ember/runloop";
 import { apiInitializer } from "discourse/lib/api";
 import { i18n } from "discourse-i18n";
-import { settings, themePrefix } from "virtual:theme";
+import { themePrefix } from "virtual:theme";
 
 import ISBFV2ComposerCancel from "../components/isbf-v2-composer-cancel";
 import ISBFV2ComposerOptions from "../components/isbf-v2-composer-options";
@@ -29,19 +29,6 @@ export default apiInitializer((api) => {
   api.renderInOutlet("before-main-outlet", ISBFV2Shell);
   api.renderInOutlet("before-composer-controls", ISBFV2ComposerCancel);
   api.renderInOutlet("before-composer-fields", ISBFV2ComposerOptions);
-  const composer = api.container.lookup("service:composer");
-
-  function syncComposerClasses(model) {
-    scheduleOnce("afterRender", () => {
-      const control = document.querySelector("#reply-control");
-      control?.classList.toggle("isbf-quick-post-composer", isQuickPost(model));
-      control?.classList.toggle(
-        "isbf-event-composer",
-        Number(model?.categoryId) === Number(settings.calendar_category_id) &&
-          Number(settings.calendar_category_id) > 0
-      );
-    });
-  }
 
   api.customizeComposerText({
     actionTitle: (model) =>
@@ -51,7 +38,6 @@ export default apiInitializer((api) => {
   });
 
   api.onAppEvent("composer:opened", () => {
-    syncComposerClasses(composer.model);
     scheduleOnce("afterRender", () => {
       document
         .querySelector(
@@ -60,8 +46,6 @@ export default apiInitializer((api) => {
         ?.focus();
     });
   });
-
-  api.onAppEvent("composer:category-changed", syncComposerClasses);
 
   api.registerValueTransformer(
     "composer-editor-reply-placeholder",
