@@ -1,6 +1,7 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
+import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
@@ -325,7 +326,7 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   <template>
-    <article class="isbf-feed-card" {{did-insert this.observe}}>
+    <article class="isbf-feed-card" {{didInsert this.observe}}>
       <a class="isbf-feed-card__avatar" href={{this.profileUrl}}>
         <img alt="" height="42" loading="lazy" src={{this.avatarUrl}} width="42" />
       </a>
