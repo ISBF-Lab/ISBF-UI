@@ -1,6 +1,7 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
+import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
 import Composer from "discourse/models/composer";
@@ -225,9 +226,12 @@ export default class ISBFV2FeedCard extends Component {
     const body = `[quote=\"${username}, post:1, topic:${this.args.topic.id}\"]\n${sourceText}\n[/quote]\n\n`;
     await this.composer.openNewTopic({
       body,
-      isbf_repost_source_topic_id: this.args.topic.id,
       title: this.args.topic.title,
     });
+    this.composer.model?.set(
+      "isbf_repost_source_topic_id",
+      this.args.topic.id
+    );
   }
 
   @action
@@ -275,18 +279,18 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   @action
-  flag() {
+  async flag() {
     this.#closeMenu();
-    this.router.transitionTo(this.topicUrl);
-    window.setTimeout(() => {
+    await this.router.transitionTo(this.topicUrl);
+    scheduleOnce("afterRender", () => {
       const article = document.querySelector("article[data-post-number='1']");
       article?.querySelector(".show-more-actions")?.click();
-      window.setTimeout(() => {
+      scheduleOnce("afterRender", () => {
         article
           ?.querySelector("button.flag, button.create-flag, [data-key='flag']")
           ?.click();
-      }, 80);
-    }, 500);
+      });
+    });
   }
 
   async #loadContent() {
