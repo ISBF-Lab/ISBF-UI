@@ -5,7 +5,19 @@ import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const about = JSON.parse(readFileSync(new URL("about.json", root), "utf8"));
-for (const icon of ["calendar-days", "table-cells-large", "chevron-left", "xmark", "ellipsis"]) {
+for (const icon of [
+  "calendar-days",
+  "table-cells-large",
+  "chevron-left",
+  "xmark",
+  "ellipsis",
+  "comment",
+  "retweet",
+  "heart",
+  "bookmark",
+  "share-nodes",
+  "flag",
+]) {
   if (!about.modifiers.svg_icons.includes(icon)) {
     throw new Error(`Missing sprite icon: ${icon}`);
   }
@@ -22,6 +34,11 @@ for (const locale of ["zh_CN", "en"]) {
     "switch_account",
     "logout",
     "logout_confirm",
+    "reply",
+    "repost",
+    "like",
+    "share",
+    "report",
   ]) {
     if (!new RegExp(`^    ${key}:`, "m").test(yaml)) {
       throw new Error(`${locale} is missing ${key}`);
