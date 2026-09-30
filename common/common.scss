@@ -41,7 +41,7 @@
   --isbf-v2-layout-max: 1260px;
   --isbf-v2-page-left: max(16px, calc((100vw - var(--isbf-v2-layout-max)) / 2));
   --isbf-v2-feed-left: calc(var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap));
-  --isbf-v2-composer-top: calc(108px + 92px + var(--isbf-v2-space-3));
+  --isbf-v2-composer-top: calc(108px + 92px);
 }
 
 body:has(.isbf-v2-shell) {
@@ -1203,12 +1203,16 @@ html.composer-open body:has(.isbf-v2-shell) #reply-control.open:has(.isbf-v2-com
 }
 
 @media (min-width: 601px) {
-  html.composer-open body:has(.isbf-v2-shell--feed):has(#reply-control.open .isbf-v2-composer-options)::before {
+  html.composer-open body:has(.isbf-v2-shell--feed):has(#reply-control.open .isbf-v2-composer-options) .discourse-root::before {
     position: fixed;
     inset: 0;
     z-index: 399;
     background: rgba(0, 0, 0, 0.68);
     content: "";
+  }
+
+  html.composer-open body:has(.isbf-v2-shell--feed):has(#reply-control.open .isbf-v2-composer-options) .fk-d-menu {
+    z-index: 401;
   }
 
   html.composer-open body:has(.isbf-v2-shell--feed) #reply-control.open:has(.isbf-v2-composer-options) {
