@@ -7,6 +7,7 @@ import { themePrefix } from "virtual:theme";
 import ISBFV2ComposerCancel from "../components/isbf-v2-composer-cancel";
 import ISBFV2ComposerOptions from "../components/isbf-v2-composer-options";
 import ISBFV2Shell from "../components/isbf-v2-shell";
+import { canPublishAnonymously } from "../lib/anonymous-post-scope";
 import { isQuickPost } from "../lib/quick-post-scope";
 import { quickPostText, quickPostTitle } from "../lib/quick-post-title";
 
@@ -39,6 +40,8 @@ export default apiInitializer((api) => {
     "isbf_repost_source_topic_id",
     "isbf_repost_source_topic_id"
   );
+  Composer.serializeOnCreate("isbf_anonymous", "isbf_anonymous");
+  Composer.serializeToDraft("isbf_anonymous", "isbf_anonymous");
   api.renderInOutlet("before-main-outlet", ISBFV2Shell);
   api.renderInOutlet("before-composer-controls", ISBFV2ComposerCancel);
   api.renderInOutlet("before-composer-fields", ISBFV2ComposerOptions);
@@ -48,6 +51,19 @@ export default apiInitializer((api) => {
       isQuickPost(model) ? i18n(themePrefix("isbf_v2.quick_post")) : null,
     saveLabel: (model) =>
       isQuickPost(model) ? themePrefix("isbf_v2.compose") : null,
+  });
+
+  api.onAppEvent("composer:category-changed", (model) => {
+    if (
+      model.isbf_anonymous &&
+      !canPublishAnonymously(
+        model,
+        api.container.lookup("service:current-user"),
+        api.container.lookup("service:site-settings")
+      )
+    ) {
+      model.set("isbf_anonymous", false);
+    }
   });
 
   api.onAppEvent("composer:opened", () => {

@@ -4,13 +4,14 @@ import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
-import { htmlSafe } from "@ember/template";
-import Composer from "discourse/models/composer";
+import { trustHTML } from "@ember/template";
+import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
+import Composer from "discourse/models/composer";
+import Draft from "discourse/models/draft";
+import { loadTopicView } from "discourse/models/topic";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
-import { themePrefix } from "virtual:theme";
-
 import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
 
 function plainText(html) {
@@ -21,7 +22,9 @@ function plainText(html) {
 
 function compactNumber(value) {
   const count = Number(value) || 0;
-  return count ? new Intl.NumberFormat(undefined, { notation: "compact" }).format(count) : "";
+  return count
+    ? new Intl.NumberFormat(undefined, { notation: "compact" }).format(count)
+    : "";
 }
 
 export default class ISBFV2FeedCard extends Component {
@@ -35,6 +38,7 @@ export default class ISBFV2FeedCard extends Component {
   @tracked bookmarked;
   @tracked expanded = false;
   @tracked isLiking = false;
+  @tracked isReplying = false;
   @tracked liked;
   @tracked likeCount;
   @tracked menuOpen = false;
@@ -63,20 +67,25 @@ export default class ISBFV2FeedCard extends Component {
 
   get bodyHtml() {
     if (this.body) {
-      return htmlSafe(this.body);
+      return trustHTML(this.body);
     }
     if (this.args.topic.excerpt) {
-      return htmlSafe(`<p>${this.args.topic.excerpt}</p>`);
+      return trustHTML(`<p>${this.args.topic.excerpt}</p>`);
     }
     return null;
   }
 
   get canFlag() {
-    return Boolean(this.currentUser) && this.currentUser.id !== this.args.topic.creator?.id;
+    return (
+      Boolean(this.currentUser) &&
+      this.currentUser.id !== this.args.topic.creator?.id
+    );
   }
 
   get canLike() {
-    return Boolean(this.currentUser) && (this.args.topic.op_can_like || this.liked);
+    return (
+      Boolean(this.currentUser) && (this.args.topic.op_can_like || this.liked)
+    );
   }
 
   get creatorName() {
@@ -89,7 +98,11 @@ export default class ISBFV2FeedCard extends Component {
     }
     const title = this.args.topic.title?.replace(/\s+/g, " ").trim();
     const body = plainText(this.body);
-    if (!title || body.startsWith(title) || title.startsWith(body.slice(0, 80))) {
+    if (
+      !title ||
+      body.startsWith(title) ||
+      title.startsWith(body.slice(0, 80))
+    ) {
       return null;
     }
     return title;
@@ -118,7 +131,9 @@ export default class ISBFV2FeedCard extends Component {
   get relativeTime() {
     const date = new Date(this.args.topic.createdAt);
     const seconds = Math.round((date.getTime() - Date.now()) / 1000);
-    const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+    const formatter = new Intl.RelativeTimeFormat(undefined, {
+      numeric: "auto",
+    });
     if (Math.abs(seconds) < 60) {
       return formatter.format(seconds, "second");
     }
@@ -158,12 +173,68 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   @action
+  openTopic(event) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      window.getSelection()?.toString() ||
+      event.target.closest(
+        "a, button, input, select, textarea, summary, audio, video, [contenteditable], [role='button'], [role='link']"
+      )
+    ) {
+      return;
+    }
+
+    event.stopPropagation();
+    this.args.navigateToTopic(this.args.topic);
+  }
+
+  @action
   async reply() {
+    if (this.isReplying) {
+      return;
+    }
     if (!this.currentUser) {
       this.router.transitionTo("login");
       return;
     }
-    await this.composer.open({ action: Composer.REPLY, topic: this.args.topic });
+
+    const topic = this.args.topic;
+    this.isReplying = true;
+    try {
+      await loadTopicView(topic, {});
+      if (!topic.get("details.can_create_post")) {
+        await this.router.transitionTo(this.topicUrl);
+        return;
+      }
+
+      const draftData = await Draft.get(topic.draft_key);
+      const options = {
+        action: Composer.REPLY,
+        draftKey: topic.draft_key,
+        draftSequence: draftData.draft_sequence,
+        topic,
+      };
+
+      if (draftData.draft) {
+        const draft = JSON.parse(draftData.draft);
+        options.reply = draft.reply;
+        options.whisper = draft.whisper;
+        if (Composer.isEditDraft(draft)) {
+          options.draft = draft;
+        }
+      }
+
+      await this.composer.open(options);
+    } catch (error) {
+      await this.#showError(error);
+    } finally {
+      this.isReplying = false;
+    }
   }
 
   @action
@@ -206,7 +277,9 @@ export default class ISBFV2FeedCard extends Component {
     }
     try {
       if (this.bookmarked) {
-        await ajax(`/t/${this.args.topic.id}/remove_bookmarks`, { type: "PUT" });
+        await ajax(`/t/${this.args.topic.id}/remove_bookmarks`, {
+          type: "PUT",
+        });
       } else {
         await ajax(`/t/${this.args.topic.id}/bookmark`, { type: "PUT" });
       }
@@ -222,17 +295,17 @@ export default class ISBFV2FeedCard extends Component {
       this.router.transitionTo("login");
       return;
     }
-    const sourceText = plainText(this.body || this.args.topic.excerpt).slice(0, 500);
+    const sourceText = plainText(this.body || this.args.topic.excerpt).slice(
+      0,
+      500
+    );
     const username = this.args.topic.creator?.username;
     const body = `[quote=\"${username}, post:1, topic:${this.args.topic.id}\"]\n${sourceText}\n[/quote]\n\n`;
     await this.composer.openNewTopic({
       body,
       title: this.args.topic.title,
     });
-    this.composer.model?.set(
-      "isbf_repost_source_topic_id",
-      this.args.topic.id
-    );
+    this.composer.model?.set("isbf_repost_source_topic_id", this.args.topic.id);
   }
 
   @action
@@ -266,7 +339,11 @@ export default class ISBFV2FeedCard extends Component {
 
   @action
   onOutsidePointer(event) {
-    if (!this.#rootElement?.querySelector(".isbf-feed-card__menu-wrap")?.contains(event.target)) {
+    if (
+      !this.#rootElement
+        ?.querySelector(".isbf-feed-card__menu-wrap")
+        ?.contains(event.target)
+    ) {
       this.#closeMenu();
     }
   }
@@ -275,7 +352,9 @@ export default class ISBFV2FeedCard extends Component {
   onDocumentKeydown(event) {
     if (event.key === "Escape") {
       this.#closeMenu();
-      this.#rootElement?.querySelector(".isbf-feed-card__menu-trigger")?.focus();
+      this.#rootElement
+        ?.querySelector(".isbf-feed-card__menu-trigger")
+        ?.focus();
     }
   }
 
@@ -283,15 +362,22 @@ export default class ISBFV2FeedCard extends Component {
   async flag() {
     this.#closeMenu();
     await this.router.transitionTo(this.topicUrl);
-    scheduleOnce("afterRender", () => {
-      const article = document.querySelector("article[data-post-number='1']");
-      article?.querySelector(".show-more-actions")?.click();
-      scheduleOnce("afterRender", () => {
-        article
-          ?.querySelector("button.flag, button.create-flag, [data-key='flag']")
-          ?.click();
-      });
-    });
+    scheduleOnce("afterRender", this, this.#openFlagMenu);
+  }
+
+  #openFlagMenu() {
+    document
+      .querySelector("article[data-post-number='1'] .show-more-actions")
+      ?.click();
+    scheduleOnce("afterRender", this, this.#clickFlagButton);
+  }
+
+  #clickFlagButton() {
+    document
+      .querySelector(
+        "article[data-post-number='1'] button.flag, article[data-post-number='1'] button.create-flag, article[data-post-number='1'] [data-key='flag']"
+      )
+      ?.click();
   }
 
   async #loadContent() {
@@ -321,40 +407,120 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   async #showError(error) {
-    const message = error?.jqXHR?.responseJSON?.errors?.[0] || i18n(themePrefix("isbf_v2.action_failed"));
+    const message =
+      error?.jqXHR?.responseJSON?.errors?.[0] ||
+      i18n(themePrefix("isbf_v2.action_failed"));
     await this.dialog.alert(message);
   }
 
   <template>
-    <article class="isbf-feed-card" {{didInsert this.observe}}>
+    {{! eslint-disable ember/template-no-invalid-interactive }}
+    <article
+      class="isbf-feed-card"
+      {{didInsert this.observe}}
+      {{on "click" this.openTopic}}
+    >
       <a class="isbf-feed-card__avatar" href={{this.profileUrl}}>
-        <img alt="" height="42" loading="lazy" src={{this.avatarUrl}} width="42" />
+        <img
+          alt=""
+          height="42"
+          loading="lazy"
+          src={{this.avatarUrl}}
+          width="42"
+        />
       </a>
       <div class="isbf-feed-card__main">
         <header class="isbf-feed-card__header">
-          <a class="isbf-feed-card__author" href={{this.profileUrl}}>{{this.creatorName}}</a>
-          <a class="isbf-feed-card__username" href={{this.profileUrl}}>@{{@topic.creator.username}}</a>
+          <a
+            class="isbf-feed-card__author"
+            href={{this.profileUrl}}
+          >{{this.creatorName}}</a>
+          <a
+            class="isbf-feed-card__username"
+            href={{this.profileUrl}}
+          >@{{@topic.creator.username}}</a>
           <span aria-hidden="true">·</span>
-          <a class="isbf-feed-card__time" href={{this.topicUrl}} title={{@topic.createdAt}}>{{this.relativeTime}}</a>
+          <a
+            class="isbf-feed-card__time"
+            href={{this.topicUrl}}
+            title={{@topic.createdAt}}
+          >{{this.relativeTime}}</a>
           <div class="isbf-feed-card__menu-wrap">
-            <button aria-expanded={{if this.menuOpen "true" "false"}} aria-label={{i18n (themePrefix "isbf_v2.more_actions")}} class="isbf-feed-card__menu-trigger" type="button" {{on "click" this.toggleMenu}}>{{dIcon "ellipsis"}}</button>
+            <button
+              aria-expanded={{if this.menuOpen "true" "false"}}
+              aria-label={{i18n (themePrefix "isbf_v2.more_actions")}}
+              class="isbf-feed-card__menu-trigger"
+              type="button"
+              {{on "click" this.toggleMenu}}
+            >{{dIcon "ellipsis"}}</button>
             {{#if this.menuOpen}}
               <div class="isbf-feed-card__menu" role="menu">
-                {{#if this.canFlag}}<button role="menuitem" type="button" {{on "click" this.flag}}>{{dIcon "flag"}}{{i18n (themePrefix "isbf_v2.report")}}</button>{{/if}}
+                {{#if this.canFlag}}<button
+                    role="menuitem"
+                    type="button"
+                    {{on "click" this.flag}}
+                  >{{dIcon "flag"}}{{i18n
+                      (themePrefix "isbf_v2.report")
+                    }}</button>{{/if}}
               </div>
             {{/if}}
           </div>
         </header>
-        {{#if this.displayTitle}}<a class="isbf-feed-card__title" href={{this.topicUrl}}>{{this.displayTitle}}</a>{{/if}}
-        <div class={{if this.expanded "isbf-feed-card__body is-expanded" "isbf-feed-card__body"}}>{{this.bodyHtml}}</div>
-        {{#if this.bodyFailed}}<a class="isbf-feed-card__fallback" href={{this.topicUrl}}>{{i18n (themePrefix "isbf_v2.view_post")}}</a>{{/if}}
-        {{#if this.showExpand}}<button class="isbf-feed-card__expand" type="button" {{on "click" this.toggleExpanded}}>{{i18n (themePrefix (if this.expanded "isbf_v2.show_less" "isbf_v2.show_more"))}}</button>{{/if}}
+        {{#if this.displayTitle}}<a
+            class="isbf-feed-card__title"
+            href={{this.topicUrl}}
+          >{{this.displayTitle}}</a>{{/if}}
+        <div
+          class={{if
+            this.expanded
+            "isbf-feed-card__body is-expanded"
+            "isbf-feed-card__body"
+          }}
+        >{{this.bodyHtml}}</div>
+        {{#if this.bodyFailed}}<a
+            class="isbf-feed-card__fallback"
+            href={{this.topicUrl}}
+          >{{i18n (themePrefix "isbf_v2.view_post")}}</a>{{/if}}
+        {{#if this.showExpand}}<button
+            class="isbf-feed-card__expand"
+            type="button"
+            {{on "click" this.toggleExpanded}}
+          >{{i18n
+              (themePrefix
+                (if this.expanded "isbf_v2.show_less" "isbf_v2.show_more")
+              )
+            }}</button>{{/if}}
         <footer class="isbf-feed-card__actions">
-          <button aria-label={{i18n (themePrefix "isbf_v2.reply")}} type="button" {{on "click" this.reply}}>{{dIcon "comment"}}<span>{{this.formattedReplyCount}}</span></button>
-          <button aria-label={{i18n (themePrefix "isbf_v2.repost")}} type="button" {{on "click" this.repost}}>{{dIcon "retweet"}}<span>{{this.formattedRepostCount}}</span></button>
-          <button aria-label={{i18n (themePrefix "isbf_v2.like")}} class={{if this.liked "is-liked"}} disabled={{this.isLiking}} type="button" {{on "click" this.toggleLike}}>{{dIcon "heart"}}<span>{{this.formattedLikeCount}}</span></button>
-          <button aria-label={{i18n (themePrefix "isbf_v2.bookmark_action")}} class={{if this.bookmarked "is-bookmarked"}} type="button" {{on "click" this.toggleBookmark}}>{{dIcon "bookmark"}}</button>
-          <button aria-label={{i18n (themePrefix "isbf_v2.share")}} type="button" {{on "click" this.share}}>{{dIcon "share-nodes"}}</button>
+          <button
+            aria-label={{i18n (themePrefix "isbf_v2.reply")}}
+            disabled={{this.isReplying}}
+            type="button"
+            {{on "click" this.reply}}
+          >{{dIcon "comment"}}<span>{{this.formattedReplyCount}}</span></button>
+          <button
+            aria-label={{i18n (themePrefix "isbf_v2.repost")}}
+            type="button"
+            {{on "click" this.repost}}
+          >{{dIcon "retweet"}}<span
+            >{{this.formattedRepostCount}}</span></button>
+          <button
+            aria-label={{i18n (themePrefix "isbf_v2.like")}}
+            class={{if this.liked "is-liked"}}
+            disabled={{this.isLiking}}
+            type="button"
+            {{on "click" this.toggleLike}}
+          >{{dIcon "heart"}}<span>{{this.formattedLikeCount}}</span></button>
+          <button
+            aria-label={{i18n (themePrefix "isbf_v2.bookmark_action")}}
+            class={{if this.bookmarked "is-bookmarked"}}
+            type="button"
+            {{on "click" this.toggleBookmark}}
+          >{{dIcon "bookmark"}}</button>
+          <button
+            aria-label={{i18n (themePrefix "isbf_v2.share")}}
+            type="button"
+            {{on "click" this.share}}
+          >{{dIcon "share-nodes"}}</button>
         </footer>
       </div>
     </article>

@@ -178,6 +178,7 @@ export default class ISBFV2AccountMenu extends Component {
         {{#if this.isOpen}}
           <div aria-label={{i18n (themePrefix "isbf_v2.account_actions")}} class="isbf-v2-account-menu__panel" role="group">
             {{#unless @mobile}}<a class="isbf-v2-account-menu__compact-profile" href={{this.profileHref}} {{on "click" this.closeMenu}}>{{i18n (themePrefix "isbf_v2.profile")}}</a>{{/unless}}
+            <a href="/isbf-anonymous/posts" {{on "click" this.closeMenu}}>{{i18n (themePrefix "isbf_v2.my_anonymous_posts")}}</a>
             <button type="button" {{on "click" this.confirmSwitch}}>{{i18n (themePrefix "isbf_v2.switch_account")}}</button>
             <button type="button" {{on "click" this.confirmLogout}}>{{i18n (themePrefix "isbf_v2.logout")}} @{{this.currentUser.username}}</button>
           </div>

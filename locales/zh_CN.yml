@@ -2,6 +2,12 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    anonymous_post: "匿名发布"
+    anonymous_post_hint: "发布后不能编辑或删除此帖。"
+    my_anonymous_posts: "我的匿名帖子"
+    anonymous_posts_empty: "你还没有匿名发布的帖子。"
+    anonymous_posts_load_error: "匿名帖子加载失败。"
+    load_more: "加载更多"
     home: "首页"
     explore: "探索"
     notifications: "通知"

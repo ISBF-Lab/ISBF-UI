@@ -2,6 +2,12 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    anonymous_post: "Post anonymously"
+    anonymous_post_hint: "After publishing, you cannot edit or delete this post."
+    my_anonymous_posts: "My anonymous posts"
+    anonymous_posts_empty: "You have not posted anonymously yet."
+    anonymous_posts_load_error: "Could not load anonymous posts."
+    load_more: "Load more"
     home: "Home"
     explore: "Explore"
     notifications: "Notifications"
