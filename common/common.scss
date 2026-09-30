@@ -104,6 +104,10 @@ body:has(.isbf-v2-shell) {
     display: none;
   }
 
+  &:has(.isbf-v2-shell--official) .category-heading {
+    display: none;
+  }
+
   .global-notice .alert {
     margin: 0;
     border-radius: 0;

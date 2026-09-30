@@ -136,6 +136,10 @@ export default class ISBFV2Shell extends Component {
   get shellClass() {
     const classes = ["isbf-v2-shell", `isbf-v2-shell--${this.pageKind}`];
 
+    if (this.officialActive) {
+      classes.push("isbf-v2-shell--official");
+    }
+
     if (!this.canCompose) {
       classes.push("isbf-v2-shell--no-compose");
     }
