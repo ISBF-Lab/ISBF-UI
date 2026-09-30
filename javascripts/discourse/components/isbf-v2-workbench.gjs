@@ -24,7 +24,6 @@ export default class ISBFV2Workbench extends Component {
 
   <template>
     <main class="isbf-v2-feature isbf-v2-workbench">
-      <p class="isbf-v2-feature__eyebrow">{{i18n (themePrefix "isbf_v2.workbench_eyebrow")}}</p>
       <h1>{{i18n (themePrefix "isbf_v2.workbench")}}</h1>
       <p class="isbf-v2-feature__intro">{{i18n (themePrefix "isbf_v2.workbench_intro")}}</p>
       <section aria-label={{i18n (themePrefix "isbf_v2.workbench_modules")}} class="isbf-v2-workbench__panel">

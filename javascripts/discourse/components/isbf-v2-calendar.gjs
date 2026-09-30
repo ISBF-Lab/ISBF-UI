@@ -339,11 +339,9 @@ export default class ISBFV2Calendar extends Component {
 
   <template>
     <main class="isbf-v2-feature isbf-v2-calendar">
-      <p class="isbf-v2-feature__eyebrow">{{i18n (themePrefix "isbf_v2.calendar_eyebrow")}}</p>
       <div class="isbf-v2-calendar__heading">
         <div>
           <h1>{{i18n (themePrefix "isbf_v2.calendar")}}</h1>
-          <p class="isbf-v2-feature__intro">{{i18n (themePrefix "isbf_v2.calendar_intro")}}</p>
         </div>
         {{#if this.currentUser}}<button class="isbf-v2-calendar__primary" type="button" {{on "click" this.newEntry}}>{{dIcon "plus"}} {{i18n (themePrefix "isbf_v2.calendar_add_personal")}}</button>{{/if}}
       </div>

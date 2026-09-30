@@ -41,7 +41,7 @@
   --isbf-v2-layout-max: 1260px;
   --isbf-v2-page-left: max(16px, calc((100vw - var(--isbf-v2-layout-max)) / 2));
   --isbf-v2-feed-left: calc(var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap));
-  --isbf-v2-composer-top: calc(108px + 92px);
+  --isbf-v2-composer-top: calc(53px + 92px);
 }
 
 body:has(.isbf-v2-shell) {
@@ -92,11 +92,11 @@ body:has(.isbf-v2-shell) {
 
   @media (min-width: 601px) {
     &:has(.isbf-v2-shell--feed) #main-outlet {
-      padding-top: 200px;
+      padding-top: 145px;
     }
 
     &:has(.isbf-v2-shell--no-compose) #main-outlet {
-      padding-top: 108px;
+      padding-top: 53px;
     }
   }
 
@@ -361,7 +361,7 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
   z-index: 30;
   box-sizing: border-box;
   width: var(--isbf-v2-feed-width);
-  height: 108px;
+  height: 53px;
   border-inline: 1px solid var(--isbf-v2-border);
   border-bottom: 1px solid var(--isbf-v2-border);
   background: color-mix(in srgb, var(--isbf-v2-background) 88%, transparent);
@@ -369,7 +369,7 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
 }
 
 .isbf-v2-feed-header__title {
-  display: flex;
+  display: none;
   align-items: center;
   height: 54px;
   padding-inline: 16px;
@@ -452,7 +452,7 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
 .isbf-v2-compose {
   display: flex;
   position: absolute;
-  top: 108px;
+  top: 53px;
   left: var(--isbf-v2-feed-left);
   z-index: 10;
   align-items: center;
@@ -1060,10 +1060,12 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
 
   .isbf-v2-feed-header {
     width: 100%;
+    height: 108px;
     border-inline: 0;
   }
 
   .isbf-v2-feed-header__title {
+    display: flex;
     justify-content: space-between;
   }
 
@@ -1375,14 +1377,6 @@ body:has(.isbf-v2-shell--workbench) {
   margin: 0;
   font-size: clamp(28px, 3vw, 34px);
   line-height: 1.25;
-}
-
-.isbf-v2-feature__eyebrow {
-  margin: 0 0 12px;
-  color: var(--isbf-v2-accent);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
 }
 
 .isbf-v2-feature__intro {
