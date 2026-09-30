@@ -1977,6 +1977,13 @@ body:has(.isbf-v2-shell--topic) {
 }
 
 body:has(.isbf-v2-shell--profile) {
+  #main-outlet .user-profile-toggle-btn,
+  #main-outlet .about .secondary dl > div:has(> .created-at),
+  #main-outlet .about .secondary dl > div:has(> .last-posted-at),
+  #main-outlet .about .secondary dl > div:has(> .last-seen-at) {
+    display: none;
+  }
+
   #main-outlet .user-main,
   #main-outlet .new-user-wrapper,
   #main-outlet .user-content {
