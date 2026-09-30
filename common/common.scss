@@ -2601,3 +2601,101 @@ body:has(.isbf-v2-shell--bookmarks) {
 body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
   display: none;
 }
+
+.isbf-v2-account-menu__panel {
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+}
+
+.isbf-v2-account-menu__linked-account {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-top: 1px solid var(--isbf-v2-border);
+}
+
+.isbf-v2-account-menu__linked-account > img {
+  border-radius: 50%;
+}
+
+.isbf-v2-account-menu__linked-account > span {
+  display: grid;
+  min-width: 0;
+}
+
+.isbf-v2-account-menu__linked-account > span > b,
+.isbf-v2-account-menu__linked-account > span > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.isbf-v2-account-menu__linked-account > button,
+.isbf-v2-account-menu__link-form button,
+.isbf-v2-account-menu__verify button {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--isbf-v2-radius-pill);
+  background: var(--isbf-v2-accent);
+  color: var(--isbf-v2-accent-contrast);
+  font-weight: var(--isbf-v2-weight-bold);
+  cursor: pointer;
+}
+
+.isbf-v2-account-menu__linked-account > button:disabled,
+.isbf-v2-account-menu__link-form button:disabled,
+.isbf-v2-account-menu__verify button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.isbf-v2-account-menu__status {
+  color: var(--isbf-v2-muted);
+  text-align: right;
+}
+
+.isbf-v2-account-menu__link-form,
+.isbf-v2-account-menu__verify {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 8px;
+  padding: 8px;
+}
+
+.isbf-v2-account-menu__link-form label,
+.isbf-v2-account-menu__verify label {
+  display: grid;
+  gap: 4px;
+  color: var(--isbf-v2-muted);
+  font-size: var(--isbf-v2-font-xs);
+}
+
+.isbf-v2-account-menu__link-form input,
+.isbf-v2-account-menu__verify input,
+.isbf-v2-account-menu__verify select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--isbf-v2-border);
+  border-radius: var(--isbf-v2-radius-sm);
+  outline: 0;
+  background: var(--isbf-v2-background);
+  color: var(--isbf-v2-text);
+}
+
+.isbf-v2-account-menu__link-form input:focus,
+.isbf-v2-account-menu__verify input:focus,
+.isbf-v2-account-menu__verify select:focus {
+  border-color: var(--isbf-v2-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--isbf-v2-accent) 32%, transparent);
+}
+
+.isbf-v2-account-menu__error {
+  margin: 4px 8px;
+  color: var(--danger);
+  font-size: var(--isbf-v2-font-sm);
+}
