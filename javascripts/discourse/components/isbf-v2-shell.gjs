@@ -126,6 +126,10 @@ export default class ISBFV2Shell extends Component {
     return !this.officialActive || Boolean(this.currentUser?.staff);
   }
 
+  get showMobileCompose() {
+    return this.isFeed && this.canCompose;
+  }
+
   get composeHref() {
     const categorySlug = settings.official_path.split("/")[2];
     return this.officialActive
@@ -236,7 +240,7 @@ export default class ISBFV2Shell extends Component {
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
         {{#if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
 
-        {{#if this.canCompose}}
+        {{#if this.showMobileCompose}}
           <a
             aria-label={{i18n (themePrefix "isbf_v2.compose")}}
             class="isbf-v2-mobile-compose"
