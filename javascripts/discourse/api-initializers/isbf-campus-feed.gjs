@@ -32,6 +32,11 @@ function syncQuickPostTitle(model) {
 }
 
 export default apiInitializer((api) => {
+  api.modifyClass("controller:user", {
+    pluginId: "isbf-ui-profile-expanded",
+    forceExpand: true,
+  });
+
   Composer.serializeOnCreate(
     "isbf_repost_source_topic_id",
     "isbf_repost_source_topic_id"
