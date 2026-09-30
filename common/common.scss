@@ -1,3 +1,5 @@
+@use "lib/viewport";
+
 :root {
   --isbf-v2-font-family: var(--font-family, system-ui, sans-serif);
   --isbf-v2-font-xs: 13px;
@@ -1334,6 +1336,7 @@ html.composer-open body:has(.isbf-v2-shell) #reply-control.open:has(.isbf-v2-com
 }
 
 body:has(.isbf-v2-shell--calendar),
+body:has(.isbf-v2-shell--anonymous-posts),
 body:has(.isbf-v2-shell--workbench) {
   #main-outlet {
     display: none;
@@ -1345,6 +1348,7 @@ body:has(.isbf-v2-shell--workbench) {
 }
 
 .isbf-v2-shell--calendar,
+.isbf-v2-shell--anonymous-posts,
 .isbf-v2-shell--workbench {
   height: auto;
 }
@@ -1887,6 +1891,21 @@ body:has(.isbf-v2-shell--topic) {
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
+  #main-outlet .topic-post > article {
+    box-sizing: border-box;
+    padding-inline: var(--isbf-v2-space-4);
+  }
+
+  #main-outlet .topic-post .topic-meta-data .names {
+    min-width: 0;
+  }
+
+  @include viewport.from(sm) {
+    #main-outlet .topic-post > article > .post__row > .topic-body {
+      width: calc(100% - var(--topic-avatar-width));
+    }
+  }
+
   #main-outlet .topic-post .cooked {
     box-sizing: border-box;
     padding-inline: 16px;
@@ -1898,6 +1917,60 @@ body:has(.isbf-v2-shell--topic) {
     max-width: 100%;
     height: auto;
     border-radius: 14px;
+  }
+  #topic-footer-buttons:not(.nested-view__topic-actions) {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    padding-inline: var(--isbf-v2-space-4);
+  }
+
+  #topic-footer-buttons:not(.nested-view__topic-actions)
+    .topic-footer-main-buttons {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--isbf-v2-space-3);
+  }
+
+  #topic-footer-buttons:not(.nested-view__topic-actions)
+    .topic-footer-main-buttons__actions {
+    min-width: 0;
+    gap: var(--isbf-v2-space-3);
+  }
+
+  @include viewport.from(sm) {
+    #topic-footer-buttons:not(.nested-view__topic-actions)
+      .topic-footer-main-buttons__actions
+      .flag-topic,
+    #topic-footer-buttons:not(.nested-view__topic-actions)
+      .topic-footer-main-buttons__actions
+      .defer-topic {
+      display: none;
+    }
+  }
+
+  @include viewport.until(sm) {
+    #topic-footer-buttons:not(.nested-view__topic-actions)
+      .topic-footer-main-buttons__actions
+      .share-and-invite
+      .d-button-label,
+    #topic-footer-buttons:not(.nested-view__topic-actions)
+      .topic-footer-main-buttons__actions
+      .bookmark
+      .d-button-label {
+      display: inline;
+    }
+
+    #topic-footer-buttons:not(.nested-view__topic-actions)
+      .topic-footer-main-buttons__actions
+      .share-and-invite
+      .d-icon,
+    #topic-footer-buttons:not(.nested-view__topic-actions)
+      .topic-footer-main-buttons__actions
+      .bookmark
+      .d-icon {
+      margin-inline-end: var(--isbf-v2-space-2);
+    }
   }
 }
 
@@ -2429,4 +2502,73 @@ body:has(.isbf-v2-shell--bookmarks) {
       padding: 0 4px;
     }
   }
+}
+
+.isbf-v2-anonymous-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: var(--isbf-v2-muted);
+  font-size: var(--isbf-v2-font-xs);
+}
+
+.isbf-v2-anonymous-option__toggle {
+  padding: 6px 12px;
+  border: 1px solid var(--isbf-v2-border-strong);
+  border-radius: var(--isbf-v2-radius-pill);
+  background: var(--isbf-v2-surface);
+  color: var(--isbf-v2-text);
+}
+
+.isbf-v2-anonymous-option__toggle[aria-pressed="true"] {
+  border-color: var(--isbf-v2-accent);
+  background: var(--isbf-v2-active-surface);
+  color: var(--isbf-v2-accent);
+}
+
+.isbf-v2-anonymous-posts__item {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--isbf-v2-border);
+}
+
+.isbf-v2-anonymous-posts__item a {
+  color: var(--isbf-v2-text);
+  font-weight: var(--isbf-v2-weight-bold);
+}
+
+.isbf-v2-anonymous-posts__item p {
+  margin: 8px 0 0;
+  color: var(--isbf-v2-muted);
+}
+
+@media (width <= 600px) {
+  body:has(.isbf-v2-shell--anonymous-posts) .isbf-v2-feature {
+    width: 100%;
+    margin-left: 0;
+    padding: 80px 16px 96px;
+  }
+
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-v2-composer-options)
+    .isbf-v2-anonymous-option {
+    position: absolute;
+    right: 12px;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    z-index: 5;
+    padding: 0;
+  }
+
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-v2-composer-options)
+    .isbf-v2-anonymous-option
+    span {
+    display: none;
+  }
+}
+
+body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
+  display: none;
 }
