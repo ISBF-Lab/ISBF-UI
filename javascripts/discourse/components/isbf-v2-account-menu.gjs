@@ -58,16 +58,6 @@ export default class ISBFV2AccountMenu extends Component {
   }
 
   @action
-  async confirmLink(link) {
-    await this.#runRequest(async () => {
-      await ajax(`/isbf/account-switch/links/${link.id}/confirm`, {
-        type: "PUT",
-      });
-      await this.#loadAccounts();
-    });
-  }
-
-  @action
   async confirmLogout() {
     this.closeMenu();
     if (
@@ -380,18 +370,6 @@ export default class ISBFV2AccountMenu extends Component {
                       (i18n (themePrefix "isbf_v2.verify_device"))
                     }}
                   </button>
-                {{else if link.needs_current_user_confirmation}}
-                  <button
-                    disabled={{this.isBusy}}
-                    type="button"
-                    {{on "click" (fn this.confirmLink link)}}
-                  >
-                    {{i18n (themePrefix "isbf_v2.confirm_account_link")}}
-                  </button>
-                {{else if (eq link.status "pending_target")}}
-                  <small class="isbf-v2-account-menu__status">
-                    {{i18n (themePrefix "isbf_v2.account_link_pending_target")}}
-                  </small>
                 {{else}}
                   <small class="isbf-v2-account-menu__status">
                     {{i18n (themePrefix "isbf_v2.account_link_pending")}}

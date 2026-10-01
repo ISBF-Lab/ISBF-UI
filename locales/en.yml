@@ -19,8 +19,6 @@ en:
     account_username: "Target account username"
     account_username_placeholder: "Enter a username"
     send_link_request: "Send link request"
-    confirm_account_link: "Confirm link"
-    account_link_pending_target: "Awaiting the target account confirmation"
     account_link_pending: "Awaiting administrator approval"
     verify_device: "Verify this device"
     switch_now: "Switch"
