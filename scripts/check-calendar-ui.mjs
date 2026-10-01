@@ -15,7 +15,7 @@ for (const icon of [
   "retweet",
   "heart",
   "bookmark",
-  "share-nodes",
+  "chart-bar",
   "flag",
 ]) {
   if (!about.modifiers.svg_icons.includes(icon)) {
@@ -37,7 +37,8 @@ for (const locale of ["zh_CN", "en"]) {
     "reply",
     "repost",
     "like",
-    "share",
+    "views",
+    "views_count",
     "report",
   ]) {
     if (!new RegExp(`^    ${key}:`, "m").test(yaml)) {

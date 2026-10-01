@@ -388,6 +388,10 @@ export default class ISBFV2AccountMenu extends Component {
                   >
                     {{i18n (themePrefix "isbf_v2.confirm_account_link")}}
                   </button>
+                {{else if (eq link.status "pending_target")}}
+                  <small class="isbf-v2-account-menu__status">
+                    {{i18n (themePrefix "isbf_v2.account_link_pending_target")}}
+                  </small>
                 {{else}}
                   <small class="isbf-v2-account-menu__status">
                     {{i18n (themePrefix "isbf_v2.account_link_pending")}}

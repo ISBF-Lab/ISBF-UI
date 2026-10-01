@@ -13,6 +13,7 @@ import { loadTopicView } from "discourse/models/topic";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
+import { recordVisibleView } from "../lib/feed-view-tracker";
 
 function plainText(html) {
   const element = document.createElement("div");
@@ -43,9 +44,12 @@ export default class ISBFV2FeedCard extends Component {
   @tracked likeCount;
   @tracked menuOpen = false;
   @tracked repostCount = null;
+  @tracked viewCount = null;
 
   #observer;
   #rootElement;
+  #viewInFlight = false;
+  #viewObserver;
 
   constructor() {
     super(...arguments);
@@ -57,6 +61,8 @@ export default class ISBFV2FeedCard extends Component {
   willDestroy() {
     super.willDestroy(...arguments);
     this.#observer?.disconnect();
+    this.#viewObserver?.disconnect();
+    document.removeEventListener("visibilitychange", this.onDocumentVisibilityChange);
     document.removeEventListener("pointerdown", this.onOutsidePointer, true);
     document.removeEventListener("keydown", this.onDocumentKeydown, true);
   }
@@ -120,6 +126,16 @@ export default class ISBFV2FeedCard extends Component {
     return compactNumber(this.repostCount);
   }
 
+  get formattedViewCount() {
+    return this.viewCount === null ? "" : compactNumber(this.viewCount) || "0";
+  }
+
+  get viewLabel() {
+    return this.viewCount === null
+      ? i18n(themePrefix("isbf_v2.views"))
+      : i18n(themePrefix("isbf_v2.views_count"), { count: this.viewCount });
+  }
+
   get profileUrl() {
     return `/u/${this.args.topic.creator?.username}`;
   }
@@ -165,6 +181,49 @@ export default class ISBFV2FeedCard extends Component {
       { rootMargin: "320px 0px" }
     );
     this.#observer.observe(element);
+  }
+
+  @action
+  observeVisibleView(element) {
+    if (!this.currentUser) {
+      return;
+    }
+
+    this.#rootElement = element;
+    this.#viewObserver = new IntersectionObserver(
+      (entries) => {
+        if (
+          document.visibilityState === "visible" &&
+          entries.some(
+            (entry) =>
+              entry.isIntersecting &&
+              entry.intersectionRect.width > 0 &&
+              entry.intersectionRect.height > 0
+          )
+        ) {
+          this.#recordView();
+        }
+      },
+      { rootMargin: "0px", threshold: 0 }
+    );
+    this.#viewObserver.observe(element);
+    document.addEventListener("visibilitychange", this.onDocumentVisibilityChange);
+  }
+
+  @action
+  onDocumentVisibilityChange() {
+    if (document.visibilityState !== "visible" || !this.#rootElement) {
+      return;
+    }
+    const rect = this.#rootElement.getBoundingClientRect();
+    if (
+      rect.top < window.innerHeight &&
+      rect.bottom > 0 &&
+      rect.left < window.innerWidth &&
+      rect.right > 0
+    ) {
+      this.#recordView();
+    }
   }
 
   @action
@@ -309,23 +368,6 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   @action
-  async share() {
-    const url = new URL(this.topicUrl, window.location.origin).href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: this.args.topic.title, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        await this.dialog.alert(i18n(themePrefix("isbf_v2.link_copied")));
-      }
-    } catch (error) {
-      if (error?.name !== "AbortError") {
-        await this.#showError(error);
-      }
-    }
-  }
-
-  @action
   toggleMenu(event) {
     event.stopPropagation();
     this.menuOpen = !this.menuOpen;
@@ -380,6 +422,23 @@ export default class ISBFV2FeedCard extends Component {
       ?.click();
   }
 
+  async #recordView() {
+    if (this.#viewInFlight || this.viewCount !== null) {
+      return;
+    }
+    this.#viewInFlight = true;
+    const count = await recordVisibleView(
+      this.args.topic.id,
+      this.currentUser.id
+    );
+    this.#viewInFlight = false;
+    if (count !== null && !this.isDestroying && !this.isDestroyed) {
+      this.viewCount = count;
+      this.#viewObserver?.disconnect();
+      document.removeEventListener("visibilitychange", this.onDocumentVisibilityChange);
+    }
+  }
+
   async #loadContent() {
     const postId = this.args.topic.first_post_id;
     if (!postId) {
@@ -418,6 +477,7 @@ export default class ISBFV2FeedCard extends Component {
     <article
       class="isbf-feed-card"
       {{didInsert this.observe}}
+      {{didInsert this.observeVisibleView}}
       {{on "click" this.openTopic}}
     >
       <a class="isbf-feed-card__avatar" href={{this.profileUrl}}>
@@ -510,17 +570,16 @@ export default class ISBFV2FeedCard extends Component {
             type="button"
             {{on "click" this.toggleLike}}
           >{{dIcon "heart"}}<span>{{this.formattedLikeCount}}</span></button>
+          <span
+            aria-label={{this.viewLabel}}
+            class="isbf-feed-card__views"
+          >{{dIcon "chart-bar"}}<span>{{this.formattedViewCount}}</span></span>
           <button
             aria-label={{i18n (themePrefix "isbf_v2.bookmark_action")}}
             class={{if this.bookmarked "is-bookmarked"}}
             type="button"
             {{on "click" this.toggleBookmark}}
           >{{dIcon "bookmark"}}</button>
-          <button
-            aria-label={{i18n (themePrefix "isbf_v2.share")}}
-            type="button"
-            {{on "click" this.share}}
-          >{{dIcon "share-nodes"}}</button>
         </footer>
       </div>
     </article>
