@@ -20,6 +20,7 @@ zh_CN:
     account_username_placeholder: "输入用户名"
     send_link_request: "发送关联申请"
     confirm_account_link: "确认关联"
+    account_link_pending_target: "等待对方账号确认"
     account_link_pending: "等待管理员批准"
     verify_device: "验证此设备"
     switch_now: "切换"
