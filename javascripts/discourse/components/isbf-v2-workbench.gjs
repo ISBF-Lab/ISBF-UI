@@ -25,15 +25,12 @@ export default class ISBFV2Workbench extends Component {
   <template>
     <main class="isbf-v2-feature isbf-v2-workbench">
       <h1>{{i18n (themePrefix "isbf_v2.workbench")}}</h1>
-      <p class="isbf-v2-feature__intro">{{i18n (themePrefix "isbf_v2.workbench_intro")}}</p>
-      <section aria-label={{i18n (themePrefix "isbf_v2.workbench_modules")}} class="isbf-v2-workbench__panel">
-        <h2>{{i18n (themePrefix "isbf_v2.workbench_modules")}}</h2>
+      <section aria-label={{i18n (themePrefix "isbf_v2.workbench")}} class="isbf-v2-workbench__panel">
         <div class="isbf-v2-workbench__grid">
           {{#each this.cards as |card|}}
             <div class="isbf-v2-workbench__card">
-              <span class="isbf-v2-workbench__icon isbf-v2-workbench__icon--{{card.tone}}" aria-hidden="true">{{dIcon card.icon}}</span>
+              <span aria-hidden="true" class="isbf-v2-workbench__icon isbf-v2-workbench__icon--{{card.tone}}">{{dIcon card.icon}}</span>
               <span class="isbf-v2-workbench__name">{{card.label}}</span>
-              <span class="isbf-v2-workbench__status">{{i18n (themePrefix "isbf_v2.workbench_pending")}}</span>
             </div>
           {{/each}}
         </div>
