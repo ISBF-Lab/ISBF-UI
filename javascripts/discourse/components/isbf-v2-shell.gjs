@@ -79,6 +79,13 @@ export default class ISBFV2Shell extends Component {
     return this.pageKind === "workbench";
   }
 
+  get showPageHeader() {
+    return (
+      !this.isFeed &&
+      !["calendar", "explore", "notifications", "workbench"].includes(this.pageKind)
+    );
+  }
+
   get showRightRail() {
     return (
       settings.show_right_rail &&
@@ -139,6 +146,10 @@ export default class ISBFV2Shell extends Component {
 
   get shellClass() {
     const classes = ["isbf-v2-shell", `isbf-v2-shell--${this.pageKind}`];
+
+    if (!this.isFeed && !this.showPageHeader) {
+      classes.push("isbf-v2-shell--no-page-header");
+    }
 
     if (this.officialActive) {
       classes.push("isbf-v2-shell--official");
@@ -222,7 +233,7 @@ export default class ISBFV2Shell extends Component {
               >{{i18n (themePrefix "isbf_v2.compose")}}</a>
             </div>
           {{/if}}
-        {{else}}
+        {{else if this.showPageHeader}}
           <header class="isbf-v2-page-header">
             <a
               aria-label={{i18n (themePrefix "isbf_v2.back_home")}}
