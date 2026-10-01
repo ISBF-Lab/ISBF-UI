@@ -1,0 +1,1139 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "id": 1,
+      "name": "admins",
+      "full_name": "开发者"
+    },
+    {
+      "id": 2,
+      "name": "moderators",
+      "full_name": "管理员"
+    }
+  ],
+  "translations": [
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.api_keys.description",
+      "original": "API 密钥功能可让您安全地将 Discourse 与外部系统集成并自动执行操作。管理员可以创建具有特定范围的密钥来控制对资源和敏感数据的访问。范围限制功能，确保增强的安全性。",
+      "value": "API 密钥功能可让您安全地将 Discourse 与外部系统集成并自动执行操作。开发者可以创建具有特定范围的密钥来控制对资源和敏感数据的访问。范围限制功能，确保增强的安全性。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.config.api_keys.header_description",
+      "original": "API 密钥功能可让您安全地将 Discourse 与外部系统集成并自动执行操作。管理员可以创建具有特定范围的密钥来控制对资源和敏感数据的访问。范围限制功能，确保增强的安全性。",
+      "value": "API 密钥功能可让您安全地将 Discourse 与外部系统集成并自动执行操作。开发者可以创建具有特定范围的密钥来控制对资源和敏感数据的访问。范围限制功能，确保增强的安全性。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.config.flags.header_description",
+      "original": "Discourse 中的举报系统可帮助您和您的版主团队管理内容和用户行为，使您的社区保持尊重和健康。默认设置适用于大多数社区，您无需更改它们。但是，如果您的网站有特殊要求，您可以禁用不需要的举报并添加您自己的自定义举报。",
+      "value": "Discourse 中的举报系统可帮助您和您的管理员团队管理内容和用户行为，使您的社区保持尊重和健康。默认设置适用于大多数社区，您无需更改它们。但是，如果您的网站有特殊要求，您可以禁用不需要的举报并添加您自己的自定义举报。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.config.security.header_description",
+      "original": "配置安全设置，包括双重身份验证、版主权限和内容安全策略",
+      "value": "配置安全设置，包括双重身份验证、管理员权限和内容安全策略"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.config.site_admin.title",
+      "original": "站点管理员",
+      "value": "站点开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.dashboard.admins",
+      "original": "管理员：",
+      "value": "开发者："
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.dashboard.configure.empty_state_moderator",
+      "original": "未启用任何版块。请联系管理员以启用版块。",
+      "value": "未启用任何版块。请联系开发者以启用版块。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.dashboard.moderators",
+      "original": "版主：",
+      "value": "管理员："
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.dashboard.moderators_activity",
+      "original": "版主活动",
+      "value": "管理员活动"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.dashboard.sections.engagement.whos_posting.modal.descriptions.staff",
+      "original": "管理员和版主",
+      "value": "开发者和管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.dashboard.sections.search.logging_disabled_moderator",
+      "original": "搜索日志记录已禁用，因此不会收集搜索数据。请联系管理员启用日志搜索查询以开始收集。",
+      "value": "搜索日志记录已禁用，因此不会收集搜索数据。请联系开发者启用日志搜索查询以开始收集。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.groups.manage.interaction.members_visibility_levels.description",
+      "original": "管理员可以查看所有群组的成员。 群组标识对所有用户可见。",
+      "value": "开发者可以查看所有群组的成员。 群组标识对所有用户可见。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.groups.manage.interaction.visibility_levels.description",
+      "original": "管理员可以看到所有群组。",
+      "value": "开发者可以看到所有群组。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.groups.manage.interaction.visibility_levels.members",
+      "original": "群组所有者、成员和版主",
+      "value": "群组所有者、成员和管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.groups.manage.interaction.visibility_levels.staff",
+      "original": "群组所有者和版主",
+      "value": "群组所有者和管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.logs.screened_ips.actions.allow_admin",
+      "original": "允许管理员",
+      "value": "允许开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.logs.staff_actions.actions.admin_onboarding_completed",
+      "original": "完成管理员入门",
+      "value": "完成开发者入门"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.logs.staff_actions.actions.admin_onboarding_dismissed",
+      "original": "忽略管理员入门",
+      "value": "忽略开发者入门"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.logs.staff_actions.actions.admin_onboarding_step_completed",
+      "original": "完成管理员入门步骤",
+      "value": "完成开发者入门步骤"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.logs.staff_actions.actions.grant_admin",
+      "original": "授予管理员权限",
+      "value": "授予开发者权限"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.logs.staff_actions.actions.revoke_admin",
+      "original": "撤消管理员权限",
+      "value": "撤消开发者权限"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.moderator",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.site_settings.requires_confirmation_messages.can_permanently_delete.prompt",
+      "original": "启用此功能后，管理员可以永久删除帖子、话题和帖子修订。永久删除的数据无法恢复。这也可能影响数据完整性并导致现有链接失效。",
+      "value": "启用此功能后，开发者可以永久删除帖子、话题和帖子修订。永久删除的数据无法恢复。这也可能影响数据完整性并导致现有链接失效。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.site_settings.requires_confirmation_messages.min_admin_password_length.prompt",
+      "original": "您即将修改密码政策。这将影响所有从现在起更改密码的管理员。确定要继续吗？",
+      "value": "您即将修改密码政策。这将影响所有从现在起更改密码的开发者。确定要继续吗？"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.title",
+      "original": "Discourse 管理员",
+      "value": "Discourse 开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.upcoming_changes.filter.impact_role_admins",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.upcoming_changes.filter.impact_role_moderators",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.upcoming_changes.impact_roles.admins",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.upcoming_changes.impact_roles.moderators",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.admin",
+      "original": "管理员？",
+      "value": "开发者？"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.delete_forbidden_because_admin",
+      "original": "管理员不能被删除。",
+      "value": "开发者不能被删除。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.delete_posts_forbidden_because_admin",
+      "original": "无法删除管理员的所有帖子。",
+      "value": "无法删除开发者的所有帖子。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.grant_admin",
+      "original": "授予管理员权限",
+      "value": "授予开发者权限"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.grant_admin_confirm",
+      "original": "我们已向您发送电子邮件以验证新管理员。请打开它并按照说明进行操作。",
+      "value": "我们已向您发送电子邮件以验证新开发者。请打开它并按照说明进行操作。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.grant_admin_success",
+      "original": "新管理员已被确认。",
+      "value": "新开发者已被确认。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.moderator",
+      "original": "版主？",
+      "value": "管理员？"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.revoke_admin",
+      "original": "撤消管理员权限",
+      "value": "撤消开发者权限"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.show_admin_profile",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.user.warnings_list_warning",
+      "original": "作为版主，您可能无法查看所有这些话题。如有必要，请向管理员或发布版主请求对该消息的<b>版主</b>访问权限。\n",
+      "value": "作为管理员，您可能无法查看所有这些话题。如有必要，请向开发者或发布管理员请求对该消息的<b>管理员</b>访问权限。\n"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.users.create",
+      "original": "添加管理员用户",
+      "value": "添加开发者用户"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.users.titles.admins",
+      "original": "管理员用户",
+      "value": "开发者用户"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.users.titles.moderators",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "admin_js.admin.watched_words.action_descriptions.flag",
+      "original": "允许包含这些字词的帖子，但将它们举报为不当言论以供版主审核。",
+      "value": "允许包含这些字词的帖子，但将它们举报为不当言论以供管理员审核。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "groups.default_descriptions.staff",
+      "original": "包括管理员和版主的自动群组",
+      "value": "包括开发者和管理员的自动群组"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "groups.default_full_names.admins",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "groups.default_full_names.moderators",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "groups.default_names.admins",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "groups.default_names.moderators",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "isbf_account_switch.errors.admin_approval_required",
+      "original": "该账号关联需要管理员批准。",
+      "value": "该账号关联需要开发者批准。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.about.admin_count.other",
+      "original": "%{formatted_number} 位管理员",
+      "value": "%{formatted_number} 位开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.about.moderator_count.other",
+      "original": "%{formatted_number} 位版主",
+      "value": "%{formatted_number} 位管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.about.moderators",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.about.our_admins",
+      "original": "我们的管理员",
+      "value": "我们的开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.about.our_moderators",
+      "original": "我们的版主",
+      "value": "我们的管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.about.report_inappropriate_content",
+      "original": "如果您发现任何不当内容，请立即与我们的版主和管理员进行对话。请记住，联系前请先登录。",
+      "value": "如果您发现任何不当内容，请立即与我们的管理员和开发者进行对话。请记住，联系前请先登录。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.admin_title",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.category.choose_type.ask_admin_to_enable_plugin",
+      "original": "请管理员启用 %{plugin_name} 插件",
+      "value": "请开发者启用 %{plugin_name} 插件"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.category.require_reply_approval",
+      "original": "所有新回复都需要版主审批",
+      "value": "所有新回复都需要管理员审批"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.category.require_reply_approval_for",
+      "original": "所有新回复都需要版主审批…",
+      "value": "所有新回复都需要管理员审批…"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.category.require_topic_approval",
+      "original": "所有新话题都需要版主审批",
+      "value": "所有新话题都需要管理员审批"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.category.require_topic_approval_for",
+      "original": "所有新话题都需要版主审批…",
+      "value": "所有新话题都需要管理员审批…"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.composer.group_mentioned_limit.other",
+      "original": "<b>警告</b>！您提及了 <a href='%{group_link}'> %{group} </a>，但是此群组的成员数量超过了管理员配置的 %{count} 个用户的最大可提及数量限制。没有人会收到通知。",
+      "value": "<b>警告</b>！您提及了 <a href='%{group_link}'> %{group} </a>，但是此群组的成员数量超过了开发者配置的 %{count} 个用户的最大可提及数量限制。没有人会收到通知。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.critical_deprecation.notice",
+      "original": "<b>[管理员通知]</b> %{source} 包含需要更新的代码。（id：%{id}）",
+      "value": "<b>[开发者通知]</b> %{source} 包含需要更新的代码。（id：%{id}）"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.custom_homepage.admin_message",
+      "original": "您的一个主题已启用“custom_homepage”修改器，但在 [custom-homepage] 连接器中没有输出任何内容。（此消息只显示给网站管理员。）",
+      "value": "您的一个主题已启用“custom_homepage”修改器，但在 [custom-homepage] 连接器中没有输出任何内容。（此消息只显示给网站开发者。）"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.directory.no_results.extra_body",
+      "original": "管理员和版主可以在<a href='%{basePath}/admin/users/'>用户管理</a>中查看和管理用户。",
+      "value": "开发者和管理员可以在<a href='%{basePath}/admin/users/'>用户管理</a>中查看和管理用户。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.emails_are_disabled",
+      "original": "所有外发电子邮件已被管理员全局禁用。任何类型的电子邮件通知都不会发出。",
+      "value": "所有外发电子邮件已被开发者全局禁用。任何类型的电子邮件通知都不会发出。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.emails_are_disabled_non_staff",
+      "original": "非管理员用户无法向外发送电子邮件。",
+      "value": "非管理人员用户无法向外发送电子邮件。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.flagging.notify_moderators_textarea_label",
+      "original": "给版主的消息",
+      "value": "给管理员的消息"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.flagging.review_process_description",
+      "original": "版主收到举报后将尽快进行审核。",
+      "value": "管理员收到举报后将尽快进行审核。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.groups.alias_levels.members_mods_and_admins",
+      "original": "仅组员、版主和管理员",
+      "value": "仅组员、管理员和开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.groups.alias_levels.mods_and_admins",
+      "original": "仅版主和管理员",
+      "value": "仅管理员和开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.groups.alias_levels.only_admins",
+      "original": "仅管理员",
+      "value": "仅开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.groups.alias_levels.owners_mods_and_admins",
+      "original": "仅所有者、版主和管理员",
+      "value": "仅所有者、管理员和开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.keyboard_shortcuts_help.actions.topic_admin_actions",
+      "original": "打开话题管理员操作",
+      "value": "打开话题开发者操作"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.keyboard_shortcuts_help.admin.search_full_page",
+      "original": "打开整页管理员搜索",
+      "value": "打开整页开发者搜索"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.keyboard_shortcuts_help.admin.search_open",
+      "original": "打开管理员界面的搜索",
+      "value": "打开开发者界面的搜索"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.keyboard_shortcuts_help.admin.title",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.login.admin_not_allowed_from_ip_address",
+      "original": "您无法从该 IP 地址以管理员身份登录。",
+      "value": "您无法从该 IP 地址以开发者身份登录。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.login.no_login_methods.description",
+      "original": "未配置登录方法。管理员可访问 <a href='%{adminLoginPath}' target='_blank'>%{adminLoginPath}</a> 重新配置网站。",
+      "value": "未配置登录方法。开发者可访问 <a href='%{adminLoginPath}' target='_blank'>%{adminLoginPath}</a> 重新配置网站。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.mcp_oauth_client_id_metadata_policy.disabled",
+      "original": "仅限管理员注册",
+      "value": "仅限开发者注册"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.post.actions.by_you.notify_moderators",
+      "original": "您将此帖子举报为需要由版主审核",
+      "value": "您将此帖子举报为需要由管理员审核"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.post.controls.admin",
+      "original": "帖子管理员操作",
+      "value": "帖子开发者操作"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.post.controls.admin_action",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.post.controls.delete_topic_disallowed_modal",
+      "original": "您无权删除此话题。如果您确实希望将其删除，请提交举报并说明原因，以便引起版主注意。",
+      "value": "您无权删除此话题。如果您确实希望将其删除，请提交举报并说明原因，以便引起管理员注意。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.post.whisper",
+      "original": "此帖子是对版主的密语",
+      "value": "此帖子是对管理员的密语"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.review.approval.description",
+      "original": "我们已收到您的帖子，不过需要由版主批准才能显示。请耐心等待。",
+      "value": "我们已收到您的帖子，不过需要由管理员批准才能显示。请耐心等待。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.review.moderator_actions",
+      "original": "版主操作",
+      "value": "管理员操作"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.review.notes.add_note_description",
+      "original": "添加注释以向其他版主提供背景信息。",
+      "value": "添加注释以向其他管理员提供背景信息。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.review.timeline.note_added",
+      "original": "版主注释",
+      "value": "管理员注释"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.review.timeline.note_added_by",
+      "original": "%{username} 的版主注释 · %{relativeDate}",
+      "value": "%{username} 的管理员注释 · %{relativeDate}"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.sidebar.sections.community.links.admin.content",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.themes.only_admins",
+      "original": "（此消息仅向网站管理员显示）",
+      "value": "（此消息仅向网站开发者显示）"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.topic.not_found.description",
+      "original": "抱歉，我们找不到该话题。也许它被版主移除了？",
+      "value": "抱歉，我们找不到该话题。也许它被管理员移除了？"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.topic_statuses.visibility_reasons.manually_relisted",
+      "original": "此话题已被管理员或版主手动重新公开",
+      "value": "此话题已被开发者或管理员手动重新公开"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.topic_statuses.visibility_reasons.manually_unlisted",
+      "original": "此话题已被管理员或版主手动取消公开",
+      "value": "此话题已被开发者或管理员手动取消公开"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.activate_account.approval_required",
+      "original": "版主必须手动批准您的新帐户，然后您才可以访问此论坛。当您的帐户获得批准时，您会收到一封电子邮件！",
+      "value": "管理员必须手动批准您的新帐户，然后您才可以访问此论坛。当您的帐户获得批准时，您会收到一封电子邮件！"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.admin",
+      "original": "%{user} 是管理员",
+      "value": "%{user} 是开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.admin_tooltip",
+      "original": "此用户是管理员",
+      "value": "此用户是开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.email.admin_note",
+      "original": "注意：管理员用户更改非管理员用户的电子邮件，则说明后者无法访问其原始电子邮件帐户，因此将向后者的新地址发送一封重置密码的电子邮件。在用户完成密码重置流程之前，其电子邮件不会更改。",
+      "value": "注意：开发者用户更改非开发者用户的电子邮件，则说明后者无法访问其原始电子邮件帐户，因此将向后者的新地址发送一封重置密码的电子邮件。在用户完成密码重置流程之前，其电子邮件不会更改。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.invited.cannot_invite_to_forum",
+      "original": "抱歉，您无权创建邀请。请联系管理员为您授予邀请权限。",
+      "value": "抱歉，您无权创建邀请。请联系开发者为您授予邀请权限。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.invited.invite_roles.admin_description",
+      "original": "管理员拥有对本网站、其设置及数据的完全访问权限。",
+      "value": "开发者拥有对本网站、其设置及数据的完全访问权限。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.invited.invite_roles.moderator_description",
+      "original": "版主可帮助管理内容和成员。",
+      "value": "管理员可帮助管理内容和成员。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.invited.invite_roles.staff_role_admin",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.invited.invite_roles.staff_role_moderator",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.invited.invite_roles.summary.role_admin",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.invited.invite_roles.summary.role_moderator",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.moderator",
+      "original": "%{user} 是版主",
+      "value": "%{user} 是管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.moderator_tooltip",
+      "original": "此用户是版主",
+      "value": "此用户是管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user.no_category_access",
+      "original": "作为版主，您具有有限的类别访问权限，保存已被禁用。",
+      "value": "作为管理员，您具有有限的类别访问权限，保存已被禁用。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "js.user_api_key.generic_error",
+      "original": "抱歉，我们无法发布用户 API 密钥，此功能可能被网站管理员禁用",
+      "value": "抱歉，我们无法发布用户 API 密钥，此功能可能被网站开发者禁用"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.admin_logins.description",
+      "original": "带有位置的管理员登录时间列表。",
+      "value": "带有位置的开发者登录时间列表。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.admin_logins.title",
+      "original": "管理员登录",
+      "value": "开发者登录"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.moderator_warning_private_messages.description",
+      "original": "版主通过个人消息发送的警告数量。",
+      "value": "管理员通过个人消息发送的警告数量。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.moderator_warning_private_messages.title",
+      "original": "版主警告",
+      "value": "管理员警告"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.moderators_activity.description",
+      "original": "版主活动列表，包括审核的举报、阅读时间、创建的话题、创建的帖子、创建的个人消息和修订。",
+      "value": "管理员活动列表，包括审核的举报、阅读时间、创建的话题、创建的帖子、创建的个人消息和修订。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.moderators_activity.labels.moderator",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.moderators_activity.title",
+      "original": "版主活动",
+      "value": "管理员活动"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.notify_moderators_private_messages.description",
+      "original": "版主收到带有附加举报详细信息的个人消息的次数。",
+      "value": "管理员收到带有附加举报详细信息的个人消息的次数。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.notify_moderators_private_messages.title",
+      "original": "通知版主",
+      "value": "通知管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.posters_by_member_type.description",
+      "original": "所选期间内发布的帖子数，按成员类型统计。“新成员”是指在此期间内注册的用户，“回访成员”是指在此之前注册的用户，“管理人员”是指管理员或版主。",
+      "value": "所选期间内发布的帖子数，按成员类型统计。“新成员”是指在此期间内注册的用户，“回访成员”是指在此之前注册的用户，“管理人员”是指开发者或管理员。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.users_by_type.description",
+      "original": "按管理员、版主、被封禁和被禁言分组的用户数量。",
+      "value": "按开发者、管理员、被封禁和被禁言分组的用户数量。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.users_by_type.xaxis_labels.admin",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "reports.users_by_type.xaxis_labels.moderator",
+      "original": "版主",
+      "value": "管理员"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.about_page_extra_groups",
+      "original": "显示在“关于”页面版主下方的群组。",
+      "value": "显示在“关于”页面管理员下方的群组。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.alert_admins_if_errors_per_hour",
+      "original": "激活管理员警告的每小时错误数量。值为 0 会禁用此功能。注意：需要重启。",
+      "value": "激活开发者警告的每小时错误数量。值为 0 会禁用此功能。注意：需要重启。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.alert_admins_if_errors_per_minute",
+      "original": "激活管理员警告的每分钟错误数量。值为 0 会禁用此功能。注意：需要重启。",
+      "value": "激活开发者警告的每分钟错误数量。值为 0 会禁用此功能。注意：需要重启。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.allow_all_users_to_flag_illegal_content",
+      "original": "匿名用户将看到需要通过电子邮件向管理员举报非法内容的信息。此设置优先于{{setting:flag_post_allowed_groups}}。",
+      "value": "匿名用户将看到需要通过电子邮件向开发者举报非法内容的信息。此设置优先于{{setting:flag_post_allowed_groups}}。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.allow_changing_staged_user_tracking",
+      "original": "允许管理员用户更改暂存用户的类别和标签通知偏好设置。",
+      "value": "允许开发者用户更改暂存用户的类别和标签通知偏好设置。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.approve_new_topics_unless_allowed_groups",
+      "original": "不属于这些群组的用户所发布的话题必须经过批准。管理员和版主发布的话题始终会被批准。",
+      "value": "不属于这些群组的用户所发布的话题必须经过批准。开发者和管理员发布的话题始终会被批准。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.approve_unless_allowed_groups",
+      "original": "不属于这些群组的用户所发布的帖子必须经过批准。管理员和版主发布的帖子始终会被批准。",
+      "value": "不属于这些群组的用户所发布的帖子必须经过批准。开发者和管理员发布的帖子始终会被批准。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.can_permanently_delete",
+      "original": "允许管理员永久删除帖子、话题和帖子修订。永久删除的数据将从数据库中彻底移除，且无法恢复。",
+      "value": "允许开发者永久删除帖子、话题和帖子修订。永久删除的数据将从数据库中彻底移除，且无法恢复。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.create_tag_allowed_groups",
+      "original": "能够创建标签的群组。管理员始终可以创建标签。",
+      "value": "能够创建标签的群组。开发者始终可以创建标签。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.create_topic_allowed_groups",
+      "original": "能够创建新话题的群组。管理员和版主始终可以创建话题。",
+      "value": "能够创建新话题的群组。开发者和管理员始终可以创建话题。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.edit_history_visible_to_public",
+      "original": "允许所有人查看已编辑帖子的先前版本。禁用此功能后，只有管理人员和类别群组版主（针对其管理的类别下的帖子）才能查看。",
+      "value": "允许所有人查看已编辑帖子的先前版本。禁用此功能后，只有管理人员和类别群组管理员（针对其管理的类别下的帖子）才能查看。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.edit_post_allowed_groups",
+      "original": "能够编辑帖子的群组。管理员和版主始终可以编辑帖子。",
+      "value": "能够编辑帖子的群组。开发者和管理员始终可以编辑帖子。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.edit_wiki_post_allowed_groups",
+      "original": "能够编辑标记为 wiki 的帖子的群组。管理员和版主始终可以编辑标记为 wiki 的帖子。",
+      "value": "能够编辑标记为 wiki 的帖子的群组。开发者和管理员始终可以编辑标记为 wiki 的帖子。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.email_address_to_report_illegal_content",
+      "original": "如果留空，将使用默认的网站管理员电子邮件地址。",
+      "value": "如果留空，将使用默认的网站开发者电子邮件地址。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.email_in_allowed_groups",
+      "original": "能够通过电子邮件发布新话题的组。管理员和版主始终可以通过电子邮件发布新话题。",
+      "value": "能够通过电子邮件发布新话题的组。开发者和管理员始终可以通过电子邮件发布新话题。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.embedded_media_post_allowed_groups",
+      "original": "这些群组中的用户能够在帖子中嵌入媒体条目。管理员和版主始终可以嵌入媒体条目。",
+      "value": "这些群组中的用户能够在帖子中嵌入媒体条目。开发者和管理员始终可以嵌入媒体条目。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.enable_backups",
+      "original": "允许管理员创建论坛备份",
+      "value": "允许开发者创建论坛备份"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.enable_invite_modal_with_roles",
+      "original": "启用重新设计的邀请流程，管理员可以直接以管理员身份邀请他人。受邀者注册后即成为版主，在邀请人通过电子邮件确认后，受邀者将成为管理员。",
+      "value": "启用重新设计的邀请流程，开发者可以直接以开发者身份邀请他人。受邀者注册后即成为管理员，在邀请人通过电子邮件确认后，受邀者将成为开发者。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.enable_site_owner_onboarding",
+      "original": "在首页上向新管理员显示面板以帮助他们开始。重新启用此设置以再次查看入门步骤。",
+      "value": "在首页上向新开发者显示面板以帮助他们开始。重新启用此设置以再次查看入门步骤。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.flag_post_allowed_groups",
+      "original": "能够举报帖子的群组。管理员和版主始终可以举报帖子。",
+      "value": "能够举报帖子的群组。开发者和管理员始终可以举报帖子。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.google_oauth2_hd_groups_service_account_admin_email",
+      "original": "属于 Google Workspace 管理员帐号的电子邮件地址。将与服务帐户凭据一起使用以获取群组信息。",
+      "value": "属于 Google Workspace 开发者帐号的电子邮件地址。将与服务帐户凭据一起使用以获取群组信息。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.granular_anonymous_and_logged_in_groups_permissions",
+      "original": "设置基于群组的站点设置权限会将 'everyone' 视为 'all logged-in users'，并启用新的 'anonymous_users' 和 'logged_in_users' 伪群组，以便管理员能够明确针对匿名访客和经过身份验证的用户。",
+      "value": "设置基于群组的站点设置权限会将 'everyone' 视为 'all logged-in users'，并启用新的 'anonymous_users' 和 'logged_in_users' 伪群组，以便开发者能够明确针对匿名访客和经过身份验证的用户。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.here_mention_allowed_groups",
+      "original": "能够提及 @here 的群组。管理员和版主始终可以提及 @here。",
+      "value": "能够提及 @here 的群组。开发者和管理员始终可以提及 @here。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.hide_user_activity_tab",
+      "original": "隐藏用户个人资料中的活动标签页，管理员和自己除外。",
+      "value": "隐藏用户个人资料中的活动标签页，开发者和自己除外。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.ignore_allowed_groups",
+      "original": "能够忽略其他用户的群组。管理员和版主始终可以忽略其他用户。",
+      "value": "能够忽略其他用户的群组。开发者和管理员始终可以忽略其他用户。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.ignored_users_count_message_threshold",
+      "original": "如果某个特定用户被此数量的其他用户忽略，则通知版主。",
+      "value": "如果某个特定用户被此数量的其他用户忽略，则通知管理员。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.ignored_users_message_gap_days",
+      "original": "当一个用户被多个用户忽略时，再次通知版主前需要等待的天数。",
+      "value": "当一个用户被多个用户忽略时，再次通知管理员前需要等待的天数。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.invalidate_inactive_admin_email_after_days",
+      "original": "在此天数内未访问网站的管理员帐户将需要在登录前重新验证其电子邮件地址。设置为 0 将禁用。",
+      "value": "在此天数内未访问网站的开发者帐户将需要在登录前重新验证其电子邮件地址。设置为 0 将禁用。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.invite_allowed_groups",
+      "original": "能够邀请用户的群组。管理员和版主始终可以邀请用户。",
+      "value": "能够邀请用户的群组。开发者和管理员始终可以邀请用户。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.isbf_account_switch_enabled",
+      "original": "启用经管理员批准的账号关联与直接切换",
+      "value": "启用经开发者批准的账号关联与直接切换"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.limit_admin_personal_messages_per_day",
+      "original": "管理员每天可以创建的新个人消息话题数量上限。设置为 0 则无限制。",
+      "value": "开发者每天可以创建的新个人消息话题数量上限。设置为 0 则无限制。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.log_personal_messages_views",
+      "original": "管理员为其他用户/群组记录个人消息浏览。",
+      "value": "开发者为其他用户/群组记录个人消息浏览。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.max_consecutive_replies",
+      "original": "用户在被阻止添加另一个回复之前可以在话题中连续发布的帖子数。此限值不适用于话题所有者、网站工作人员或类别版主。",
+      "value": "用户在被阻止添加另一个回复之前可以在话题中连续发布的帖子数。此限值不适用于话题所有者、网站工作人员或类别管理员。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.mcp_oauth_client_id_metadata_policy",
+      "original": "选择是否允许 OAuth 客户端使用客户端 ID 元数据文档 (CIMD) 进行注册。管理员注册的客户端始终允许访问。用户仍需批准请求的访问权限。",
+      "value": "选择是否允许 OAuth 客户端使用客户端 ID 元数据文档 (CIMD) 进行注册。开发者注册的客户端始终允许访问。用户仍需批准请求的访问权限。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.min_admin_password_length",
+      "original": "指定管理员用户密码的最小长度。它可以确保所有管理员密码都满足一定的长度要求，以增强安全性。此设置对于保护管理员帐户免受潜在的未经授权访问至关重要。",
+      "value": "指定开发者用户密码的最小长度。它可以确保所有开发者密码都满足一定的长度要求，以增强安全性。此设置对于保护开发者帐户免受潜在的未经授权访问至关重要。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderator_guide_topic",
+      "original": "概述您如何管理您的社区的话题。链接将在审核队列中显示，供版主和管理员使用。",
+      "value": "概述您如何管理您的社区的话题。链接将在审核队列中显示，供管理员和开发者使用。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderators_change_post_ownership",
+      "original": "允许版主更改帖子所有权",
+      "value": "允许管理员更改帖子所有权"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderators_change_trust_levels",
+      "original": "允许版主更改用户信任级别。",
+      "value": "允许管理员更改用户信任级别。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderators_manage_categories",
+      "original": "允许版主创建和管理类别",
+      "value": "允许管理员创建和管理类别"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderators_manage_groups",
+      "original": "允许版主创建和管理群组",
+      "value": "允许管理员创建和管理群组"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderators_view_emails",
+      "original": "允许版主查看用户电子邮件地址。",
+      "value": "允许管理员查看用户电子邮件地址。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderators_view_ips",
+      "original": "允许版主查看用户 IP 地址。",
+      "value": "允许管理员查看用户 IP 地址。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.moderators_view_sso_details",
+      "original": "允许版主查看 SSO 记录",
+      "value": "允许管理员查看 SSO 记录"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.must_approve_users",
+      "original": "所有新用户必须等待版主或管理员批准后才能登录。（注意：启用此设置也会移除“直达话题”邀请选项）",
+      "value": "所有新用户必须等待管理员或开发者批准后才能登录。（注意：启用此设置也会移除“直达话题”邀请选项）"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.notify_about_queued_posts_after",
+      "original": "如果有帖子等待审核的小时超过此数值，向所有版主发送通知。设置为 0 将禁用这些通知。",
+      "value": "如果有帖子等待审核的小时超过此数值，向所有管理员发送通知。设置为 0 将禁用这些通知。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.notify_about_reviewable_item_after",
+      "original": "如果经过这么多小时数后仍有未处理的可审核条目，请向版主发送个人信息。设置为 0 将禁用。",
+      "value": "如果经过这么多小时数后仍有未处理的可审核条目，请向管理员发送个人信息。设置为 0 将禁用。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.notify_mods_when_user_silenced",
+      "original": "如果用户被自动禁言，则向所有版主发送消息。",
+      "value": "如果用户被自动禁言，则向所有管理员发送消息。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.pending_users_reminder_delay_minutes",
+      "original": "如果新用户等待批准的时间超过此分钟数则通知版主。设置为 -1 可禁用通知。",
+      "value": "如果新用户等待批准的时间超过此分钟数则通知管理员。设置为 -1 可禁用通知。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.personal_message_enabled_groups",
+      "original": "允许这些群组中的用户创建个人消息。重要信息：1) 所有用户都可以回复消息。2) 管理员和版主可以给任何用户创建消息。3) 信任级别群组包括更高级别；选择 trust_level_1 允许 TL1、TL2、TL3、TL4，但不允许 TL0。4) 群组交互设置可以替换此设置，用于向特定群组发送消息。",
+      "value": "允许这些群组中的用户创建个人消息。重要信息：1) 所有用户都可以回复消息。2) 开发者和管理员可以给任何用户创建消息。3) 信任级别群组包括更高级别；选择 trust_level_1 允许 TL1、TL2、TL3、TL4，但不允许 TL0。4) 群组交互设置可以替换此设置，用于向特定群组发送消息。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.post_links_allowed_groups",
+      "original": "能够在帖子中包含链接的群组。管理员和版主始终可以发布链接。",
+      "value": "能够在帖子中包含链接的群组。开发者和管理员始终可以发布链接。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.profile_background_allowed_groups",
+      "original": "能够上传个人资料背景的群组。管理员和版主始终可以上传个人资料背景。",
+      "value": "能够上传个人资料背景的群组。开发者和管理员始终可以上传个人资料背景。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.reporting_improvements",
+      "original": "改进了 Discourse 管理员报告的导航、设计和实用性。",
+      "value": "改进了 Discourse 开发者报告的导航、设计和实用性。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.self_wiki_allowed_groups",
+      "original": "允许这些群组中的用户将他们自己的帖子设为 wiki。管理员和版主始终可以将他们自己的帖子设为 wiki。",
+      "value": "允许这些群组中的用户将他们自己的帖子设为 wiki。开发者和管理员始终可以将他们自己的帖子设为 wiki。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.send_email_messages_allowed_groups",
+      "original": "能够通过电子邮件发送个人消息的群组。管理员和版主始终可以通过电子邮件发送个人消息。",
+      "value": "能够通过电子邮件发送个人消息的群组。开发者和管理员始终可以通过电子邮件发送个人消息。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.skip_review_media_groups",
+      "original": "如果帖子包含嵌入式媒体，则不属于上述任何群组的用户的帖子将被发送给管理人员进行审核。管理员和版主创建的帖子始终会被允许。",
+      "value": "如果帖子包含嵌入式媒体，则不属于上述任何群组的用户的帖子将被发送给管理人员进行审核。开发者和管理员创建的帖子始终会被允许。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.suppress_secured_categories_from_admin",
+      "original": "在界面的某些地方对管理员禁止不公开话题和 PM。内容仍将在某些地方可见。这不是一项安全功能：管理员始终可以访问网站上的所有内容。",
+      "value": "在界面的某些地方对开发者禁止不公开话题和 PM。内容仍将在某些地方可见。这不是一项安全功能：开发者始终可以访问网站上的所有内容。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.tag_topic_allowed_groups",
+      "original": "能够为话题添加标签的群组。管理员和版主始终可以为话题添加标签。",
+      "value": "能够为话题添加标签的群组。开发者和管理员始终可以为话题添加标签。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.tagging_enabled",
+      "original": "启用话题标签？有关详情，请参阅 <a href='https://meta.discourse.org/t/admin-guide-to-tags-in-discourse/121041'>Meta 上的标签管理员指南</a>。",
+      "value": "启用话题标签？有关详情，请参阅 <a href='https://meta.discourse.org/t/admin-guide-to-tags-in-discourse/121041'>Meta 上的标签开发者指南</a>。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.topic_timers_allowed_groups",
+      "original": "能够设置话题计时器的群组。管理员和版主始终可以设置话题计时器。",
+      "value": "能够设置话题计时器的群组。开发者和管理员始终可以设置话题计时器。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.use_admin_ip_allowlist",
+      "original": "只有使用<a href='%{base_path}/admin/logs/screened_ip_addresses'>屏蔽的 IP 列表</a>中定义的 IP 地址时，管理员才能登录。",
+      "value": "只有使用<a href='%{base_path}/admin/logs/screened_ip_addresses'>屏蔽的 IP 列表</a>中定义的 IP 地址时，开发者才能登录。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.user_api_key_allowed_groups",
+      "original": "生成用户 API 密钥需要群组成员资格。<br>\n<b>警告</b>：更改信任级别将阻止信任级别较低的用户通过 Discourse Hub 登录。<br>\n 管理员和版主可以随时创建用户 API 密钥。\n",
+      "value": "生成用户 API 密钥需要群组成员资格。<br>\n<b>警告</b>：更改信任级别将阻止信任级别较低的用户通过 Discourse Hub 登录。<br>\n 开发者和管理员可以随时创建用户 API 密钥。\n"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "site_settings.user_card_background_allowed_groups",
+      "original": "能够上传用户卡片背景的群组。管理员和版主始终可以上传用户卡片背景。",
+      "value": "能够上传用户卡片背景的群组。开发者和管理员始终可以上传用户卡片背景。"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "trust_levels.admin",
+      "original": "管理员",
+      "value": "开发者"
+    },
+    {
+      "locale": "zh_CN",
+      "key": "wizard.step.setup.fields.must_approve_users.choices.yes.label",
+      "original": "是，新成员必须经过版主批准",
+      "value": "是，新成员必须经过管理员批准"
+    }
+  ]
+}
