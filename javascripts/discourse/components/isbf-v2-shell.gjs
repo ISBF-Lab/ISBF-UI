@@ -4,6 +4,8 @@ import { settings, themePrefix } from "virtual:theme";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import ISBFNotifications from "./isbf-notifications";
+import { notificationsEnabled } from "../lib/notification-groups";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
 import ISBFV2AnonymousPosts from "./isbf-v2-anonymous-posts";
 import ISBFV2Calendar from "./isbf-v2-calendar";
@@ -14,6 +16,7 @@ import ISBFV2Workbench from "./isbf-v2-workbench";
 export default class ISBFV2Shell extends Component {
   @service currentUser;
   @service router;
+  @service siteSettings;
 
   get path() {
     return (this.router.currentURL ?? "").split("?")[0];
@@ -67,6 +70,10 @@ export default class ISBFV2Shell extends Component {
     return this.pageKind === "notifications";
   }
 
+  get showGroupedNotifications() {
+    return notificationsEnabled(this.path, this.currentUser, this.siteSettings);
+  }
+
   get isAnonymousPosts() {
     return this.pageKind === "anonymous-posts";
   }
@@ -82,12 +89,17 @@ export default class ISBFV2Shell extends Component {
   get showPageHeader() {
     return (
       !this.isFeed &&
-      !["calendar", "explore", "notifications", "workbench"].includes(this.pageKind)
+      !["calendar", "explore", "notifications", "workbench"].includes(
+        this.pageKind
+      )
     );
   }
 
   get showSectionHeading() {
-    return ["bookmarks", "explore", "notifications"].includes(this.pageKind);
+    return (
+      !this.showGroupedNotifications &&
+      ["bookmarks", "explore", "notifications"].includes(this.pageKind)
+    );
   }
 
   get showRightRail() {
@@ -153,6 +165,10 @@ export default class ISBFV2Shell extends Component {
 
     if (!this.isFeed && !this.showPageHeader) {
       classes.push("isbf-v2-shell--no-page-header");
+    }
+
+    if (this.showGroupedNotifications) {
+      classes.push("isbf-v2-shell--grouped-notifications");
     }
 
     if (this.showSectionHeading) {
@@ -260,6 +276,8 @@ export default class ISBFV2Shell extends Component {
             <h1>{{this.pageTitle}}</h1>
           </header>
         {{/if}}
+
+        {{#if this.showGroupedNotifications}}<ISBFNotifications />{{/if}}
 
         {{#if this.isAnonymousPosts}}<ISBFV2AnonymousPosts />{{/if}}
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
