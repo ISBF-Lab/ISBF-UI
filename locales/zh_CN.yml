@@ -128,3 +128,5 @@ zh_CN:
     notification_activity: "动态"
     notification_action_count: "%{action} · %{count}"
     notifications_unread: "未读通知"
+    topic_info: "话题信息与订阅"
+    topic_edit_title: "编辑标题、分类和标签"

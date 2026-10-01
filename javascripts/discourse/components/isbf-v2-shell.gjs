@@ -1,10 +1,12 @@
 import Component from "@glimmer/component";
 import { service } from "@ember/service";
+import { getOwner } from "@ember/owner";
 import { settings, themePrefix } from "virtual:theme";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import ISBFNotifications from "./isbf-notifications";
+import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import { notificationsEnabled } from "../lib/notification-groups";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
 import ISBFV2AnonymousPosts from "./isbf-v2-anonymous-posts";
@@ -168,8 +170,23 @@ export default class ISBFV2Shell extends Component {
       : "/new-topic";
   }
 
+  get topicController() {
+    return getOwner(this).lookup("controller:topic");
+  }
+
+  get topicFeedStyle() {
+    return isFeedStyleTopic(this.topicController.get("model"), this.path);
+  }
+
   get shellClass() {
     const classes = ["isbf-v2-shell", `isbf-v2-shell--${this.pageKind}`];
+
+    if (this.topicFeedStyle) {
+      classes.push("isbf-v2-shell--topic-feed-style");
+      if (this.topicController.get("editingTopic")) {
+        classes.push("isbf-v2-shell--topic-editing");
+      }
+    }
 
     if (!this.isFeed && !this.showPageHeader) {
       classes.push("isbf-v2-shell--no-page-header");

@@ -128,3 +128,5 @@ en:
     notification_activity: "Activity"
     notification_action_count: "%{action} · %{count}"
     notifications_unread: "Unread notification"
+    topic_info: "Topic information and notifications"
+    topic_edit_title: "Edit title, category and tags"

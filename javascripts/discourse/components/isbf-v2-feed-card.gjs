@@ -14,19 +14,12 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
 import { recordVisibleView } from "../lib/feed-view-tracker";
-
-function plainText(html) {
-  const element = document.createElement("div");
-  element.innerHTML = html ?? "";
-  return element.textContent?.replace(/\s+/g, " ").trim() ?? "";
-}
-
-function compactNumber(value) {
-  const count = Number(value) || 0;
-  return count
-    ? new Intl.NumberFormat(undefined, { notation: "compact" }).format(count)
-    : "";
-}
+import {
+  compactNumber,
+  openQuotedRepost,
+  plainText,
+  postCardTitle,
+} from "../lib/post-card-helpers";
 
 export default class ISBFV2FeedCard extends Component {
   @service composer;
@@ -62,7 +55,10 @@ export default class ISBFV2FeedCard extends Component {
     super.willDestroy(...arguments);
     this.#observer?.disconnect();
     this.#viewObserver?.disconnect();
-    document.removeEventListener("visibilitychange", this.onDocumentVisibilityChange);
+    document.removeEventListener(
+      "visibilitychange",
+      this.onDocumentVisibilityChange
+    );
     document.removeEventListener("pointerdown", this.onOutsidePointer, true);
     document.removeEventListener("keydown", this.onDocumentKeydown, true);
   }
@@ -99,19 +95,7 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   get displayTitle() {
-    if (!this.body) {
-      return null;
-    }
-    const title = this.args.topic.title?.replace(/\s+/g, " ").trim();
-    const body = plainText(this.body);
-    if (
-      !title ||
-      body.startsWith(title) ||
-      title.startsWith(body.slice(0, 80))
-    ) {
-      return null;
-    }
-    return title;
+    return postCardTitle(this.args.topic.title, this.body);
   }
 
   get formattedLikeCount() {
@@ -207,7 +191,10 @@ export default class ISBFV2FeedCard extends Component {
       { rootMargin: "0px", threshold: 0 }
     );
     this.#viewObserver.observe(element);
-    document.addEventListener("visibilitychange", this.onDocumentVisibilityChange);
+    document.addEventListener(
+      "visibilitychange",
+      this.onDocumentVisibilityChange
+    );
   }
 
   @action
@@ -350,21 +337,16 @@ export default class ISBFV2FeedCard extends Component {
 
   @action
   async repost() {
-    if (!this.currentUser) {
-      this.router.transitionTo("login");
-      return;
-    }
-    const sourceText = plainText(this.body || this.args.topic.excerpt).slice(
-      0,
-      500
-    );
-    const username = this.args.topic.creator?.username;
-    const body = `[quote=\"${username}, post:1, topic:${this.args.topic.id}\"]\n${sourceText}\n[/quote]\n\n`;
-    await this.composer.openNewTopic({
-      body,
+    await openQuotedRepost({
+      composer: this.composer,
+      router: this.router,
+      currentUser: this.currentUser,
+      topicId: this.args.topic.id,
+      postNumber: 1,
+      username: this.args.topic.creator?.username,
+      cookedHtml: this.body || this.args.topic.excerpt,
       title: this.args.topic.title,
     });
-    this.composer.model?.set("isbf_repost_source_topic_id", this.args.topic.id);
   }
 
   @action
@@ -409,7 +391,7 @@ export default class ISBFV2FeedCard extends Component {
 
   #openFlagMenu() {
     document
-      .querySelector("article[data-post-number='1'] .show-more-actions")
+      .querySelector(".topic-post[data-post-number='1'] .show-more-actions")
       ?.click();
     scheduleOnce("afterRender", this, this.#clickFlagButton);
   }
@@ -417,7 +399,7 @@ export default class ISBFV2FeedCard extends Component {
   #clickFlagButton() {
     document
       .querySelector(
-        "article[data-post-number='1'] button.flag, article[data-post-number='1'] button.create-flag, article[data-post-number='1'] [data-key='flag']"
+        ".topic-post[data-post-number='1'] button.flag, .topic-post[data-post-number='1'] button.create-flag, .topic-post[data-post-number='1'] [data-key='flag']"
       )
       ?.click();
   }
@@ -435,7 +417,10 @@ export default class ISBFV2FeedCard extends Component {
     if (count !== null && !this.isDestroying && !this.isDestroyed) {
       this.viewCount = count;
       this.#viewObserver?.disconnect();
-      document.removeEventListener("visibilitychange", this.onDocumentVisibilityChange);
+      document.removeEventListener(
+        "visibilitychange",
+        this.onDocumentVisibilityChange
+      );
     }
   }
 

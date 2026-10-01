@@ -15,3 +15,5 @@ jobs:
           node-version: 22
       - run: node --experimental-vm-modules scripts/check-calendar-ui.mjs
       - run: node --experimental-vm-modules scripts/check-notifications-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-post-card-helpers.mjs
+      - run: node --experimental-vm-modules scripts/check-topic-card-ui.mjs
