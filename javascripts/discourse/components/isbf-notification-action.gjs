@@ -75,7 +75,7 @@ export default class ISBFNotificationAction extends Component {
   <template>
     <section class="isbf-notification-action">
       <button
-        aria-expanded={{this.expanded}}
+        aria-expanded={{if this.expanded "true" "false"}}
         class="isbf-notification-action__toggle"
         type="button"
         {{on "click" this.toggle}}

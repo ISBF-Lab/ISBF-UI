@@ -275,13 +275,13 @@ export default class ISBFNotifications extends Component {
         role="group"
       >
         <button
-          aria-pressed={{this.allSelected}}
+          aria-pressed={{if this.allSelected "true" "false"}}
           class={{if this.allSelected "is-active"}}
           type="button"
           {{on "click" (fn this.selectTab "all")}}
         >{{i18n (themePrefix "isbf_v2.notifications_all")}}</button>
         <button
-          aria-pressed={{this.mentionsSelected}}
+          aria-pressed={{if this.mentionsSelected "true" "false"}}
           class={{if this.mentionsSelected "is-active"}}
           type="button"
           {{on "click" (fn this.selectTab "mentions")}}
