@@ -114,6 +114,22 @@ body:has(.isbf-v2-shell) {
   }
 }
 
+body:has(.isbf-v2-shell--no-page-header) {
+  #main-outlet {
+    padding-top: 0;
+  }
+
+  .isbf-v2-feature {
+    padding-top: var(--isbf-v2-space-8);
+  }
+
+  @media (max-width: 600px) {
+    .isbf-v2-feature {
+      padding-top: var(--isbf-v2-space-6);
+    }
+  }
+}
+
 .isbf-v2-shell {
   box-sizing: border-box;
   height: 0;
