@@ -2994,3 +2994,20 @@ body:has(.isbf-v2-shell--grouped-notifications) #main-outlet {
     margin-right: var(--isbf-v2-space-2);
   }
 }
+
+.isbf-notifications__topic {
+  > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--isbf-v2-space-3);
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker { display: none; }
+    h2 { margin: 0; }
+  }
+
+  &[open] > summary { margin-bottom: var(--isbf-v2-space-3); }
+  &:not([open]) > summary > .d-icon { transform: rotate(-90deg); }
+}

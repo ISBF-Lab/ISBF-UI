@@ -296,8 +296,11 @@ export default class ISBFNotifications extends Component {
           /></div>{{/if}}
       {{#each this.groups key="key" as |group|}}
         {{#if group.topic}}
-          <article class="isbf-notifications__topic">
-            <h2><a href={{group.topic.url}}>{{group.topic.title}}</a></h2>
+          <details class="isbf-notifications__topic" open>
+            <summary>
+              <h2><a href={{group.topic.url}}>{{group.topic.title}}</a></h2>
+              {{dIcon "chevron-down"}}
+            </summary>
             {{#each group.actions key="key" as |item|}}
               <ISBFNotificationAction
                 @actionLabel={{this.actionLabel}}
@@ -305,7 +308,7 @@ export default class ISBFNotifications extends Component {
                 @prepareEntries={{this.prepareEntries}}
               />
             {{/each}}
-          </article>
+          </details>
         {{else}}
           <article class="isbf-notifications__standalone"><ISBFNotificationEntry
               @entry={{group.latest}}
