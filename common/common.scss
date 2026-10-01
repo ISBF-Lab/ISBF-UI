@@ -275,6 +275,7 @@ body:has(.isbf-v2-shell--no-page-header) {
 }
 
 .isbf-v2-side__compose,
+.isbf-v2-side__review,
 .isbf-v2-compose__button {
   display: grid;
   place-items: center;
@@ -284,19 +285,26 @@ body:has(.isbf-v2-shell--no-page-header) {
   font-weight: 750;
 }
 
-.isbf-v2-side__compose {
+.isbf-v2-side__compose,
+.isbf-v2-side__review {
   width: calc(100% - 20px);
   min-height: 52px;
   margin-top: 18px;
   font-size: 17px;
 }
 
+.isbf-v2-side__review {
+  margin-top: 12px;
+}
+
 .isbf-v2-side__compose:hover,
+.isbf-v2-side__review:hover,
 .isbf-v2-compose__button:hover {
   filter: brightness(0.92);
 }
 
 .isbf-v2-side__compose,
+.isbf-v2-side__review,
 .isbf-v2-compose__button,
 .isbf-v2-side__links a,
 .isbf-v2-feed-header nav a,
@@ -645,7 +653,8 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
   display: none;
 }
 
-.isbf-v2-mobile-compose {
+.isbf-v2-mobile-compose,
+.isbf-v2-mobile-review {
   display: none;
 }
 
@@ -1084,6 +1093,12 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
     font-size: 0;
   }
 
+  .isbf-v2-side__review {
+    width: 52px;
+    height: 52px;
+    font-size: 14px;
+  }
+
   .isbf-v2-side__compose::before {
     content: "+";
     font-size: 26px;
@@ -1168,7 +1183,8 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
     display: none;
   }
 
-  .isbf-v2-mobile-compose {
+  .isbf-v2-mobile-compose,
+  .isbf-v2-mobile-review {
     display: grid;
     position: fixed;
     right: 18px;
@@ -1182,6 +1198,12 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
     box-shadow: 0 4px 16px rgb(0 0 0 / 20%);
     color: var(--isbf-v2-accent-contrast) !important;
     font-size: 24px;
+  }
+
+  .isbf-v2-mobile-review {
+    bottom: calc(144px + env(safe-area-inset-bottom));
+    font-size: 14px;
+    font-weight: 750;
   }
 
   body:has(.isbf-v2-shell--topic) .isbf-v2-mobile-compose {
@@ -1243,7 +1265,8 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
 }
 
 html.composer-open .isbf-v2-mobile-nav,
-html.composer-open .isbf-v2-mobile-compose {
+html.composer-open .isbf-v2-mobile-compose,
+html.composer-open .isbf-v2-mobile-review {
   display: none;
 }
 
@@ -2062,6 +2085,10 @@ body:has(.isbf-v2-shell--topic) {
       margin-inline-end: var(--isbf-v2-space-2);
     }
   }
+}
+
+body:has(.isbf-v2-shell--profile) .user-main .about > .staff-counters {
+  display: none;
 }
 
 body:has(.isbf-v2-shell--profile) {

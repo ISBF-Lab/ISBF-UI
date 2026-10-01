@@ -153,6 +153,14 @@ export default class ISBFV2Shell extends Component {
     return this.isFeed && this.canCompose;
   }
 
+  get showMobileReview() {
+    return (
+      this.isFeed &&
+      (this.latestActive || this.officialActive) &&
+      Boolean(this.currentUser?.staff)
+    );
+  }
+
   get composeHref() {
     const categorySlug = settings.official_path.split("/")[2];
     return this.officialActive
@@ -289,6 +297,14 @@ export default class ISBFV2Shell extends Component {
             class="isbf-v2-mobile-compose"
             href={{this.composeHref}}
           >{{dIcon "plus"}}</a>
+        {{/if}}
+
+        {{#if this.showMobileReview}}
+          <a
+            aria-label={{i18n (themePrefix "isbf_v2.review")}}
+            class="isbf-v2-mobile-review"
+            href="/review"
+          >{{i18n (themePrefix "isbf_v2.review")}}</a>
         {{/if}}
 
         <nav
