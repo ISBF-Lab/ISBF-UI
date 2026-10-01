@@ -86,6 +86,10 @@ export default class ISBFV2Shell extends Component {
     );
   }
 
+  get showSectionHeading() {
+    return ["bookmarks", "explore", "notifications"].includes(this.pageKind);
+  }
+
   get showRightRail() {
     return (
       settings.show_right_rail &&
@@ -149,6 +153,10 @@ export default class ISBFV2Shell extends Component {
 
     if (!this.isFeed && !this.showPageHeader) {
       classes.push("isbf-v2-shell--no-page-header");
+    }
+
+    if (this.showSectionHeading) {
+      classes.push("isbf-v2-shell--section-heading");
     }
 
     if (this.officialActive) {
@@ -244,6 +252,12 @@ export default class ISBFV2Shell extends Component {
             {{#if this.isOwnProfile}}<ISBFV2AccountMenu
                 @mobile={{true}}
               />{{/if}}
+          </header>
+        {{/if}}
+
+        {{#if this.showSectionHeading}}
+          <header class="isbf-v2-section-heading">
+            <h1>{{this.pageTitle}}</h1>
           </header>
         {{/if}}
 
