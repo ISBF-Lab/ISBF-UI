@@ -15,6 +15,7 @@ en:
     explore_create_restricted: "You cannot create topics in the selected category"
     explore_loading: "Loading…"
     explore_restore_error: "Could not restore filters. Please retry."
+    explore_filter_unavailable: "The explore filter plugin needs updating. Refresh the page or contact a developer."
     explore_save_error: "Could not save filters. Please retry."
     explore_search_error: "Search failed. Please retry."
     explore_retry: "Retry"

@@ -30,32 +30,23 @@ export function enqueueExploreQuery(work, isCurrent = () => true) {
   });
 }
 
-export function categoryFilterPath(category, categories) {
-  const parts = [];
-  const visited = new Set();
-  let current = category;
-  while (current) {
-    if (!current.slug || visited.has(Number(current.id))) {
-      return null;
-    }
-    visited.add(Number(current.id));
-    parts.unshift(current.slug);
-    const parentId = current.parent_category_id;
-    current = parentId
-      ? categories.find((item) => Number(item.id) === Number(parentId))
-      : null;
-  }
-  return parts.join(":");
+export function categoryFilterId(category) {
+  const id = Number(category?.id);
+  return Number.isInteger(id) && id > 0 && id <= 2147483647 ? id : null;
 }
 
 export function buildExploreQuery({
-  categoryPath,
+  categoryId,
   tags = [],
   order = "activity",
 }) {
   const clauses = [];
-  if (categoryPath) {
-    clauses.push(`=category:${categoryPath}`);
+  if (categoryId !== undefined) {
+    const id = categoryFilterId({ id: categoryId });
+    if (id === null) {
+      throw new Error("Invalid explore category ID");
+    }
+    clauses.push(`isbf-category:${id}`);
   }
   if (tags.length) {
     clauses.push(`tag:${[...new Set(tags)].join(",")}`);
