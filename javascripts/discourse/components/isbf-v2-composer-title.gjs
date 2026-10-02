@@ -1,52 +1,17 @@
 import Component from "@glimmer/component";
-import { modifier } from "ember-modifier";
-import EmberObject, { computed } from "@ember/object";
-import { alias } from "@ember/object/computed";
-import ComposerTitle from "discourse/components/composer-title";
+import EmberObject, { action } from "@ember/object";
+import { service } from "@ember/service";
+import { tracked } from "@glimmer/tracking";
+import { on } from "@ember/modifier";
+import DPopupInputTip from "discourse/ui-kit/d-popup-input-tip";
+import DTextField from "discourse/ui-kit/d-text-field";
+import { i18n } from "discourse-i18n";
 import { isQuickPost } from "../lib/quick-post-scope";
-import {
-  optionalTopicTitle,
-  setOptionalTopicTitle,
-} from "../lib/optional-topic-title";
-
-class OptionalTitleModel extends EmberObject {
-  @alias("content.canEditTopicFeaturedLink") canEditTopicFeaturedLink;
-  @alias("content.loading") loading;
-  @alias("content.disableTitleInput") disableTitleInput;
-  @alias("content.titleLength") titleLength;
-  @alias("content.missingTitleCharacters") missingTitleCharacters;
-  @alias("content.minimumTitleLength") minimumTitleLength;
-  @alias("content.categoryTitlePlaceholder") categoryTitlePlaceholder;
-  @alias("content.titlePlaceholder") titlePlaceholder;
-  @alias("content.reply") reply;
-  @alias("content.replyLength") replyLength;
-  @alias("content.category") category;
-  @alias("content.featuredLink") featuredLink;
-  @alias("content.action") action;
-  @alias("content.post") post;
-  @alias("content.topic") topic;
-  @alias("content.privateMessage") privateMessage;
-  @alias("content.siteSettings") siteSettings;
-
-  @computed("content.title", "content.isbf_optional_title")
-  get title() {
-    return (
-      this.content.isbf_optional_title ?? optionalTopicTitle(this.content.title)
-    );
-  }
-
-  set title(value) {
-    setOptionalTopicTitle(this.content, value);
-    return value;
-  }
-  appendText(...args) {
-    return this.content.appendText(...args);
-  }
-}
+import { setOptionalTopicTitle } from "../lib/optional-topic-title";
 
 export default class ISBFV2ComposerTitle extends Component {
-  #model;
-  #titleModel;
+  @service siteSettings;
+  @tracked focused = false;
 
   get model() {
     return this.args.outletArgs?.model;
@@ -56,39 +21,70 @@ export default class ISBFV2ComposerTitle extends Component {
     return isQuickPost(this.model);
   }
 
-  get titleModel() {
-    if (this.#model !== this.model) {
-      this.#titleModel?.destroy();
-      this.#model = this.model;
-      this.#titleModel = OptionalTitleModel.create({ content: this.model });
-    }
-    return this.#titleModel;
+  get disabled() {
+    return this.model.loading || this.model.disableTitleInput;
   }
 
-  bindTitle = modifier((element, [model]) => {
-    const update = (event) => {
-      if (event.target.matches("input")) {
-        setOptionalTopicTitle(model, event.target.value);
-      }
-    };
+  get label() {
+    return i18n(themePrefix("isbf_v2.optional_title"));
+  }
 
-    element.addEventListener("input", update, true);
-    element.addEventListener("change", update, true);
-    return () => {
-      element.removeEventListener("input", update, true);
-      element.removeEventListener("change", update, true);
-    };
-  });
+  get validation() {
+    if (this.focused || !this.model.isbf_optional_title?.trim()) {
+      return;
+    }
 
-  willDestroy() {
-    super.willDestroy(...arguments);
-    this.#titleModel?.destroy();
+    let reason;
+    if (this.model.missingTitleCharacters > 0) {
+      reason = i18n("composer.error.title_too_short", {
+        count: this.model.minimumTitleLength,
+      });
+    } else if (
+      this.model.titleLength > this.siteSettings.max_topic_title_length
+    ) {
+      reason = i18n("composer.error.title_too_long", {
+        count: this.siteSettings.max_topic_title_length,
+      });
+    }
+
+    if (reason) {
+      return EmberObject.create({ failed: true, reason });
+    }
+  }
+
+  @action
+  updateTitle(event) {
+    setOptionalTopicTitle(this.model, event.target.value);
+  }
+
+  @action
+  focusTitle() {
+    this.focused = true;
+  }
+
+  @action
+  blurTitle() {
+    this.focused = false;
   }
 
   <template>
     {{#if this.enabled}}
-      <div class="isbf-v2-composer-title" {{this.bindTitle this.model}}>
-        <ComposerTitle @composer={{this.titleModel}} />
+      <div class="isbf-v2-composer-title">
+        <div class="title-input">
+          <DTextField
+            @aria-label={{this.label}}
+            @autocomplete="off"
+            @disabled={{this.disabled}}
+            @id="isbf-optional-title"
+            @maxLength={{this.siteSettings.max_topic_title_length}}
+            @placeholder={{this.label}}
+            @value={{this.model.isbf_optional_title}}
+            {{on "input" this.updateTitle}}
+            {{on "focus" this.focusTitle}}
+            {{on "blur" this.blurTitle}}
+          />
+          <DPopupInputTip @validation={{this.validation}} />
+        </div>
       </div>
     {{/if}}
   </template>
