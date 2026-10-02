@@ -1,7 +1,7 @@
 import Component from "@glimmer/component";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
-import { action, computed } from "@ember/object";
-import ObjectProxy from "@ember/object/proxy";
+import EmberObject, { action, computed } from "@ember/object";
+import { alias } from "@ember/object/computed";
 import ComposerTitle from "discourse/components/composer-title";
 import { isQuickPost } from "../lib/quick-post-scope";
 import {
@@ -9,7 +9,26 @@ import {
   setOptionalTopicTitle,
 } from "../lib/optional-topic-title";
 
-class OptionalTitleModel extends ObjectProxy {
+class OptionalTitleModel extends EmberObject {
+  @alias("content.canEditTopicFeaturedLink") canEditTopicFeaturedLink;
+  @alias("content.loading") loading;
+  @alias("content.disableTitleInput") disableTitleInput;
+  @alias("content.titleLength") titleLength;
+  @alias("content.missingTitleCharacters") missingTitleCharacters;
+  @alias("content.minimumTitleLength") minimumTitleLength;
+  @alias("content.categoryTitlePlaceholder") categoryTitlePlaceholder;
+  @alias("content.titlePlaceholder") titlePlaceholder;
+  @alias("content.reply") reply;
+  @alias("content.replyLength") replyLength;
+  @alias("content.category") category;
+  @alias("content.featuredLink") featuredLink;
+  @alias("content.action") action;
+  @alias("content.post") post;
+  @alias("content.topic") topic;
+  @alias("content.privateMessage") privateMessage;
+  @alias("content.siteSettings") siteSettings;
+
+
   @computed("content.title", "content.isbf_optional_title")
   get title() {
     return (
@@ -20,6 +39,9 @@ class OptionalTitleModel extends ObjectProxy {
   set title(value) {
     setOptionalTopicTitle(this.content, value);
     return value;
+  }
+  appendText(...args) {
+    return this.content.appendText(...args);
   }
 }
 

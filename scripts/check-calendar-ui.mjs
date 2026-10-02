@@ -76,7 +76,7 @@ function checkDirectory(dir) {
     const js = source
       .replace(/<template>[\s\S]*?<\/template>/g, "")
       .replace(/@(service|tracked|action)\s+/g, "")
-      .replace(/@computed\([^)]*\)\s*/g, "");
+      .replace(/@(computed|alias)\([^)]*\)\s*/g, "");
     new vm.SourceTextModule(js, { identifier: path });
   }
 }
