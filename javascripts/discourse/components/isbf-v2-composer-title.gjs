@@ -1,6 +1,6 @@
 import Component from "@glimmer/component";
-import didInsert from "@ember/render-modifiers/modifiers/did-insert";
-import EmberObject, { action, computed } from "@ember/object";
+import { modifier } from "ember-modifier";
+import EmberObject, { computed } from "@ember/object";
 import { alias } from "@ember/object/computed";
 import ComposerTitle from "discourse/components/composer-title";
 import { isQuickPost } from "../lib/quick-post-scope";
@@ -27,7 +27,6 @@ class OptionalTitleModel extends EmberObject {
   @alias("content.topic") topic;
   @alias("content.privateMessage") privateMessage;
   @alias("content.siteSettings") siteSettings;
-
 
   @computed("content.title", "content.isbf_optional_title")
   get title() {
@@ -66,10 +65,20 @@ export default class ISBFV2ComposerTitle extends Component {
     return this.#titleModel;
   }
 
-  @action
-  identifyInput(element) {
-    element.querySelector("input").id = "isbf-optional-title";
-  }
+  bindTitle = modifier((element, [model]) => {
+    const update = (event) => {
+      if (event.target.matches("input")) {
+        setOptionalTopicTitle(model, event.target.value);
+      }
+    };
+
+    element.addEventListener("input", update, true);
+    element.addEventListener("change", update, true);
+    return () => {
+      element.removeEventListener("input", update, true);
+      element.removeEventListener("change", update, true);
+    };
+  });
 
   willDestroy() {
     super.willDestroy(...arguments);
@@ -78,7 +87,7 @@ export default class ISBFV2ComposerTitle extends Component {
 
   <template>
     {{#if this.enabled}}
-      <div class="isbf-v2-composer-title" {{didInsert this.identifyInput}}>
+      <div class="isbf-v2-composer-title" {{this.bindTitle this.model}}>
         <ComposerTitle @composer={{this.titleModel}} />
       </div>
     {{/if}}

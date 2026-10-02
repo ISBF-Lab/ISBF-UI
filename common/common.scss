@@ -3616,20 +3616,33 @@ body:has(.isbf-v2-shell--topic-editing) #main-outlet #topic-title {
 html.composer-open
   body:has(.isbf-v2-shell)
   #reply-control.open:has(.isbf-v2-composer) {
+  .ProseMirror-container {
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
   .isbf-v2-composer-title {
     order: -1;
     min-width: 0;
     width: 100%;
+    max-width: none;
     margin-bottom: 12px;
   }
 
   .isbf-v2-composer-title .title-input {
     display: block;
+    min-width: 0;
     width: 100%;
+    max-width: none;
   }
 
   .isbf-v2-composer-title .title-input input {
+    box-sizing: border-box;
+    min-width: 0;
     width: 100%;
+    max-width: none;
     height: auto;
     min-height: 40px;
     margin: 0;
