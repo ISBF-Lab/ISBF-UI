@@ -2175,6 +2175,7 @@ body:has(.isbf-v2-shell--profile) .user-main .about > .staff-counters {
 
 body:has(.isbf-v2-shell--profile) {
   #main-outlet .user-profile-toggle-btn,
+  #main-outlet .user-navigation-primary .user-nav__notifications,
   #main-outlet .about .secondary dl > div:has(> .created-at),
   #main-outlet .about .secondary dl > div:has(> .last-posted-at),
   #main-outlet .about .secondary dl > div:has(> .last-seen-at) {
