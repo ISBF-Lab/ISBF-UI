@@ -92,6 +92,7 @@ zh_CN:
     feed_label: "信息流筛选"
     quick_label: "快捷导航"
     topic: "帖子"
+    reading_progress: "阅读进度"
     back_home: "返回首页"
     workbench: "工作台"
     workbench_pending: "即将开放"

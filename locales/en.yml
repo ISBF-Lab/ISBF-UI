@@ -92,6 +92,7 @@ en:
     feed_label: "Feed filters"
     quick_label: "Quick navigation"
     topic: "Post"
+    reading_progress: "Reading progress"
     back_home: "Back to home"
     workbench: "Workbench"
     workbench_pending: "Coming soon"

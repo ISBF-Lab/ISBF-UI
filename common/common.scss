@@ -3579,7 +3579,7 @@ body:has(.isbf-v2-shell--topic-feed-style) {
       margin: 0;
     }
 
-    #main-outlet .container.posts > .topic-navigation {
+    #main-outlet .container.posts > .topic-navigation:not(.isbf-topic-reading) {
       display: none;
     }
   }
@@ -4203,3 +4203,5 @@ body:has(.isbf-v2-shell--custom-explore) #main-outlet {
     }
   }
 }
+
+@import "topic-reading";
