@@ -13,7 +13,7 @@ import {
 } from "../lib/explore-preferences";
 import {
   buildExploreQuery,
-  categoryFilterPath,
+  categoryFilterId,
   enqueueExploreQuery,
 } from "../lib/explore-query";
 import ISBFExploreGroup from "./isbf-explore-group";
@@ -65,11 +65,17 @@ export default class ISBFExplore extends Component {
   get categoryItems() {
     const categories = Array.from(this.site.categories || []);
     return categories.flatMap((category) => {
-      const path = categoryFilterPath(category, categories);
-      return path
-        ? [{ category, id: Number(category.id), label: category.name, path }]
-        : [];
+      const id = categoryFilterId(category);
+      return id ? [{ category, id, label: category.name }] : [];
     });
+  }
+
+  get categoryFilterAvailable() {
+    return this.site.isbf_explore_category_id_filter === true;
+  }
+
+  get filtersReady() {
+    return this.accountReady && this.categoryFilterAvailable;
   }
 
   get selectedCategory() {
@@ -97,7 +103,7 @@ export default class ISBFExplore extends Component {
   }
 
   get groups() {
-    if (!this.accountReady) {
+    if (!this.filtersReady) {
       return [];
     }
     const tags = this.selectedTags.map((tag) => tag.name);
@@ -121,7 +127,7 @@ export default class ISBFExplore extends Component {
         ];
     return groups.map((group) => {
       const query = buildExploreQuery({
-        categoryPath: group.path,
+        categoryId: group.category?.id,
         order: this.preferences.order,
         tags,
       });
@@ -414,7 +420,7 @@ export default class ISBFExplore extends Component {
   }
 
   #updatePreferences(changes) {
-    if (!this.accountReady) {
+    if (!this.filtersReady) {
       return;
     }
     this.preferences = normalizeExplorePreferences({
@@ -433,7 +439,7 @@ export default class ISBFExplore extends Component {
         <div class="isbf-explore__toolbar">
           <ISBFExplorePicker
             @canCreateCategory={{@canCreateCategory}}
-            @disabled={{not this.accountReady}}
+            @disabled={{not this.filtersReady}}
             @items={{this.categoryItems}}
             @labelKey="isbf_v2.explore_categories"
             @onClear={{this.clearCategories}}
@@ -443,7 +449,7 @@ export default class ISBFExplore extends Component {
             @selectedIds={{this.preferences.category_ids}}
           />
           <ISBFExplorePicker
-            @disabled={{not this.accountReady}}
+            @disabled={{not this.filtersReady}}
             @error={{this.tagSearchFailed}}
             @items={{this.tagItems}}
             @labelKey="isbf_v2.explore_tags"
@@ -457,7 +463,7 @@ export default class ISBFExplore extends Component {
           <button
             aria-pressed={{if (eq this.preferences.order "hot") "true" "false"}}
             class="isbf-explore__order"
-            disabled={{not this.accountReady}}
+            disabled={{not this.filtersReady}}
             type="button"
             {{on "click" this.toggleOrder}}
           >{{i18n (themePrefix "isbf_v2.explore_hot")}}</button>
@@ -470,6 +476,11 @@ export default class ISBFExplore extends Component {
           >{{i18n (themePrefix "isbf_v2.explore_new_topic")}}</button>
         </div>
       {{/if}}
+      {{#unless this.categoryFilterAvailable}}
+        <div class="isbf-explore__error" role="alert">
+          {{i18n (themePrefix "isbf_v2.explore_filter_unavailable")}}
+        </div>
+      {{/unless}}
       {{#if this.restoreFailed}}
         <div class="isbf-explore__error" role="alert">
           <span>{{i18n (themePrefix "isbf_v2.explore_restore_error")}}</span>
@@ -499,7 +510,7 @@ export default class ISBFExplore extends Component {
             (themePrefix "isbf_v2.explore_guest_preferences")
           }}</p>
       {{/if}}
-      {{#if this.accountReady}}
+      {{#if this.filtersReady}}
         {{#each this.groups key="key" as |group|}}
           <ISBFExploreGroup
             @category={{group.category}}

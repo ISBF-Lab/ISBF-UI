@@ -58,33 +58,107 @@ async function loadHelper(name, globals = {}) {
 
 const query = await loadHelper("query");
 const categories = [
-  { id: 1, name: "Default", slug: "uncategorized" },
+  { id: 1, name: "Default", slug: "" },
   { id: 2, name: "Campus", slug: "campus" },
-  { id: 3, name: "Events", slug: "events", parent_category_id: 2 },
+  { id: 3, name: "Events", parent_category_id: 2 },
 ];
-assert.equal(
-  query.categoryFilterPath(categories[0], categories),
-  "uncategorized"
-);
-assert.equal(
-  query.categoryFilterPath(categories[2], categories),
-  "campus:events"
-);
-assert.equal(
-  query.categoryFilterPath({ id: 4, slug: "loop", parent_category_id: 4 }, [
-    { id: 4, slug: "loop", parent_category_id: 4 },
-  ]),
-  null
-);
+assert.equal(query.categoryFilterId(categories[0]), 1);
+assert.equal(query.categoryFilterId(categories[2]), 3);
+assert.equal(query.categoryFilterId({ id: "4", slug: "general" }), 4);
+for (const id of [undefined, null, 0, -1, 1.5, "general", 2147483648]) {
+  assert.equal(query.categoryFilterId({ id }), null);
+  if (id !== undefined) {
+    assert.throws(() => query.buildExploreQuery({ categoryId: id }));
+  }
+}
 assert.equal(
   query.buildExploreQuery({
-    categoryPath: "campus:events",
+    categoryId: 3,
     tags: ["scholarship", "deadline", "scholarship"],
     order: "activity",
   }),
-  "=category:campus:events tag:scholarship,deadline order:activity"
+  "isbf-category:3 tag:scholarship,deadline order:activity"
+);
+assert.equal(
+  query.buildExploreQuery({ categoryId: 4, order: "hot" }),
+  "isbf-category:4 order:hot"
 );
 assert.equal(query.buildExploreQuery({}), "order:activity");
+
+const componentContext = vm.createContext({ clearTimeout, setTimeout });
+const componentHelpers = new Map();
+for (const name of ["preferences", "query"]) {
+  const helper = new vm.SourceTextModule(
+    readFileSync(
+      new URL(`javascripts/discourse/lib/explore-${name}.js`, root),
+      "utf8"
+    ),
+    { context: componentContext }
+  );
+  await helper.link(() => {
+    throw new Error("Unexpected helper dependency");
+  });
+  componentHelpers.set(`../lib/explore-${name}`, helper);
+}
+const exploreComponent = new vm.SourceTextModule(
+  readFileSync(new URL(componentPaths[0], root), "utf8")
+    .replace(/<template>[\s\S]*?<\/template>/g, "")
+    .replace(/@(service|tracked|action)\s+/g, ""),
+  { context: componentContext }
+);
+await exploreComponent.link((specifier) => {
+  if (componentHelpers.has(specifier)) {
+    return componentHelpers.get(specifier);
+  }
+  const exports = {
+    default:
+      specifier === "@glimmer/component"
+        ? class {
+            willDestroy() {}
+          }
+        : () => {},
+    action: () => {},
+    ajax: () => {
+      throw new Error("Unexpected request");
+    },
+    i18n: (key) => key,
+    service: () => {},
+    themePrefix: (key) => key,
+    tracked: () => {},
+  };
+  return new vm.SyntheticModule(
+    Object.keys(exports),
+    function () {
+      for (const [name, value] of Object.entries(exports)) {
+        this.setExport(name, value);
+      }
+    },
+    { context: componentContext }
+  );
+});
+await exploreComponent.evaluate();
+const explore = new exploreComponent.namespace.default();
+explore.site = { categories };
+explore.preferences = { category_ids: [1, 3], tag_ids: [], order: "activity" };
+assert.equal(
+  explore.groups.length,
+  0,
+  "Missing plugin capability blocks queries"
+);
+explore.site.isbf_explore_category_id_filter = true;
+assert.deepEqual(
+  Array.from(explore.groups, (group) => group.query),
+  ["isbf-category:1 order:activity", "isbf-category:3 order:activity"],
+  "Empty and absent slugs do not prevent independent category groups"
+);
+explore.site.isbf_explore_category_id_filter = false;
+assert.equal(
+  explore.groups.length,
+  0,
+  "Disabled plugin blocks restored groups"
+);
+explore.willDestroy();
+
 assert.deepEqual(
   Array.from(
     query.uniqueTopicList([{ id: 1 }, { id: 2 }, { id: 1 }]),
