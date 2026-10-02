@@ -6,30 +6,11 @@ import { themePrefix } from "virtual:theme";
 
 import ISBFV2ComposerCancel from "../components/isbf-v2-composer-cancel";
 import ISBFV2ComposerOptions from "../components/isbf-v2-composer-options";
+import ISBFV2ComposerTitle from "../components/isbf-v2-composer-title";
 import ISBFV2Shell from "../components/isbf-v2-shell";
 import { canPublishAnonymously } from "../lib/anonymous-post-scope";
 import { isQuickPost } from "../lib/quick-post-scope";
-import { quickPostText, quickPostTitle } from "../lib/quick-post-title";
-
-function syncQuickPostTitle(model) {
-  if (!isQuickPost(model)) {
-    return;
-  }
-
-  const title = quickPostTitle(
-    model.reply,
-    model.minimumTitleLength,
-    model.siteSettings.max_topic_title_length
-  );
-
-  if (model.isbf_repost_source_topic_id && !quickPostText(model.reply) && model.title) {
-    return;
-  }
-
-  if (model.title !== title) {
-    model.set("title", title);
-  }
-}
+import { prepareOptionalTopicTitle } from "../lib/optional-topic-title";
 
 export default apiInitializer((api) => {
   api.modifyClass("controller:user", {
@@ -47,11 +28,22 @@ export default apiInitializer((api) => {
   );
   Composer.serializeOnCreate("isbf_anonymous", "isbf_anonymous");
   Composer.serializeToDraft("isbf_anonymous", "isbf_anonymous");
+  Composer.serializeToDraft("isbf_optional_title", "isbf_optional_title");
+  api.modifyClass("model:composer", {
+    pluginId: "isbf-ui-optional-topic-title",
+    clearState() {
+      this._super(...arguments);
+      this.set("isbf_optional_title", null);
+    },
+  });
   api.renderInOutlet("before-main-outlet", ISBFV2Shell);
   api.renderInOutlet("before-composer-controls", ISBFV2ComposerCancel);
   api.renderInOutlet("before-composer-fields", ISBFV2ComposerOptions);
+  api.renderInOutlet("composer-fields", ISBFV2ComposerTitle);
 
   api.customizeComposerText({
+    titlePlaceholder: (model) =>
+      isQuickPost(model) ? themePrefix("isbf_v2.optional_title") : null,
     actionTitle: (model) =>
       isQuickPost(model) ? i18n(themePrefix("isbf_v2.quick_post")) : null,
     saveLabel: (model) =>
@@ -72,6 +64,10 @@ export default apiInitializer((api) => {
   });
 
   api.onAppEvent("composer:opened", () => {
+    const model = api.container.lookup("service:composer").model;
+    if (isQuickPost(model)) {
+      prepareOptionalTopicTitle(model);
+    }
     scheduleOnce("afterRender", () => {
       document
         .querySelector(
@@ -91,19 +87,6 @@ export default apiInitializer((api) => {
     }
   );
 
-  api.registerValueTransformer(
-    "composer-service-cannot-submit-post",
-    ({ value, context }) => {
-      const model = context?.model;
-      if (!isQuickPost(model)) {
-        return value;
-      }
-
-      syncQuickPostTitle(model);
-      return model.cantSubmitPost;
-    }
-  );
-
   // Discourse's own mobile topic renderer already has an avatar, title,
   // excerpt, categories, tags, reply count and activity time.
   api.registerValueTransformer(
@@ -112,15 +95,18 @@ export default apiInitializer((api) => {
       context?.listContext === "discovery" ? true : value
   );
 
-  api.registerValueTransformer("topic-list-item-class", ({ value, context }) => {
-    if (context?.listContext !== "discovery") {
-      return value;
-    }
+  api.registerValueTransformer(
+    "topic-list-item-class",
+    ({ value, context }) => {
+      if (context?.listContext !== "discovery") {
+        return value;
+      }
 
-    return value.includes("isbf-v2-topic")
-      ? value
-      : [...value, "isbf-v2-topic"];
-  });
+      return value.includes("isbf-v2-topic")
+        ? value
+        : [...value, "isbf-v2-topic"];
+    }
+  );
 
   api.registerValueTransformer(
     "topic-list-item-expand-pinned",

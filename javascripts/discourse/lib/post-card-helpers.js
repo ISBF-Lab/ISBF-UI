@@ -1,4 +1,8 @@
 import Composer from "discourse/models/composer";
+import {
+  isUntitledTopicTitle,
+  optionalTopicTitle,
+} from "./optional-topic-title";
 
 export function plainText(html) {
   const element = document.createElement("div");
@@ -21,6 +25,7 @@ export function postCardTitle(title, cookedHtml) {
   const body = plainText(cookedHtml);
   if (
     !normalizedTitle ||
+    isUntitledTopicTitle(normalizedTitle) ||
     (body &&
       (body.startsWith(normalizedTitle) ||
         normalizedTitle.startsWith(body.slice(0, 80))))
@@ -49,7 +54,7 @@ export async function openQuotedRepost({
   const body = `[quote="${username}, post:${postNumber}, topic:${topicId}"]\n${sourceText}\n[/quote]\n\n`;
   const previousModel = composer.model;
   const previousDraftKey = previousModel?.draftKey;
-  await composer.openNewTopic({ body, title });
+  await composer.openNewTopic({ body, title: optionalTopicTitle(title) });
 
   // Native openNewTopic returns undefined on both success and draft cancellation.
   const model = composer.model;

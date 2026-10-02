@@ -88,7 +88,6 @@
   --isbf-v2-feed-left: calc(
     var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap)
   );
-  --isbf-v2-composer-top: calc(53px + 92px);
 }
 
 body:has(.isbf-v2-shell) {
@@ -1307,7 +1306,7 @@ html.composer-open
 html.composer-open
   body:has(.isbf-v2-shell)
   #reply-control.open:has(.isbf-v2-composer-options) {
-  .title-input {
+  .title-and-category > .title-input {
     display: none;
   }
 
@@ -1334,9 +1333,7 @@ html.composer-open
 
 @media (min-width: 601px) {
   html.composer-open
-    body:has(.isbf-v2-shell--feed):has(
-      #reply-control.open .isbf-v2-composer-options
-    )
+    body:has(.isbf-v2-shell):has(#reply-control.open .isbf-v2-composer)
     .discourse-root::before {
     position: fixed;
     inset: 0;
@@ -1346,28 +1343,26 @@ html.composer-open
   }
 
   html.composer-open
-    body:has(.isbf-v2-shell--feed):has(
-      #reply-control.open .isbf-v2-composer-options
-    )
+    body:has(.isbf-v2-shell):has(#reply-control.open .isbf-v2-composer)
     .fk-d-menu {
     z-index: 401;
   }
 
   html.composer-open
-    body:has(.isbf-v2-shell--feed)
-    #reply-control.open:has(.isbf-v2-composer-options) {
+    body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-v2-composer) {
     position: fixed;
-    top: var(--isbf-v2-composer-top);
+    top: auto;
     right: auto;
-    bottom: auto;
+    bottom: 0;
     left: var(--isbf-v2-feed-left);
     z-index: 400;
     width: var(--isbf-v2-feed-width);
     max-width: none;
     min-width: 0;
-    height: min(520px, calc(100dvh - var(--isbf-v2-composer-top) - 24px));
+    height: min(520px, calc(100dvh - 24px));
     min-height: 0;
-    max-height: calc(100dvh - var(--isbf-v2-composer-top) - 24px);
+    max-height: calc(100dvh - 24px);
     margin: 0;
     padding: 0;
     transform: none;
@@ -1398,8 +1393,20 @@ html.composer-open
     }
 
     .reply-to .composer-controls {
-      order: -1;
-      margin-right: 8px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .reply-to .action-title {
+      min-width: 0;
+    }
+
+    .reply-to .composer-actions-trigger {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .reply-to .toggle-save-and-close {
@@ -1472,6 +1479,7 @@ html.composer-open
   }
 }
 
+.isbf-v2-composer,
 .isbf-v2-composer-cancel,
 .isbf-v2-composer-options {
   display: none;
@@ -2334,7 +2342,8 @@ body:has(.isbf-v2-shell--bookmarks) {
     .reply-to
     .composer-action-title {
     overflow: hidden;
-    max-width: calc(100% - 210px);
+    min-width: 0;
+    max-width: 100%;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 16px;
@@ -2343,30 +2352,18 @@ body:has(.isbf-v2-shell--bookmarks) {
 
   html.composer-open
     body:has(.isbf-v2-shell)
-    #reply-control.composer-action-reply
-    .composer-actions-reply-target-link {
-    display: none;
-  }
-
-  html.composer-open
-    body:has(.isbf-v2-shell)
     #reply-control.open
     .reply-to
     .composer-controls {
-    position: absolute;
-    left: 8px;
+    position: static;
+    flex-shrink: 0;
   }
 
   html.composer-open
     body:has(.isbf-v2-shell)
-    #reply-control.open
+    #reply-control.open:has(.isbf-v2-composer-options)
     .reply-to
-    .toggle-toolbar,
-  html.composer-open
-    body:has(.isbf-v2-shell)
-    #reply-control.open
-    .reply-to
-    .toggle-minimize {
+    .toggle-toolbar {
     display: none;
   }
 
@@ -2462,7 +2459,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 @media (max-width: 600px) {
   html.composer-open
     body:has(.isbf-v2-shell)
-    #reply-control.open:has(.isbf-v2-composer-options) {
+    #reply-control.open:has(.isbf-v2-composer) {
     top: 0;
     right: 0;
     bottom: auto;
@@ -2485,9 +2482,9 @@ body:has(.isbf-v2-shell--bookmarks) {
       border-bottom: 0;
     }
 
-    .reply-to .composer-action-title,
-    .reply-to .composer-controls,
-    .save-or-cancel .discard-button {
+    &:has(.isbf-v2-composer-options) .reply-to .composer-action-title,
+    &:has(.isbf-v2-composer-options) .reply-to .composer-controls,
+    &:has(.isbf-v2-composer-options) .save-or-cancel .discard-button {
       display: none;
     }
 
@@ -2596,7 +2593,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 
     .d-editor-input {
       min-height: 0;
-      padding: 20px 16px 190px 72px;
+      padding: 20px 16px 190px;
       font-size: var(--isbf-v2-font-lg);
     }
 
@@ -2684,7 +2681,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 
   html.keyboard-visible
     body:has(.isbf-v2-shell)
-    #reply-control.open:has(.isbf-v2-composer-options) {
+    #reply-control.open:has(.isbf-v2-composer) {
     .composer-fields {
       bottom: 56px;
     }
@@ -2755,6 +2752,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 .isbf-v2-anonymous-option {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 10px;
   padding: 8px 12px;
   color: var(--isbf-v2-muted);
@@ -2762,6 +2760,8 @@ body:has(.isbf-v2-shell--bookmarks) {
 }
 
 .isbf-v2-anonymous-option__toggle {
+  flex-shrink: 0;
+  min-height: 32px;
   padding: 6px 12px;
   border: 1px solid var(--isbf-v2-border-strong);
   border-radius: var(--isbf-v2-radius-pill);
@@ -3606,4 +3606,126 @@ body:has(.isbf-v2-shell--topic-feed-style) {
 
 body:has(.isbf-v2-shell--topic-editing) #main-outlet #topic-title {
   display: block;
+}
+
+.isbf-v2-anonymous-option > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+html.composer-open
+  body:has(.isbf-v2-shell)
+  #reply-control.open:has(.isbf-v2-composer) {
+  .isbf-v2-composer-title {
+    order: -1;
+    min-width: 0;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .isbf-v2-composer-title .title-input {
+    display: block;
+    width: 100%;
+  }
+
+  .isbf-v2-composer-title .title-input input {
+    width: 100%;
+    height: auto;
+    min-height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--isbf-v2-text);
+    box-shadow: none;
+    font-size: 24px;
+    line-height: 1.4;
+  }
+
+  .isbf-v2-composer-title .title-input input:focus-visible {
+    outline: 2px solid var(--isbf-v2-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 600px) {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-v2-composer) {
+    &:not(:has(.isbf-v2-composer-options)) {
+      .reply-area {
+        padding-top: calc(108px + env(safe-area-inset-top));
+      }
+
+      .reply-to {
+        align-items: flex-end;
+        gap: 4px;
+        height: calc(108px + env(safe-area-inset-top));
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--isbf-v2-border);
+      }
+
+      .reply-to .action-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .reply-to .composer-controls {
+        flex-shrink: 0;
+        margin-left: auto;
+      }
+
+      .reply-to .composer-actions-trigger {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .composer-actions-reply-target-link {
+        display: inline;
+      }
+
+      .save-or-cancel {
+        gap: 4px;
+        padding-right: 8px;
+      }
+
+      .save-or-cancel .discard-button {
+        position: static;
+      }
+    }
+
+    &:has(.isbf-v2-composer-options) .d-editor-input {
+      padding-left: 72px;
+    }
+
+    &:has(.isbf-v2-composer-title) .d-editor-input {
+      padding-top: 68px;
+    }
+
+    .isbf-v2-composer-title {
+      position: fixed;
+      top: calc(76px + env(safe-area-inset-top));
+      right: 16px;
+      left: 72px;
+      z-index: 6;
+      width: auto;
+      margin: 0;
+      background: var(--isbf-v2-surface);
+    }
+
+    .isbf-v2-composer-title .title-input input {
+      font-size: 22px;
+    }
+  }
+}
+
+body:has(.isbf-v2-shell) #reply-control:has(.isbf-v2-composer-options) {
+  .title-and-category > .title-input,
+  .composer-fields > .title-input {
+    display: none;
+  }
 }

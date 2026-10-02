@@ -37,6 +37,7 @@ zh_CN:
     quick_post: "发布动态"
     compose_prompt: "有什么新鲜事？"
     compose_cancel: "取消"
+    optional_title: "标题（可选）"
     compose_options: "发布选项"
     reply: "评论"
     repost: "引用转发"
