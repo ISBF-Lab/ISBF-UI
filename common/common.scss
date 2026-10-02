@@ -189,7 +189,8 @@ body:has(.isbf-v2-shell--no-page-header) {
   background: var(--isbf-v2-surface);
 }
 
-.isbf-v2-shell--notifications {
+.isbf-v2-shell--notifications,
+.isbf-v2-shell--custom-explore {
   height: auto;
 
   .isbf-v2-section-heading {
@@ -216,7 +217,8 @@ body:has(.isbf-v2-shell--no-page-header) {
 }
 
 @media (width <= 600px) {
-  .isbf-v2-shell--notifications .isbf-v2-section-heading {
+  .isbf-v2-shell--notifications .isbf-v2-section-heading,
+  .isbf-v2-shell--custom-explore .isbf-v2-section-heading {
     width: 100%;
     margin-left: 0;
     padding: var(--isbf-v2-space-6) var(--isbf-v2-space-4);
