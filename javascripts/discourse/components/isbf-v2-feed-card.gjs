@@ -77,6 +77,10 @@ export default class ISBFV2FeedCard extends Component {
     return null;
   }
 
+  get contentReady() {
+    return this.body !== null || this.bodyFailed;
+  }
+
   get canFlag() {
     return (
       Boolean(this.currentUser) &&
@@ -155,6 +159,10 @@ export default class ISBFV2FeedCard extends Component {
   @action
   observe(element) {
     this.#rootElement = element;
+    if (this.args.measureOnly) {
+      this.#loadContent();
+      return;
+    }
     this.#observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
@@ -169,7 +177,7 @@ export default class ISBFV2FeedCard extends Component {
 
   @action
   observeVisibleView(element) {
-    if (!this.currentUser) {
+    if (!this.currentUser || this.args.measureOnly) {
       return;
     }
 
@@ -414,7 +422,7 @@ export default class ISBFV2FeedCard extends Component {
       this.currentUser.id
     );
     this.#viewInFlight = false;
-    if (count !== null && !this.isDestroying && !this.isDestroyed) {
+    if (count !== null && !this.isDestroying) {
       this.viewCount = count;
       this.#viewObserver?.disconnect();
       document.removeEventListener(
@@ -432,8 +440,13 @@ export default class ISBFV2FeedCard extends Component {
     }
     const [body, count] = await Promise.allSettled([
       loadCookedPost(postId),
-      loadRepostCount(this.args.topic.id),
+      this.args.measureOnly
+        ? Promise.resolve(null)
+        : loadRepostCount(this.args.topic.id),
     ]);
+    if (this.isDestroying) {
+      return;
+    }
     if (body.status === "fulfilled") {
       this.body = body.value;
     } else {
@@ -461,6 +474,7 @@ export default class ISBFV2FeedCard extends Component {
     {{! eslint-disable ember/template-no-invalid-interactive }}
     <article
       class="isbf-feed-card"
+      data-content-ready={{this.contentReady}}
       {{didInsert this.observe}}
       {{didInsert this.observeVisibleView}}
       {{on "click" this.openTopic}}
