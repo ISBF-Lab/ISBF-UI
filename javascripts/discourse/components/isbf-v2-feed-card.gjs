@@ -474,7 +474,7 @@ export default class ISBFV2FeedCard extends Component {
     {{! eslint-disable ember/template-no-invalid-interactive }}
     <article
       class="isbf-feed-card"
-      data-content-ready={{this.contentReady}}
+      data-content-ready={{if this.contentReady "true" "false"}}
       {{didInsert this.observe}}
       {{didInsert this.observeVisibleView}}
       {{on "click" this.openTopic}}
