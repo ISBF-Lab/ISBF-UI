@@ -64,10 +64,11 @@ export default class ISBFTopicMore extends Component {
   <template>
     <div class="isbf-topic-card__more-menu" ...attributes>
       <DMenu
+        @ariaLabel={{i18n "more"}}
         @icon="ellipsis"
         @identifier={{this.identifier}}
-        @label={{i18n "more"}}
         @modalForMobile={{true}}
+        @title={{i18n "more"}}
         @triggerClass="btn-flat isbf-topic-card__more show-more-actions"
       >
         <:content as |menu|>
