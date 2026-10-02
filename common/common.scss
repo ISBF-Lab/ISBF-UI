@@ -3255,11 +3255,12 @@ body:has(.isbf-v2-shell--topic-feed-style) {
     .names {
       order: 0;
       display: flex;
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       flex-wrap: nowrap;
       align-items: baseline;
       gap: var(--isbf-v2-space-1);
       min-width: 0;
+      max-width: 50%;
       margin: 0;
       padding: 0;
     }
@@ -3310,6 +3311,15 @@ body:has(.isbf-v2-shell--topic-feed-style) {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+  }
+
+  // Let the menu trigger anchor to the post body beside the author metadata.
+  #main-outlet
+    .isbf-topic-card__article
+    > .post__row
+    > .post__body:not(.embedded-posts)
+    > .post__contents {
+    position: static;
   }
 
   .isbf-topic-card__title {
@@ -3510,15 +3520,14 @@ body:has(.isbf-v2-shell--topic-feed-style) {
 
   @media (min-width: 925px) {
     #main-outlet .container.posts {
-      grid-template-columns: minmax(0, 1fr) 96px;
-      gap: var(--isbf-v2-space-3);
+      grid-template-areas: "posts";
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
       margin: 0;
     }
 
     #main-outlet .container.posts > .topic-navigation {
-      width: 100%;
-      min-width: 0;
-      margin-left: 0;
+      display: none;
     }
   }
 

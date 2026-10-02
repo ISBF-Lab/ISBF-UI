@@ -99,6 +99,7 @@ const common = {
   themePrefix: (key) => key,
   i18n: (key) => key,
   recordVisibleView: async () => 5,
+  recordVisiblePostView: async () => 6,
 };
 async function componentModule(pathname) {
   const source = read(pathname)
@@ -114,7 +115,11 @@ const actions = await componentModule("components/isbf-topic-actions.gjs");
 const Views = (await componentModule("components/isbf-topic-views.gjs"))
   .default;
 assert.equal(Views.shouldRender({ post: firstPost }), true);
-assert.equal(Views.shouldRender({ post: replyPost }), false);
+assert.equal(Views.shouldRender({ post: replyPost }), true);
+assert.equal(
+  Views.shouldRender({ post: { ...replyPost, post_type: 3 } }),
+  false
+);
 const More = (await componentModule("components/isbf-topic-more.gjs")).default;
 assert.equal(More.extraControls(), true);
 assert.equal(More.shouldRender(), true);

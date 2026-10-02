@@ -7,12 +7,15 @@ import { service } from "@ember/service";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { themePrefix } from "virtual:theme";
-import { recordVisibleView } from "../lib/feed-view-tracker";
+import {
+  recordVisiblePostView,
+  recordVisibleView,
+} from "../lib/feed-view-tracker";
 import { compactNumber } from "../lib/post-card-helpers";
 
 export default class ISBFTopicViews extends Component {
   static shouldRender({ post }) {
-    return post.post_number === 1;
+    return post.post_type === 1 && post.post_number >= 1;
   }
 
   @service currentUser;
@@ -22,9 +25,14 @@ export default class ISBFTopicViews extends Component {
 
   #observer;
   #pending = false;
+  #visible = false;
 
   get countLabel() {
-    return this.count === null ? "" : compactNumber(this.count);
+    return this.count === null
+      ? ""
+      : this.count === 0
+        ? "0"
+        : compactNumber(this.count);
   }
 
   get label() {
@@ -40,23 +48,29 @@ export default class ISBFTopicViews extends Component {
     }
     this.#observer = new IntersectionObserver(
       (entries) => {
-        if (
-          document.visibilityState === "visible" &&
-          entries.some((entry) => entry.isIntersecting)
-        ) {
-          this.#recordView();
-        }
+        this.#visible = entries.some((entry) => entry.isIntersecting);
+        this.onVisibilityChange();
       },
       { rootMargin: "0px", threshold: 0 }
     );
     this.#observer.observe(
       element.closest(".isbf-topic-card__article") ?? element
     );
+    document.addEventListener("visibilitychange", this.onVisibilityChange);
+  }
+
+  @action
+  onVisibilityChange() {
+    if (this.#visible && document.visibilityState === "visible") {
+      this.#recordView();
+    }
   }
 
   @action
   destroyObserver() {
     this.#observer?.disconnect();
+    this.#visible = false;
+    document.removeEventListener("visibilitychange", this.onVisibilityChange);
   }
 
   async #recordView() {
@@ -64,14 +78,14 @@ export default class ISBFTopicViews extends Component {
       return;
     }
     this.#pending = true;
-    const count = await recordVisibleView(
-      this.args.post.topic.id,
-      this.currentUser.id
-    );
+    const post = this.args.post;
+    const count = await (post.post_number === 1
+      ? recordVisibleView(post.topic.id, this.currentUser.id)
+      : recordVisiblePostView(post.id, this.currentUser.id));
     if (!this.isDestroying && !this.isDestroyed) {
       this.count = count;
       if (count !== null) {
-        this.#observer?.disconnect();
+        this.destroyObserver();
       }
     }
     this.#pending = false;
