@@ -18,3 +18,4 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-post-card-helpers.mjs
       - run: node --experimental-vm-modules scripts/check-topic-card-ui.mjs
       - run: node --experimental-vm-modules scripts/check-view-tracker.mjs
+      - run: node --experimental-vm-modules scripts/check-composer-ui.mjs

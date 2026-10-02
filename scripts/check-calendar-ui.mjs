@@ -60,7 +60,9 @@ function checkDirectory(dir) {
 
     const source = readFileSync(path, "utf8");
     const stack = [];
-    for (const match of source.matchAll(/\{\{([#/])(if|unless|each|let|component)(?:\s[^}]*)?\}\}/g)) {
+    for (const match of source.matchAll(
+      /\{\{([#/])(if|unless|each|let|component)(?:\s[^}]*)?\}\}/g
+    )) {
       if (match[1] === "#") {
         stack.push(match[2]);
       } else if (stack.pop() !== match[2]) {
@@ -71,10 +73,15 @@ function checkDirectory(dir) {
       throw new Error(`${path}: unclosed template block`);
     }
 
-    const js = source.replace(/<template>[\s\S]*?<\/template>/g, "").replace(/@(service|tracked|action)\s+/g, "");
+    const js = source
+      .replace(/<template>[\s\S]*?<\/template>/g, "")
+      .replace(/@(service|tracked|action)\s+/g, "")
+      .replace(/@(computed|alias)\([^)]*\)\s*/g, "");
     new vm.SourceTextModule(js, { identifier: path });
   }
 }
 
 checkDirectory(fileURLToPath(new URL("javascripts/discourse", root)));
-console.log("Theme metadata, localization, template blocks and JavaScript syntax OK");
+console.log(
+  "Theme metadata, localization, template blocks and JavaScript syntax OK"
+);

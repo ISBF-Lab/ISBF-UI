@@ -19,7 +19,22 @@ const context = vm.createContext({
   },
 });
 const helpers = new vm.SourceTextModule(source, { context });
+const titleHelpers = new vm.SourceTextModule(
+  readFileSync(
+    new URL(
+      "../javascripts/discourse/lib/optional-topic-title.js",
+      import.meta.url
+    ),
+    "utf8"
+  ),
+  { context }
+);
+await titleHelpers.link(() => {});
+await titleHelpers.evaluate();
 await helpers.link((name) => {
+  if (name === "./optional-topic-title") {
+    return titleHelpers;
+  }
   assert.equal(name, "discourse/models/composer");
   return new vm.SyntheticModule(
     ["default"],
@@ -41,6 +56,14 @@ assert.equal(
   compactNumber(1234),
   new Intl.NumberFormat(undefined, { notation: "compact" }).format(1234)
 );
+assert.equal(
+  postCardTitle(
+    "校园动态 [isbf-untitled:00000000-0000-4000-8000-000000000001]",
+    "<p>没有标题的正文</p>"
+  ),
+  null
+);
+assert.equal(postCardTitle("校园动态", "<p>正常手动标题</p>"), "校园动态");
 assert.equal(postCardTitle("标题", null), null);
 assert.equal(postCardTitle("标题", undefined), null);
 assert.equal(postCardTitle("  校园   活动 ", "<p>校园 活动详情</p>"), null);

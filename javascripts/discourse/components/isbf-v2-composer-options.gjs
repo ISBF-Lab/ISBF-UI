@@ -46,6 +46,7 @@ export default class ISBFV2ComposerOptions extends Component {
   }
 
   <template>
+    <span aria-hidden="true" class="isbf-v2-composer"></span>
     {{#if this.isQuickPost}}
       <div class="isbf-v2-composer-options">
         <div aria-hidden="true" class="isbf-v2-composer-options__avatar">

@@ -37,6 +37,7 @@ en:
     quick_post: "New post"
     compose_prompt: "What's happening on campus?"
     compose_cancel: "Cancel"
+    optional_title: "Title (optional)"
     compose_options: "Post options"
     reply: "Reply"
     repost: "Quote repost"
