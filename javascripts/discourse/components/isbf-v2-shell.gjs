@@ -1,13 +1,15 @@
 import Component from "@glimmer/component";
-import { service } from "@ember/service";
+import { action } from "@ember/object";
 import { getOwner } from "@ember/owner";
+import { service } from "@ember/service";
 import { settings, themePrefix } from "virtual:theme";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
-import ISBFNotifications from "./isbf-notifications";
-import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import { notificationsEnabled } from "../lib/notification-groups";
+import { isFeedStyleTopic } from "../lib/topic-card-scope";
+import ISBFExplore from "./isbf-explore";
+import ISBFNotifications from "./isbf-notifications";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
 import ISBFV2AnonymousPosts from "./isbf-v2-anonymous-posts";
 import ISBFV2Calendar from "./isbf-v2-calendar";
@@ -16,6 +18,7 @@ import ISBFV2SideNav from "./isbf-v2-side-nav";
 import ISBFV2Workbench from "./isbf-v2-workbench";
 
 export default class ISBFV2Shell extends Component {
+  @service categoryTypeChooser;
   @service currentUser;
   @service router;
   @service siteSettings;
@@ -66,6 +69,21 @@ export default class ISBFV2Shell extends Component {
 
   get isFeed() {
     return this.pageKind === "feed";
+  }
+
+  get canCreateExploreCategory() {
+    return Boolean(
+      this.currentUser?.admin ||
+      (this.currentUser?.moderator &&
+        this.siteSettings.moderators_manage_categories)
+    );
+  }
+
+  get showCustomExplore() {
+    return (
+      this.path.replace(/\/$/, "") === "/categories" &&
+      this.siteSettings.isbf_explore_enabled
+    );
   }
 
   get isNotifications() {
@@ -196,6 +214,10 @@ export default class ISBFV2Shell extends Component {
       classes.push("isbf-v2-shell--grouped-notifications");
     }
 
+    if (this.showCustomExplore) {
+      classes.push("isbf-v2-shell--custom-explore");
+    }
+
     if (this.showSectionHeading) {
       classes.push("isbf-v2-shell--section-heading");
     }
@@ -219,6 +241,13 @@ export default class ISBFV2Shell extends Component {
     return this.currentUser
       ? "/u/" + this.currentUser.username + "/notifications"
       : "/login";
+  }
+
+  @action
+  createExploreCategory() {
+    if (this.canCreateExploreCategory) {
+      this.categoryTypeChooser.createCategory();
+    }
   }
 
   #isOfficialPath(path) {
@@ -303,6 +332,11 @@ export default class ISBFV2Shell extends Component {
         {{/if}}
 
         {{#if this.showGroupedNotifications}}<ISBFNotifications />{{/if}}
+
+        {{#if this.showCustomExplore}}<ISBFExplore
+            @canCreateCategory={{this.canCreateExploreCategory}}
+            @onCreateCategory={{this.createExploreCategory}}
+          />{{/if}}
 
         {{#if this.isAnonymousPosts}}<ISBFV2AnonymousPosts />{{/if}}
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
