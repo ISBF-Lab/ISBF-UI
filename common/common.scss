@@ -1397,8 +1397,29 @@ html.composer-open
       margin-left: auto;
     }
 
+    .reply-to .composer-action-title {
+      flex: 1 1 auto;
+    }
+
     .reply-to .action-title {
+      gap: 8px;
       min-width: 0;
+    }
+
+    .reply-to .composer-actions {
+      flex: 0 0 auto;
+    }
+
+    .reply-to .composer-actions-reply-target-link {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    &.composer-action-reply
+      .reply-to
+      .composer-actions-trigger
+      .d-icon:not(.composer-actions-caret) {
+      display: none;
     }
 
     .reply-to .composer-actions-trigger {
@@ -1420,6 +1441,10 @@ html.composer-open
 
     .composer-fields {
       padding: 14px 20px 0;
+    }
+
+    .isbf-v2-anonymous-option {
+      padding-inline: 0;
     }
 
     .title-and-category {
@@ -3740,5 +3765,22 @@ body:has(.isbf-v2-shell) #reply-control:has(.isbf-v2-composer-options) {
   .title-and-category > .title-input,
   .composer-fields > .title-input {
     display: none;
+  }
+}
+
+@media (width <= 600px) {
+  body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-v2-composer)
+    .select-kit-body.isbf-v2-composer-category-menu {
+    max-height: min(320px, var(--isbf-v2-category-menu-max-height));
+
+    .select-kit-filter {
+      flex-shrink: 0;
+    }
+
+    .select-kit-collection {
+      min-height: 0;
+      overscroll-behavior: contain;
+    }
   }
 }
