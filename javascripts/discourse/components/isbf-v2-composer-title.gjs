@@ -3,6 +3,7 @@ import EmberObject, { action } from "@ember/object";
 import { service } from "@ember/service";
 import { tracked } from "@glimmer/tracking";
 import { on } from "@ember/modifier";
+import { themePrefix } from "virtual:theme";
 import DPopupInputTip from "discourse/ui-kit/d-popup-input-tip";
 import DTextField from "discourse/ui-kit/d-text-field";
 import { i18n } from "discourse-i18n";

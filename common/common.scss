@@ -2799,7 +2799,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 
   html.composer-open
     body:has(.isbf-v2-shell)
-    #reply-control.open:has(.isbf-v2-composer-options)
+    #reply-control.open:has(.isbf-v2-composer)
     .isbf-v2-anonymous-option {
     position: static;
     order: 2;
@@ -2810,7 +2810,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 
   html.composer-open
     body:has(.isbf-v2-shell)
-    #reply-control.open:has(.isbf-v2-composer-options)
+    #reply-control.open:has(.isbf-v2-composer)
     .isbf-v2-anonymous-option
     span {
     display: inline;
@@ -2818,7 +2818,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 
   html.composer-open
     body:has(.isbf-v2-shell)
-    #reply-control.open:has(.isbf-v2-composer-options)
+    #reply-control.open:has(.isbf-v2-composer)
     .isbf-v2-anonymous-option__toggle {
     min-height: 44px;
   }
