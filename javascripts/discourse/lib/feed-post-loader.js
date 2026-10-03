@@ -1,27 +1,43 @@
 import { ajax } from "discourse/lib/ajax";
 
 const cache = new Map();
+const invalidatedPosts = new Set();
+const generations = new Map();
 const queue = [];
 let activeRequests = 0;
 
 function runQueue() {
   while (activeRequests < 4 && queue.length) {
-    const job = queue.shift();
     activeRequests += 1;
-    ajax(`/posts/${job.postId}/cooked`)
-      .then((result) => {
-        cache.set(job.postId, result.cooked);
-        job.resolve(result.cooked);
-      })
-      .catch(job.reject)
-      .finally(() => {
-        activeRequests -= 1;
-        runQueue();
-      });
+    runJob(queue.shift());
   }
 }
 
+function runJob(job) {
+  const generation = generations.get(Number(job.postId));
+  ajax(`/posts/${job.postId}/cooked`)
+    .then((result) => {
+      if (
+        invalidatedPosts.has(Number(job.postId)) ||
+        generation !== generations.get(Number(job.postId))
+      ) {
+        job.resolve("");
+      } else {
+        cache.set(job.postId, result.cooked);
+        job.resolve(result.cooked);
+      }
+    })
+    .catch(job.reject)
+    .finally(() => {
+      activeRequests -= 1;
+      runQueue();
+    });
+}
+
 export function loadCookedPost(postId) {
+  if (invalidatedPosts.has(Number(postId))) {
+    return Promise.resolve("");
+  }
   if (cache.has(postId)) {
     return Promise.resolve(cache.get(postId));
   }
@@ -30,6 +46,18 @@ export function loadCookedPost(postId) {
     queue.push({ postId, reject, resolve });
     runQueue();
   });
+}
+
+export function invalidateCookedPost(postId, hidden = true) {
+  const id = Number(postId);
+  generations.set(id, (generations.get(id) || 0) + 1);
+  if (hidden) {
+    invalidatedPosts.add(Number(postId));
+  } else {
+    invalidatedPosts.delete(Number(postId));
+  }
+  cache.delete(postId);
+  cache.delete(Number(postId));
 }
 
 const countCache = new Map();

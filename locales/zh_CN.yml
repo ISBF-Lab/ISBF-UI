@@ -2,6 +2,15 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    severe_report: "严重违规"
+    severe_description: "请说明严重违规的具体情况。提交后帖子将立即下架，并交由管理员审核。"
+    severe_reason: "举报理由"
+    severe_hint: "请填写 10–2000 字的具体理由。"
+    severe_confirm: "提交后立即下架，请确认"
+    severe_submit: "提交并立即下架"
+    severe_back: "返回"
+    severe_failed: "举报提交失败，请重试。"
+    report_hidden: "该帖子已下架，等待审核。"
     explore_categories: "类别"
     explore_tags: "标签"
     explore_selected_count: "%{label} · %{count}"

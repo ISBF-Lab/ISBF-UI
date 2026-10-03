@@ -1,8 +1,8 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
-import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
 import { themePrefix } from "virtual:theme";
@@ -20,17 +20,25 @@ import {
   plainText,
   postCardTitle,
 } from "../lib/post-card-helpers";
+import { isReportedHidden, openPostReport } from "../lib/report-post";
 
 export default class ISBFV2FeedCard extends Component {
+  @service appEvents;
   @service composer;
   @service currentUser;
   @service dialog;
+  @service modal;
   @service router;
+  @service site;
+  @service siteSettings;
+  @service store;
 
   @tracked body = null;
   @tracked bodyFailed = false;
   @tracked bookmarked;
   @tracked expanded = false;
+  @tracked hidden = false;
+  @tracked isFlagging = false;
   @tracked isLiking = false;
   @tracked isReplying = false;
   @tracked liked;
@@ -39,6 +47,7 @@ export default class ISBFV2FeedCard extends Component {
   @tracked repostCount = null;
   @tracked viewCount = null;
 
+  #bodyRequest = 0;
   #observer;
   #rootElement;
   #viewInFlight = false;
@@ -46,6 +55,10 @@ export default class ISBFV2FeedCard extends Component {
 
   constructor() {
     super(...arguments);
+    this.hidden =
+      isReportedHidden(this.args.topic.first_post_id) ||
+      Boolean(this.args.topic.hidden);
+    this.appEvents.on("isbf:post-hidden", this.onPostHidden);
     this.bookmarked = Boolean(this.args.topic.bookmarked);
     this.liked = Boolean(this.args.topic.op_liked);
     this.likeCount = Number(this.args.topic.op_like_count) || 0;
@@ -53,6 +66,7 @@ export default class ISBFV2FeedCard extends Component {
 
   willDestroy() {
     super.willDestroy(...arguments);
+    this.appEvents.off("isbf:post-hidden", this.onPostHidden);
     this.#observer?.disconnect();
     this.#viewObserver?.disconnect();
     document.removeEventListener(
@@ -68,6 +82,9 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   get bodyHtml() {
+    if (this.hidden) {
+      return null;
+    }
     if (this.body) {
       return trustHTML(this.body);
     }
@@ -84,7 +101,12 @@ export default class ISBFV2FeedCard extends Component {
   get canFlag() {
     return (
       Boolean(this.currentUser) &&
-      this.currentUser.id !== this.args.topic.creator?.id
+      !this.hidden &&
+      (((this.site.isbf_severe_reports_enabled ??
+        this.siteSettings.isbf_severe_reports_enabled) === true &&
+        this.args.topic.isbf_can_severe_report) ||
+        this.args.topic.op_can_flag === true ||
+        this.currentUser.id !== this.args.topic.creator?.id)
     );
   }
 
@@ -99,6 +121,9 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   get displayTitle() {
+    if (this.hidden) {
+      return null;
+    }
     return postCardTitle(this.args.topic.title, this.body);
   }
 
@@ -129,7 +154,10 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   get showExpand() {
-    return plainText(this.body || this.args.topic.excerpt).length > 900;
+    return (
+      !this.hidden &&
+      plainText(this.body || this.args.topic.excerpt).length > 900
+    );
   }
 
   get relativeTime() {
@@ -392,24 +420,50 @@ export default class ISBFV2FeedCard extends Component {
 
   @action
   async flag() {
-    this.#closeMenu();
-    await this.router.transitionTo(this.topicUrl);
-    scheduleOnce("afterRender", this, this.#openFlagMenu);
+    if (this.isFlagging) {
+      return;
+    }
+    if (!this.currentUser) {
+      this.appEvents.trigger("show-login");
+      return;
+    }
+    this.isFlagging = true;
+    try {
+      const post = await this.store.find("post", this.args.topic.first_post_id);
+      if (this.isDestroying) {
+        return;
+      }
+      post.set("topic", this.args.topic);
+      this.#closeMenu();
+      this.#rootElement
+        ?.querySelector(".isbf-feed-card__menu-trigger")
+        ?.focus();
+      openPostReport({
+        post,
+        modal: this.modal,
+        siteSettings: this.siteSettings,
+        site: this.site,
+        appEvents: this.appEvents,
+      });
+    } catch (error) {
+      await this.#showError(error);
+    } finally {
+      this.isFlagging = false;
+    }
   }
 
-  #openFlagMenu() {
-    document
-      .querySelector(".topic-post[data-post-number='1'] .show-more-actions")
-      ?.click();
-    scheduleOnce("afterRender", this, this.#clickFlagButton);
-  }
-
-  #clickFlagButton() {
-    document
-      .querySelector(
-        ".topic-post[data-post-number='1'] button.flag, .topic-post[data-post-number='1'] button.create-flag, .topic-post[data-post-number='1'] [data-key='flag']"
-      )
-      ?.click();
+  @action
+  onPostHidden(postId, hidden = true) {
+    if (Number(postId) === Number(this.args.topic.first_post_id)) {
+      this.hidden = hidden;
+      this.#bodyRequest += 1;
+      this.body = null;
+      this.bodyFailed = false;
+      this.#closeMenu();
+      if (!hidden) {
+        this.#loadContent();
+      }
+    }
   }
 
   async #recordView() {
@@ -433,7 +487,11 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   async #loadContent() {
+    const request = ++this.#bodyRequest;
     const postId = this.args.topic.first_post_id;
+    if (this.hidden) {
+      return;
+    }
     if (!postId) {
       this.bodyFailed = true;
       return;
@@ -444,7 +502,12 @@ export default class ISBFV2FeedCard extends Component {
         ? Promise.resolve(null)
         : loadRepostCount(this.args.topic.id),
     ]);
-    if (this.isDestroying) {
+    if (
+      this.isDestroying ||
+      this.hidden ||
+      isReportedHidden(postId) ||
+      request !== this.#bodyRequest
+    ) {
       return;
     }
     if (body.status === "fulfilled") {
@@ -515,6 +578,7 @@ export default class ISBFV2FeedCard extends Component {
             {{#if this.menuOpen}}
               <div class="isbf-feed-card__menu" role="menu">
                 {{#if this.canFlag}}<button
+                    disabled={{this.isFlagging}}
                     role="menuitem"
                     type="button"
                     {{on "click" this.flag}}
@@ -535,7 +599,9 @@ export default class ISBFV2FeedCard extends Component {
             "isbf-feed-card__body is-expanded"
             "isbf-feed-card__body"
           }}
-        >{{this.bodyHtml}}</div>
+        >{{#if this.hidden}}{{i18n
+              (themePrefix "isbf_v2.report_hidden")
+            }}{{else}}{{this.bodyHtml}}{{/if}}</div>
         {{#if this.bodyFailed}}<a
             class="isbf-feed-card__fallback"
             href={{this.topicUrl}}
