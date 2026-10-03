@@ -2234,6 +2234,48 @@ body:has(.isbf-v2-shell--profile) {
   }
 }
 
+body:has(.isbf-v2-shell--profile):has(
+    .user-nav__activity-drafts[aria-current="location"]
+  ) {
+  #main-outlet .user-content {
+    margin-block-start: 0;
+    padding-block-start: 0;
+  }
+
+  #main-outlet .user-stream {
+    .post-list-item__bulk-select,
+    .draft-icon {
+      flex: none;
+    }
+
+    .post-list-item__details {
+      flex: 1 1 0;
+      min-width: 0;
+      margin-inline-end: var(--isbf-v2-space-3);
+    }
+
+    .stream-topic-title .title,
+    .draft-title {
+      display: block;
+      max-width: 100%;
+    }
+
+    .draft-title,
+    .draft-title .d-button-label {
+      white-space: normal;
+      overflow-wrap: anywhere;
+      text-align: start;
+    }
+
+    .user-stream-item-draft-actions {
+      flex: none;
+      align-self: flex-start;
+      gap: var(--isbf-v2-space-2);
+      margin-block-start: 0;
+    }
+  }
+}
+
 body:has(.isbf-v2-shell--explore) {
   #main-outlet .search-container,
   #main-outlet .search-results,
