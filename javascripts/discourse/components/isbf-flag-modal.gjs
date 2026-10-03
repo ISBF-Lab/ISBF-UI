@@ -155,7 +155,8 @@ export default class ISBFFlagModal extends Flag {
               class="isbf-flag-modal__error"
               role="alert"
             >{{this.severeError}}</p>{{/if}}
-        {{else}}
+        {{/if}}
+        <div hidden={{this.severeStep}}>
           <p>{{trustHTML (i18n "flagging.review_process_description")}}</p>
           <PluginOutlet
             @connectorTagName="div"
@@ -184,7 +185,7 @@ export default class ISBFFlagModal extends Flag {
             @name="flag-modal-bottom"
             @outletArgs={{lazyHash post=@model.flagModel}}
           />
-        {{/if}}
+        </div>
       </:body>
       <:footer>
         {{#if this.severeStep}}
