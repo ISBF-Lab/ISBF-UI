@@ -8,6 +8,11 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { notificationsEnabled } from "../lib/notification-groups";
 import { isFeedStyleTopic } from "../lib/topic-card-scope";
+import {
+  feedbackCategory,
+  feedbackComposeHref,
+  isFeedbackPath,
+} from "../lib/feedback-category";
 import ISBFExplore from "./isbf-explore";
 import ISBFNotifications from "./isbf-notifications";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
@@ -21,6 +26,7 @@ export default class ISBFV2Shell extends Component {
   @service categoryTypeChooser;
   @service currentUser;
   @service router;
+  @service site;
   @service siteSettings;
 
   get path() {
@@ -54,7 +60,10 @@ export default class ISBFV2Shell extends Component {
     if (/^\/u\//.test(path)) {
       return "profile";
     }
-    if (this.#isOfficialPath(path)) {
+    if (/^\/badges(\/|$)/.test(path)) {
+      return "badges";
+    }
+    if (this.#isOfficialPath(path) || this.isFeedback) {
       return "feed";
     }
     if (/^\/(search|categories|c|tag|tags)(\/|$)/.test(path)) {
@@ -71,11 +80,27 @@ export default class ISBFV2Shell extends Component {
     return this.pageKind === "feed";
   }
 
+  get feedbackCategory() {
+    return feedbackCategory(this.site, settings.feedback_category_id);
+  }
+
+  get isFeedback() {
+    return isFeedbackPath(this.path, this.feedbackCategory);
+  }
+
+  get composePrompt() {
+    return i18n(
+      themePrefix(
+        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt",
+      ),
+    );
+  }
+
   get canCreateExploreCategory() {
     return Boolean(
       this.currentUser?.admin ||
       (this.currentUser?.moderator &&
-        this.siteSettings.moderators_manage_categories)
+        this.siteSettings.moderators_manage_categories),
     );
   }
 
@@ -110,7 +135,7 @@ export default class ISBFV2Shell extends Component {
     return (
       !this.isFeed &&
       !["calendar", "explore", "notifications", "workbench"].includes(
-        this.pageKind
+        this.pageKind,
       )
     );
   }
@@ -143,6 +168,10 @@ export default class ISBFV2Shell extends Component {
   }
 
   get pageTitle() {
+    if (this.pageKind === "badges") {
+      return i18n("badges.title");
+    }
+
     const titles = {
       "anonymous-posts": "my_anonymous_posts",
       bookmarks: "bookmarks",
@@ -166,6 +195,9 @@ export default class ISBFV2Shell extends Component {
   }
 
   get canCompose() {
+    if (this.isFeedback) {
+      return !this.currentUser || this.feedbackCategory.canCreateTopic;
+    }
     return !this.officialActive || Boolean(this.currentUser?.staff);
   }
 
@@ -182,6 +214,9 @@ export default class ISBFV2Shell extends Component {
   }
 
   get composeHref() {
+    if (this.isFeedback) {
+      return feedbackComposeHref(this.feedbackCategory);
+    }
     const categorySlug = settings.official_path.split("/")[2];
     return this.officialActive
       ? `/new-topic?category=${encodeURIComponent(categorySlug)}`
@@ -226,6 +261,10 @@ export default class ISBFV2Shell extends Component {
       classes.push("isbf-v2-shell--official");
     }
 
+    if (this.isFeedback) {
+      classes.push("isbf-v2-shell--feedback");
+    }
+
     if (!this.canCompose) {
       classes.push("isbf-v2-shell--no-compose");
     }
@@ -262,35 +301,41 @@ export default class ISBFV2Shell extends Component {
         {{#if this.showRightRail}}<ISBFV2RightRail />{{/if}}
 
         {{#if this.isFeed}}
-          <header class="isbf-v2-feed-header">
-            <div class="isbf-v2-feed-header__title">
-              {{#if this.currentUser}}
+          {{#if this.isFeedback}}
+            <header class="isbf-v2-feedback-header">
+              <h1>{{i18n (themePrefix "isbf_v2.feedback")}}</h1>
+            </header>
+          {{else}}
+            <header class="isbf-v2-feed-header">
+              <div class="isbf-v2-feed-header__title">
+                {{#if this.currentUser}}
+                  <a
+                    aria-label={{i18n (themePrefix "isbf_v2.profile")}}
+                    class="isbf-v2-feed-header__avatar"
+                    href={{this.profileHref}}
+                  >{{dAvatar this.currentUser imageSize="small"}}</a>
+                {{/if}}
+                <span>{{i18n (themePrefix "isbf_v2.home")}}</span>
                 <a
-                  aria-label={{i18n (themePrefix "isbf_v2.profile")}}
-                  class="isbf-v2-feed-header__avatar"
-                  href={{this.profileHref}}
-                >{{dAvatar this.currentUser imageSize="small"}}</a>
-              {{/if}}
-              <span>{{i18n (themePrefix "isbf_v2.home")}}</span>
-              <a
-                aria-label={{i18n (themePrefix "isbf_v2.search")}}
-                class="isbf-v2-feed-header__search"
-                href="/search"
-              >{{dIcon "magnifying-glass"}}</a>
-            </div>
-            <nav aria-label={{i18n (themePrefix "isbf_v2.feed_label")}}>
-              <a
-                aria-current={{if this.latestActive "page"}}
-                class={{if this.latestActive "is-active"}}
-                href="/latest"
-              >{{i18n (themePrefix "isbf_v2.latest")}}</a>
-              <a
-                aria-current={{if this.officialActive "page"}}
-                class={{if this.officialActive "is-active"}}
-                href={{settings.official_path}}
-              >{{i18n (themePrefix "isbf_v2.official")}}</a>
-            </nav>
-          </header>
+                  aria-label={{i18n (themePrefix "isbf_v2.search")}}
+                  class="isbf-v2-feed-header__search"
+                  href="/search"
+                >{{dIcon "magnifying-glass"}}</a>
+              </div>
+              <nav aria-label={{i18n (themePrefix "isbf_v2.feed_label")}}>
+                <a
+                  aria-current={{if this.latestActive "page"}}
+                  class={{if this.latestActive "is-active"}}
+                  href="/latest"
+                >{{i18n (themePrefix "isbf_v2.latest")}}</a>
+                <a
+                  aria-current={{if this.officialActive "page"}}
+                  class={{if this.officialActive "is-active"}}
+                  href={{settings.official_path}}
+                >{{i18n (themePrefix "isbf_v2.official")}}</a>
+              </nav>
+            </header>
+          {{/if}}
 
           {{#if this.canCompose}}
             <div class="isbf-v2-compose">
@@ -304,7 +349,7 @@ export default class ISBFV2Shell extends Component {
               <a
                 class="isbf-v2-compose__prompt"
                 href={{this.composeHref}}
-              >{{i18n (themePrefix "isbf_v2.compose_prompt")}}</a>
+              >{{this.composePrompt}}</a>
               <a
                 class="isbf-v2-compose__button"
                 href={{this.composeHref}}

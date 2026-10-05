@@ -2,6 +2,13 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    sidebar_more: "More"
+    sidebar_settings: "Settings"
+    feedback: "Feedback"
+    feedback_prompt: "Share a question or suggestion"
+    feedback_unavailable: "Feedback is currently unavailable. Please try again later."
+    join_us: "Join us"
+    join_us_pending: "Recruitment information is being prepared"
     severe_report: "Severe violation"
     severe_description: "Report a severe violation. The post will be hidden immediately and sent to moderators for review."
     severe_reason: "Reason"
