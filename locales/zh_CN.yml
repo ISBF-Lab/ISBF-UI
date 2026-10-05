@@ -2,6 +2,13 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    sidebar_more: "更多"
+    sidebar_settings: "设置"
+    feedback: "反馈"
+    feedback_prompt: "提出问题或建议"
+    feedback_unavailable: "反馈暂不可用，请稍后重试。"
+    join_us: "加入我们"
+    join_us_pending: "招募信息筹备中"
     severe_report: "严重违规"
     severe_description: "请说明严重违规的具体情况。提交后帖子将立即下架，并交由管理员审核。"
     severe_reason: "举报理由"
