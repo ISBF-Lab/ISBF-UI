@@ -816,7 +816,6 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
 // Keep Core topic navigation, permissions and data while presenting the
 // discovery list as a single-column feed.
 body:has(.isbf-v2-shell) .topic-list {
-  display: block;
   width: 100%;
   margin: 0;
   border-collapse: collapse;
@@ -826,8 +825,34 @@ body:has(.isbf-v2-shell) .topic-list thead {
   display: none;
 }
 
-body:has(.isbf-v2-shell) .topic-list tbody {
-  display: block;
+.isbf-v2-topic-list {
+  &.--discovery {
+    display: block;
+
+    .topic-list-body {
+      display: block;
+    }
+  }
+
+  &.--suggested {
+    --d-topic-list-data-padding-inline-start: var(--isbf-v2-space-4);
+    --d-topic-list-data-padding-inline-end: var(--isbf-v2-space-4);
+    --table-border-color: var(--isbf-v2-border);
+
+    .topic-list-data.activity {
+      text-align: end;
+
+      .post-activity {
+        padding-inline-end: 0;
+      }
+    }
+
+    @include viewport.until(sm) {
+      .topic-list-data {
+        padding-inline: var(--isbf-v2-space-4);
+      }
+    }
+  }
 }
 
 body:has(.isbf-v2-shell) tr.isbf-v2-topic {
@@ -2345,6 +2370,33 @@ body:has(.isbf-v2-shell--profile) {
   }
 }
 
+body:has(.isbf-v2-shell--badges) {
+  .container.badges,
+  .container.show-badge {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: var(--isbf-v2-space-4);
+    background: var(--isbf-v2-surface);
+  }
+
+  .badge-group-list,
+  .badges-granted {
+    grid-template-columns: repeat(auto-fit, minmax(min(18em, 100%), 1fr));
+  }
+
+  .badge-card.--badge-large {
+    max-width: 100%;
+  }
+
+  .show-badge h1,
+  .badge-summary,
+  .post-link {
+    overflow-wrap: anywhere;
+  }
+}
+
 body:has(.isbf-v2-shell--profile):has(
     .user-nav__activity-drafts[aria-current="location"]
   ) {
@@ -3338,28 +3390,30 @@ body:has(.isbf-v2-shell--grouped-notifications) #main-outlet {
 }
 
 .isbf-notifications__topic {
-  > summary {
+  position: relative;
+
+  > h2 {
+    margin-inline-end: 40px;
+  }
+
+  > details > summary {
+    position: absolute;
+    top: var(--isbf-v2-space-4);
+    right: var(--isbf-v2-space-4);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--isbf-v2-space-3);
+    justify-content: center;
+    min-width: 28px;
+    min-height: 28px;
     cursor: pointer;
     list-style: none;
 
     &::-webkit-details-marker {
       display: none;
     }
-
-    h2 {
-      margin: 0;
-    }
   }
 
-  &[open] > summary {
-    margin-bottom: var(--isbf-v2-space-3);
-  }
-
-  &:not([open]) > summary > .d-icon {
+  > details:not([open]) > summary > .d-icon {
     transform: rotate(-90deg);
   }
 }

@@ -60,6 +60,9 @@ export default class ISBFV2Shell extends Component {
     if (/^\/u\//.test(path)) {
       return "profile";
     }
+    if (/^\/badges(\/|$)/.test(path)) {
+      return "badges";
+    }
     if (this.#isOfficialPath(path) || this.isFeedback) {
       return "feed";
     }
@@ -165,6 +168,10 @@ export default class ISBFV2Shell extends Component {
   }
 
   get pageTitle() {
+    if (this.pageKind === "badges") {
+      return i18n("badges.title");
+    }
+
     const titles = {
       "anonymous-posts": "my_anonymous_posts",
       bookmarks: "bookmarks",
