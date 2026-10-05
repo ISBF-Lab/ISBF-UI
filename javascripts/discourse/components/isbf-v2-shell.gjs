@@ -33,11 +33,24 @@ export default class ISBFV2Shell extends Component {
     return (this.router.currentURL ?? "").split("?")[0];
   }
 
+  get informationPage() {
+    return (
+      this.path
+        .split("#")[0]
+        .match(
+          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/,
+        )?.[1] ?? null
+    );
+  }
+
   get pageKind() {
     const path = this.path;
 
     if (/^\/(admin|login|signup|session)(\/|$)/.test(path)) {
       return null;
+    }
+    if (this.informationPage) {
+      return "information";
     }
     if (/^\/t\//.test(path)) {
       return "topic";
@@ -59,6 +72,9 @@ export default class ISBFV2Shell extends Component {
     }
     if (/^\/u\//.test(path)) {
       return "profile";
+    }
+    if (/^\/badges(\/|$)/.test(path)) {
+      return "badges";
     }
     if (this.#isOfficialPath(path) || this.isFeedback) {
       return "feed";
@@ -165,6 +181,18 @@ export default class ISBFV2Shell extends Component {
   }
 
   get pageTitle() {
+    if (this.informationPage) {
+      return i18n(
+        this.informationPage === "about"
+          ? "about.simple_title"
+          : this.informationPage,
+      );
+    }
+
+    if (this.pageKind === "badges") {
+      return i18n("badges.title");
+    }
+
     const titles = {
       "anonymous-posts": "my_anonymous_posts",
       bookmarks: "bookmarks",
