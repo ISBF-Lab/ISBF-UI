@@ -22,3 +22,4 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-explore-ui.mjs
       - run: node --experimental-vm-modules scripts/check-reporting-ui.mjs
       - run: node --experimental-vm-modules scripts/check-sidebar-more-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-official-ui.mjs
