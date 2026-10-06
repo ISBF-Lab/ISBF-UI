@@ -44,6 +44,14 @@ const helpers = new vm.SourceTextModule(read("lib/feedback-category.js"), {
 });
 await helpers.link(() => {});
 await helpers.evaluate();
+const officialHelpers = new vm.SourceTextModule(
+  read("lib/official-filters.js"),
+  {
+    context,
+  },
+);
+await officialHelpers.link(() => {});
+await officialHelpers.evaluate();
 const { feedbackCategory, isFeedbackPath, feedbackHref, feedbackComposeHref } =
   helpers.namespace;
 const category = { id: 2, url: "/c/site-feedback/2", canCreateTopic: true };
@@ -86,9 +94,15 @@ async function loadComponent(path) {
       .replace(/@(service|action)\s+/g, ""),
     { context },
   );
-  await module.link((specifier) =>
-    specifier.endsWith("feedback-category") ? helpers : dummy,
-  );
+  await module.link((specifier) => {
+    if (specifier.endsWith("feedback-category")) {
+      return helpers;
+    }
+    if (specifier.endsWith("official-filters")) {
+      return officialHelpers;
+    }
+    return dummy;
+  });
   await module.evaluate();
   return module.namespace.default;
 }
