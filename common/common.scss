@@ -47,7 +47,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--isbf-v2-space-1);
-  width: auto;
+  width: calc(100% + 2 * var(--isbf-card-action-padding));
   margin-inline: calc(-1 * var(--isbf-card-action-padding));
 
   > * {
