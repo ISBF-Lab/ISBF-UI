@@ -189,6 +189,8 @@ export default class ISBFLearning extends Component {
     try {
       await this.composer.open({
         action: Composer.CREATE_TOPIC,
+        draftKey: this.composer.topicDraftKey,
+        draftSequence: 0,
         categoryId: this.config.category_id,
         isbf_learning_course_id: this.selectedCourseId || "",
         isbf_learning_files: "[]",
