@@ -1,7 +1,9 @@
 import Component from "@glimmer/component";
+import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import { learningConfig } from "../lib/learning-resources";
 
 const CARDS = [
   { key: "learning_resources", icon: "book-open", tone: "blue" },
@@ -15,23 +17,45 @@ const CARDS = [
 ];
 
 export default class ISBFV2Workbench extends Component {
+  @service site;
+
   get cards() {
     return CARDS.map((card) => ({
       ...card,
       label: i18n(themePrefix(`isbf_v2.workbench_${card.key}`)),
+      href:
+        card.key === "learning_resources" && learningConfig(this.site)
+          ? "/isbf/learning"
+          : null,
     }));
   }
 
   <template>
     <main class="isbf-v2-feature isbf-v2-workbench">
       <h1>{{i18n (themePrefix "isbf_v2.workbench")}}</h1>
-      <section aria-label={{i18n (themePrefix "isbf_v2.workbench")}} class="isbf-v2-workbench__panel">
+      <section
+        aria-label={{i18n (themePrefix "isbf_v2.workbench")}}
+        class="isbf-v2-workbench__panel"
+      >
         <div class="isbf-v2-workbench__grid">
           {{#each this.cards as |card|}}
-            <div class="isbf-v2-workbench__card">
-              <span aria-hidden="true" class="isbf-v2-workbench__icon isbf-v2-workbench__icon--{{card.tone}}">{{dIcon card.icon}}</span>
-              <span class="isbf-v2-workbench__name">{{card.label}}</span>
-            </div>
+            {{#if card.href}}
+              <a class="isbf-v2-workbench__card" href={{card.href}}>
+                <span
+                  aria-hidden="true"
+                  class="isbf-v2-workbench__icon isbf-v2-workbench__icon--{{card.tone}}"
+                >{{dIcon card.icon}}</span>
+                <span class="isbf-v2-workbench__name">{{card.label}}</span>
+              </a>
+            {{else}}
+              <div class="isbf-v2-workbench__card">
+                <span
+                  aria-hidden="true"
+                  class="isbf-v2-workbench__icon isbf-v2-workbench__icon--{{card.tone}}"
+                >{{dIcon card.icon}}</span>
+                <span class="isbf-v2-workbench__name">{{card.label}}</span>
+              </div>
+            {{/if}}
           {{/each}}
         </div>
       </section>

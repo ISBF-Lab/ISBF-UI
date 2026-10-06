@@ -15,6 +15,7 @@ import { notificationsEnabled } from "../lib/notification-groups";
 import { officialConfig } from "../lib/official-filters";
 import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import ISBFExplore from "./isbf-explore";
+import ISBFLearning from "./isbf-learning";
 import ISBFNotifications from "./isbf-notifications";
 import ISBFOfficialFeed from "./isbf-official-feed";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
@@ -40,7 +41,7 @@ export default class ISBFV2Shell extends Component {
       this.path
         .split("#")[0]
         .match(
-          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/
+          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/,
         )?.[1] ?? null
     );
   }
@@ -65,6 +66,9 @@ export default class ISBFV2Shell extends Component {
     }
     if (path === "/isbf/workbench") {
       return "workbench";
+    }
+    if (path === "/isbf/learning") {
+      return "learning";
     }
     if (/^\/u\/[^/]+\/notifications(\/|$)/.test(path)) {
       return "notifications";
@@ -106,8 +110,8 @@ export default class ISBFV2Shell extends Component {
   get composePrompt() {
     return i18n(
       themePrefix(
-        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt"
-      )
+        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt",
+      ),
     );
   }
 
@@ -115,7 +119,7 @@ export default class ISBFV2Shell extends Component {
     return Boolean(
       this.currentUser?.admin ||
       (this.currentUser?.moderator &&
-        this.siteSettings.moderators_manage_categories)
+        this.siteSettings.moderators_manage_categories),
     );
   }
 
@@ -143,15 +147,23 @@ export default class ISBFV2Shell extends Component {
   }
 
   get isWorkbench() {
-    return this.pageKind === "workbench";
+    return ["workbench", "learning"].includes(this.pageKind);
+  }
+
+  get isLearning() {
+    return this.pageKind === "learning";
   }
 
   get showPageHeader() {
     return (
       !this.isFeed &&
-      !["calendar", "explore", "notifications", "workbench"].includes(
-        this.pageKind
-      )
+      ![
+        "calendar",
+        "explore",
+        "learning",
+        "notifications",
+        "workbench",
+      ].includes(this.pageKind)
     );
   }
 
@@ -187,7 +199,7 @@ export default class ISBFV2Shell extends Component {
       return i18n(
         this.informationPage === "about"
           ? "about.simple_title"
-          : this.informationPage
+          : this.informationPage,
       );
     }
 
@@ -236,10 +248,10 @@ export default class ISBFV2Shell extends Component {
       this.officialConfig?.category_id ??
       Number(settings.official_path.split("/")[3]);
     const category = this.site.categories?.find(
-      (item) => item.id === categoryId
+      (item) => item.id === categoryId,
     );
     return Boolean(
-      this.currentUser?.academy_official_member && category?.canCreateTopic
+      this.currentUser?.academy_official_member && category?.canCreateTopic,
     );
   }
 
@@ -435,7 +447,8 @@ export default class ISBFV2Shell extends Component {
 
         {{#if this.isAnonymousPosts}}<ISBFV2AnonymousPosts />{{/if}}
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
-        {{#if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
+        {{#if this.isLearning}}<ISBFLearning />
+        {{else if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
 
         {{#if this.showMobileCompose}}
           <a

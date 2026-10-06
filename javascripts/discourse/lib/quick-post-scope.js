@@ -6,6 +6,10 @@ export function isQuickPost(model) {
   return (
     model?.action === "createTopic" &&
     !model.creatingEvent &&
+    !(
+      model?.site?.isbf_learning?.category_id > 0 &&
+      Number(model.categoryId) === model.site.isbf_learning.category_id
+    ) &&
     !(eventCategoryId > 0 && Number(model.categoryId) === eventCategoryId) &&
     Boolean(document.querySelector(".isbf-v2-shell"))
   );
