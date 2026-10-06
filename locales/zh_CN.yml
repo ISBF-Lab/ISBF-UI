@@ -2,6 +2,16 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    official_campus: "校区"
+    official_type: "分类"
+    official_all_campuses: "全部校区"
+    official_all_types: "全部分类"
+    official_loading: "正在加载官方信息…"
+    official_load_error: "官方信息加载失败，请重试。"
+    official_empty: "当前筛选下暂无官方信息。"
+    official_retry: "重试"
+    official_required: "请至少选择一个校区和一个类型。"
+    official_selection_hint: "官方信息须选择校区和类型，可多选。"
     sidebar_more: "更多"
     sidebar_settings: "设置"
     feedback: "反馈"

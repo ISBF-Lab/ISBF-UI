@@ -6,15 +6,17 @@ import { settings, themePrefix } from "virtual:theme";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
-import { notificationsEnabled } from "../lib/notification-groups";
-import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import {
   feedbackCategory,
   feedbackComposeHref,
   isFeedbackPath,
 } from "../lib/feedback-category";
+import { notificationsEnabled } from "../lib/notification-groups";
+import { officialConfig } from "../lib/official-filters";
+import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import ISBFExplore from "./isbf-explore";
 import ISBFNotifications from "./isbf-notifications";
+import ISBFOfficialFeed from "./isbf-official-feed";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
 import ISBFV2AnonymousPosts from "./isbf-v2-anonymous-posts";
 import ISBFV2Calendar from "./isbf-v2-calendar";
@@ -38,7 +40,7 @@ export default class ISBFV2Shell extends Component {
       this.path
         .split("#")[0]
         .match(
-          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/,
+          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/
         )?.[1] ?? null
     );
   }
@@ -104,8 +106,8 @@ export default class ISBFV2Shell extends Component {
   get composePrompt() {
     return i18n(
       themePrefix(
-        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt",
-      ),
+        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt"
+      )
     );
   }
 
@@ -113,7 +115,7 @@ export default class ISBFV2Shell extends Component {
     return Boolean(
       this.currentUser?.admin ||
       (this.currentUser?.moderator &&
-        this.siteSettings.moderators_manage_categories),
+        this.siteSettings.moderators_manage_categories)
     );
   }
 
@@ -148,7 +150,7 @@ export default class ISBFV2Shell extends Component {
     return (
       !this.isFeed &&
       !["calendar", "explore", "notifications", "workbench"].includes(
-        this.pageKind,
+        this.pageKind
       )
     );
   }
@@ -185,7 +187,7 @@ export default class ISBFV2Shell extends Component {
       return i18n(
         this.informationPage === "about"
           ? "about.simple_title"
-          : this.informationPage,
+          : this.informationPage
       );
     }
 
@@ -215,11 +217,30 @@ export default class ISBFV2Shell extends Component {
     return this.#isOfficialPath(this.path);
   }
 
+  get officialConfig() {
+    return officialConfig(this.site);
+  }
+
+  get showOfficialFeed() {
+    return this.officialActive && Boolean(this.officialConfig);
+  }
+
   get canCompose() {
     if (this.isFeedback) {
       return !this.currentUser || this.feedbackCategory.canCreateTopic;
     }
-    return !this.officialActive || Boolean(this.currentUser?.staff);
+    if (!this.officialActive) {
+      return true;
+    }
+    const categoryId =
+      this.officialConfig?.category_id ??
+      Number(settings.official_path.split("/")[3]);
+    const category = this.site.categories?.find(
+      (item) => item.id === categoryId
+    );
+    return Boolean(
+      this.currentUser?.academy_official_member && category?.canCreateTopic
+    );
   }
 
   get showMobileCompose() {
@@ -276,6 +297,10 @@ export default class ISBFV2Shell extends Component {
 
     if (this.showSectionHeading) {
       classes.push("isbf-v2-shell--section-heading");
+    }
+
+    if (this.showOfficialFeed) {
+      classes.push("isbf-v2-shell--official-filtered");
     }
 
     if (this.officialActive) {
@@ -402,6 +427,10 @@ export default class ISBFV2Shell extends Component {
         {{#if this.showCustomExplore}}<ISBFExplore
             @canCreateCategory={{this.canCreateExploreCategory}}
             @onCreateCategory={{this.createExploreCategory}}
+          />{{/if}}
+
+        {{#if this.showOfficialFeed}}<ISBFOfficialFeed
+            @config={{this.officialConfig}}
           />{{/if}}
 
         {{#if this.isAnonymousPosts}}<ISBFV2AnonymousPosts />{{/if}}

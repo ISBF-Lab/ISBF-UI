@@ -2,6 +2,16 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    official_campus: "Campus"
+    official_type: "Type"
+    official_all_campuses: "All campuses"
+    official_all_types: "All types"
+    official_loading: "Loading official posts…"
+    official_load_error: "Could not load official posts. Please retry."
+    official_empty: "No official posts match these filters."
+    official_retry: "Retry"
+    official_required: "Select at least one campus and one type."
+    official_selection_hint: "Official posts require at least one campus and one type. Multiple selections are allowed."
     sidebar_more: "More"
     sidebar_settings: "Settings"
     feedback: "Feedback"
