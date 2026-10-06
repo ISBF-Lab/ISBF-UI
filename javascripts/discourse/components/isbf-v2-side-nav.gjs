@@ -83,7 +83,9 @@ export default class ISBFV2SideNav extends Component {
   }
 
   get workbenchActive() {
-    return (this.router.currentURL ?? "").startsWith("/isbf/workbench");
+    return /^\/isbf\/(workbench|learning)(\/|\?|$)/.test(
+      this.router.currentURL ?? "",
+    );
   }
 
   get bookmarksActive() {
