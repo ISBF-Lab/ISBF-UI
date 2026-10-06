@@ -25,18 +25,30 @@ export default class ISBFLearningResource extends Component {
 
   get gradeLabel() {
     return this.args.grades.find(
-      (grade) => grade.id === this.args.resource.grade,
+      (grade) => grade.id === this.args.resource.grade
     )?.label;
   }
 
   get links() {
-    return (this.args.resource.links || [])
-      .map(learningSafeUrl)
-      .filter(Boolean);
+    return (this.args.resource.links || []).filter((value) => {
+      if (!learningSafeUrl(value) || !/^https?:\/\//i.test(value)) {
+        return false;
+      }
+      try {
+        const url = new URL(value);
+        return Boolean(url.hostname && !url.username && !url.password);
+      } catch {
+        return false;
+      }
+    });
   }
 
-  get topicUrl() {
-    return learningSafeUrl(this.args.resource.url);
+  get titleUrl() {
+    return this.links[0];
+  }
+
+  get additionalLinks() {
+    return this.args.resource.link_only ? [] : this.links;
   }
 
   <template>
@@ -52,7 +64,11 @@ export default class ISBFLearningResource extends Component {
           }}</span>
         <time datetime={{@resource.created_at}}>{{this.createdAtLabel}}</time>
       </div>
-      <h3><a href={{this.topicUrl}}>{{@resource.title}}</a></h3>
+      <h3>{{#if this.titleUrl}}<a
+            href={{this.titleUrl}}
+            rel="noopener noreferrer"
+            target="_blank"
+          >{{@resource.title}}</a>{{else}}{{@resource.title}}{{/if}}</h3>
       {{#if @searching}}<p
           class="isbf-learning-resource__context"
         >{{this.gradeLabel}} · {{@resource.course.name}}</p>{{/if}}
@@ -69,12 +85,12 @@ export default class ISBFLearningResource extends Component {
               >{{file.name}}</a><span>{{file.sizeLabel}}</span></li>{{/each}}
         </ul>
       {{/if}}
-      {{#if this.links.length}}
+      {{#if this.additionalLinks.length}}
         <ul
           aria-label={{i18n (themePrefix "isbf_v2.learning_links")}}
           class="isbf-learning-resource__attachments"
         >
-          {{#each this.links as |url|}}<li><a
+          {{#each this.additionalLinks as |url|}}<li><a
                 href={{url}}
                 rel="noopener noreferrer"
                 target="_blank"

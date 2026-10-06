@@ -257,6 +257,52 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
   gap: var(--isbf-v2-space-2);
 }
 
+.isbf-learning-share-dialog {
+  .modal-inner-container {
+    background: var(--isbf-v2-surface);
+    color: var(--isbf-v2-text);
+  }
+
+  form,
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--isbf-v2-space-2);
+  }
+
+  form {
+    gap: var(--isbf-v2-space-4);
+  }
+
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    background: var(--isbf-v2-background);
+    color: var(--isbf-v2-text);
+    border-color: var(--isbf-v2-border);
+  }
+
+  input:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--isbf-v2-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.isbf-learning-share-dialog__course {
+  color: var(--isbf-v2-muted);
+  overflow-wrap: anywhere;
+}
+
+.isbf-learning-share-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--isbf-v2-space-2);
+}
+
 .isbf-v2-workbench a.isbf-v2-workbench__card {
   color: var(--isbf-v2-text);
 
