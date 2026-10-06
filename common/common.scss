@@ -400,7 +400,8 @@ body:has(.isbf-v2-shell--no-page-header) {
 }
 
 .isbf-v2-side__links a,
-.isbf-v2-side__links .isbf-v2-side__more {
+.isbf-v2-side__links .isbf-v2-side__more,
+.isbf-v2-more-menu .isbf-v2-more-menu__item {
   display: flex;
   align-items: center;
   gap: 18px;
@@ -435,30 +436,43 @@ body:has(.isbf-v2-shell--no-page-header) {
   box-sizing: border-box;
   width: min(260px, calc(100vw - var(--isbf-v2-space-8)));
   max-height: calc(100dvh - var(--isbf-v2-space-8));
-  overflow-y: auto;
-  padding: var(--isbf-v2-space-2);
-  border: 1px solid var(--isbf-v2-border);
-  border-radius: var(--isbf-v2-radius-md);
-  background: var(--isbf-v2-surface);
-  box-shadow: var(--isbf-v2-shadow-menu);
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   color: var(--isbf-v2-text);
-  overscroll-behavior: contain;
+
+  .fk-d-menu__inner-content {
+    box-sizing: border-box;
+    width: 100%;
+    max-height: inherit;
+    overflow-y: auto;
+    padding: var(--isbf-v2-space-2);
+    border: 1px solid var(--isbf-v2-border);
+    border-radius: var(--isbf-v2-radius-md);
+    background: var(--isbf-v2-surface);
+    box-shadow: var(--isbf-v2-shadow-menu);
+    overscroll-behavior: contain;
+  }
+
+  .dropdown-menu {
+    width: 100%;
+    min-width: 0;
+    gap: 4px;
+    padding: 0;
+  }
 }
 
-.isbf-v2-more-menu__item {
-  display: flex;
-  align-items: center;
-  gap: var(--isbf-v2-space-3);
+.isbf-v2-more-menu .isbf-v2-more-menu__item {
+  justify-content: flex-start;
   box-sizing: border-box;
   width: 100%;
-  min-height: 44px;
-  padding: var(--isbf-v2-space-3);
   border: 0;
-  border-radius: var(--isbf-v2-radius-sm);
   background: transparent;
   color: var(--isbf-v2-text);
   font-family: inherit;
-  font-size: var(--isbf-v2-font-md);
+  font-weight: inherit;
   text-align: left;
   text-decoration: none;
   overflow-wrap: anywhere;
@@ -506,7 +520,8 @@ body:has(.isbf-v2-shell--no-page-header) {
   font-weight: var(--isbf-v2-weight-bold);
 }
 
-.isbf-v2-side__links .d-icon {
+.isbf-v2-side__links .d-icon,
+.isbf-v2-more-menu .isbf-v2-more-menu__item .d-icon {
   width: 26px;
   height: 26px;
   font-size: 25px;
@@ -4512,7 +4527,7 @@ body:has(.isbf-v2-shell--custom-explore) #main-outlet {
   align-items: center;
   box-sizing: border-box;
   width: var(--isbf-v2-feed-width);
-  height: 76px;
+  height: var(--isbf-v2-feedback-header-height);
   padding-inline: 26px;
   border-inline: 1px solid var(--isbf-v2-border);
   border-bottom: 1px solid var(--isbf-v2-border);
@@ -4527,17 +4542,32 @@ body:has(.isbf-v2-shell--custom-explore) #main-outlet {
   }
 }
 
-body:has(.isbf-v2-shell--feedback) {
+// Match the shared feed rule's specificity so its offset cannot overlap cards.
+body:has(.isbf-v2-shell):has(.isbf-v2-shell--feedback) {
+  --isbf-v2-feedback-header-height: 76px;
+  --isbf-v2-feedback-compose-height: 92px;
+
   #main-outlet {
-    padding-top: 168px;
+    padding-top: calc(
+      var(--isbf-v2-feedback-header-height) +
+        var(--isbf-v2-feedback-compose-height)
+    );
   }
 
   .isbf-v2-compose {
-    top: 76px;
+    top: var(--isbf-v2-feedback-header-height);
+    height: var(--isbf-v2-feedback-compose-height);
+    min-height: var(--isbf-v2-feedback-compose-height);
+    background: var(--isbf-v2-surface);
+  }
+
+  .isbf-v2-topic-list.--discovery {
+    --d-table-border-top-height: 0;
+    border-top: 0;
   }
 
   &:has(.isbf-v2-shell--no-compose) #main-outlet {
-    padding-top: 76px;
+    padding-top: var(--isbf-v2-feedback-header-height);
   }
 }
 
@@ -4545,7 +4575,6 @@ body:has(.isbf-v2-shell--feedback) {
   .isbf-v2-feedback-header {
     left: 0;
     width: 100%;
-    height: 60px;
     padding-inline: var(--isbf-v2-space-4);
     border-inline: 0;
 
@@ -4554,14 +4583,9 @@ body:has(.isbf-v2-shell--feedback) {
     }
   }
 
-  body:has(.isbf-v2-shell--feedback) {
-    #main-outlet {
-      padding-top: 60px;
-    }
-
-    &:has(.isbf-v2-shell--no-compose) #main-outlet {
-      padding-top: 60px;
-    }
+  body:has(.isbf-v2-shell):has(.isbf-v2-shell--feedback) {
+    --isbf-v2-feedback-header-height: 60px;
+    --isbf-v2-feedback-compose-height: 0px;
   }
 }
 
