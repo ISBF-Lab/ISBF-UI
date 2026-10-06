@@ -8,11 +8,11 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 const context = vm.createContext({});
 const composer = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-composer.js"),
-  { context },
+  { context }
 );
 const resources = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-resources.js"),
-  { context },
+  { context }
 );
 await composer.link(() => {});
 await resources.link(() => {});
@@ -47,7 +47,7 @@ assert.equal(learningConfig({ isbf_learning: config }), config);
 assert.equal(learningConfig({}), null);
 assert.equal(
   learningConfig({ isbf_learning: { ...config, category_id: 0 } }),
-  null,
+  null
 );
 assert.equal(isLearningComposer(model()), true);
 assert.equal(
@@ -56,9 +56,9 @@ assert.equal(
       creatingTopic: false,
       editingPost: true,
       post: { post_number: 1 },
-    }),
+    })
   ),
-  true,
+  true
 );
 for (const excluded of [
   model({ site: {} }),
@@ -75,7 +75,7 @@ for (const excluded of [
   assert.equal(
     isLearningComposer(excluded),
     false,
-    "Replies must not inherit learning metadata",
+    "Replies must not inherit learning metadata"
   );
   assert.equal(learningPayload(excluded, "isbf_learning_course_id"), undefined);
   assert.equal(learningPayload(excluded, "isbf_learning_files"), undefined);
@@ -98,7 +98,7 @@ assert.equal(fresh.isbf_anonymous, false);
 assert.equal(learningPayload(fresh, "isbf_learning_course_id"), courseId);
 assert.equal(
   learningPayload(fresh, "isbf_learning_files"),
-  JSON.stringify([fileId]),
+  JSON.stringify([fileId])
 );
 const draft = model({
   isbf_learning_course_id: courseId,
@@ -114,7 +114,7 @@ restoreLearning(draft, {
 assert.equal(
   draft.isbf_learning_course_id,
   "",
-  "Explicit empty selections must replace drafts",
+  "Explicit empty selections must replace drafts"
 );
 assert.equal(draft.isbf_learning_files, "[]");
 const edited = model({
@@ -137,7 +137,7 @@ assert.deepEqual(plain(learningFileIds([fileId, fileId, "bad", null])), [
 ]);
 const manyIds = Array.from(
   { length: 25 },
-  (_, index) => `${String(index).padStart(8, "0")}-1111-4111-8111-111111111111`,
+  (_, index) => `${String(index).padStart(8, "0")}-1111-4111-8111-111111111111`
 );
 assert.equal(learningFileIds(manyIds).length, 20);
 assert.deepEqual(plain(learningResourceQuery(courseId, " campus ", 2)), {
@@ -193,18 +193,18 @@ const getUrl = new vm.SyntheticModule(
   function () {
     this.setExport("default", (path) => `/forum${path}`);
   },
-  { context },
+  { context }
 );
 const uploadBase = new vm.SyntheticModule(
   ["UploadPreProcessorPlugin"],
   function () {
     this.setExport("UploadPreProcessorPlugin", UploadPreProcessorPlugin);
   },
-  { context },
+  { context }
 );
 const upload = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-upload.js"),
-  { context },
+  { context }
 );
 await upload.link((specifier) => {
   if (specifier === "discourse/lib/get-url") {
@@ -248,7 +248,7 @@ preprocessor.process(["native-file"]);
 assert.equal(
   uploader.opts.endpoint,
   nativeEndpoint,
-  "Leaving learning must restore native uploads",
+  "Leaving learning must restore native uploads"
 );
 uploadModel.categoryId = config.category_id;
 preprocessor.process(["second-learning-file"]);
@@ -259,7 +259,7 @@ preprocessor.process(["reply-file"]);
 assert.equal(
   uploader.opts.endpoint,
   nativeEndpoint,
-  "Reply attachments must use native transport",
+  "Reply attachments must use native transport"
 );
 uploadModel.creatingTopic = true;
 uploadModel.isbf_learning_course_id = "";
@@ -268,7 +268,7 @@ transport = null;
 uploadModel.isbf_learning_course_id = courseId;
 assert.throws(
   () => preprocessor.process(["missing-transport"]),
-  /authenticated upload transport/,
+  /authenticated upload transport/
 );
 uploadModel.categoryId = 11;
 assert.doesNotThrow(() => preprocessor.process(["native-without-xhr"]));
@@ -276,7 +276,7 @@ preprocessor.uninstall();
 assert.equal(preprocessor.installed, null);
 
 const initializer = read(
-  "javascripts/discourse/api-initializers/isbf-learning.gjs",
+  "javascripts/discourse/api-initializers/isbf-learning.gjs"
 );
 for (const hook of [
   "serializeOnCreate",
@@ -286,9 +286,220 @@ for (const hook of [
 ]) {
   assert.ok(
     initializer.includes(hook),
-    `Learning initializer must register ${hook}`,
+    `Learning initializer must register ${hook}`
   );
 }
+function componentClass(path, globals = {}) {
+  const source = read(`javascripts/discourse/components/${path}.gjs`);
+  const className = source.match(/export default class (\w+)/)[1];
+  const body = source
+    .slice(
+      source.indexOf("export default class"),
+      source.indexOf("  <template>")
+    )
+    .replace("export default class", "class")
+    .replace(/@service (\w+);/g, "$1;")
+    .replace(/@tracked /g, "")
+    .replace(/  @action\r?\n/g, "");
+  return vm.runInNewContext(`${body}}\n${className}`, {
+    Component: class {
+      constructor(args = {}) {
+        this.args = args;
+      }
+      willDestroy() {}
+    },
+    URL,
+    Intl,
+    themePrefix: (key) => key,
+    i18n: (key) => key,
+    ...globals,
+  });
+}
+
+let completeSubmission;
+let rejectSubmission;
+let submissions = [];
+const ShareDialog = componentClass("isbf-learning-share-dialog", {
+  ajax: (url, options) => {
+    submissions.push({ url, ...options });
+    return new Promise((resolve, reject) => {
+      completeSubmission = resolve;
+      rejectSubmission = reject;
+    });
+  },
+});
+const submitted = [];
+let closed = 0;
+const makeDialog = () => {
+  const dialog = new ShareDialog({
+    course: { id: courseId, name: "Economics" },
+    onClose: () => closed++,
+    onSubmitted: (response) => submitted.push(response),
+  });
+  dialog.siteSettings = {
+    min_topic_title_length: 5,
+    max_topic_title_length: 80,
+  };
+  dialog.title = " Resource title ";
+  dialog.link = " https://example.edu/resource ";
+  return dialog;
+};
+const form = makeDialog();
+for (const link of [
+  "javascript:alert(1)",
+  "/t/resource/1",
+  "https://user:password@example.edu/",
+  "https://",
+  "https://example.edu/a b",
+  "https://example.edu/\\file",
+  `https://example.edu/${"a".repeat(2048)}`,
+]) {
+  form.link = link;
+  assert.equal(form.saveDisabled, true, `Invalid form URL accepted: ${link}`);
+}
+form.link = " https://example.edu/resource ";
+form.title = "tiny";
+assert.equal(form.saveDisabled, true);
+form.title = "a".repeat(81);
+assert.equal(form.saveDisabled, true);
+form.title = " Resource title ";
+assert.equal(form.saveDisabled, false);
+const submitEvent = { preventDefault() {} };
+let saving = form.save(submitEvent);
+await form.save(submitEvent);
+assert.equal(
+  submissions.length,
+  1,
+  "Repeated submit must not send a second POST"
+);
+assert.deepEqual(plain(submissions[0]), {
+  url: "/isbf/learning/resources",
+  type: "POST",
+  data: {
+    course_id: courseId,
+    title: "Resource title",
+    link: "https://example.edu/resource",
+  },
+});
+rejectSubmission({ jqXHR: { responseJSON: { errors: ["Please retry"] } } });
+await saving;
+assert.equal(form.error, "Please retry");
+assert.equal(form.saving, false);
+saving = form.save(submitEvent);
+completeSubmission({ success: true });
+await saving;
+assert.equal(form.saving, false);
+assert.equal(submitted.length, 0, "Malformed success must allow a retry");
+saving = form.save(submitEvent);
+completeSubmission({ success: true, pending: true });
+await saving;
+assert.deepEqual(plain(submitted), [{ success: true, pending: true }]);
+const dismissed = makeDialog();
+saving = dismissed.save(submitEvent);
+dismissed.close();
+completeSubmission({ success: true, pending: false });
+await saving;
+assert.equal(closed, 1);
+assert.equal(submitted.length, 1, "Closed form must ignore late success");
+const destroyed = makeDialog();
+saving = destroyed.save(submitEvent);
+destroyed.willDestroy();
+rejectSubmission(new Error("Late failure"));
+await saving;
+assert.equal(destroyed.error, null, "Destroyed form must ignore late errors");
+
+const ResourceCard = componentClass("isbf-learning-resource", {
+  learningSafeUrl,
+  learningFileSize: resources.namespace.learningFileSize,
+});
+const card = new ResourceCard({
+  resource: {
+    url: "/t/native-topic/1",
+    links: [
+      "/local",
+      "https://user@example.edu",
+      "https://example.edu/resource",
+    ],
+    files: [
+      { url: "/isbf/learning/files/token", name: "Legacy PDF", size: 1024 },
+    ],
+  },
+});
+assert.equal(card.titleUrl, "https://example.edu/resource");
+assert.equal(card.additionalLinks.length, 1);
+card.args.resource.link_only = true;
+assert.equal(
+  card.additionalLinks.length,
+  0,
+  "New cards must not repeat their title link"
+);
+assert.equal(card.files.length, 1, "Legacy attachments must remain accessible");
+card.args.resource.links = [];
+assert.equal(
+  card.titleUrl,
+  undefined,
+  "File-only cards must not navigate to a topic"
+);
+const shareTemplate = read(
+  "javascripts/discourse/components/isbf-learning-share-dialog.gjs"
+).split("  <template>")[1];
+assert.equal((shareTemplate.match(/<input\b/g) || []).length, 2);
+assert.ok(shareTemplate.includes("<DModal"));
+assert.ok(!/textarea|Composer|Upload|TagChooser/.test(shareTemplate));
+const learningPage = read("javascripts/discourse/components/isbf-learning.gjs");
+assert.ok(
+  !learningPage.includes("Composer") && !learningPage.includes("this.composer")
+);
+
+const listRequests = [];
+const LearningPage = componentClass("isbf-learning", {
+  learningConfig,
+  learningResourceQuery,
+  clearTimeout,
+  setTimeout,
+  document: { activeElement: { focus() {} } },
+  ajax: (url, options) => {
+    listRequests.push({ url, options });
+    return Promise.resolve({ resources: [] });
+  },
+});
+const page = new LearningPage();
+page.site = { isbf_learning: { ...config, link_sharing: true } };
+page.courses = [{ id: courseId, grade: 1, name: "Economics" }];
+page.selectedCourseId = courseId;
+page.share();
+page.resourceSubmitted({ success: true, pending: true });
+assert.equal(page.sharePending, true);
+assert.equal(
+  listRequests.length,
+  0,
+  "Pending resources must not refresh the list"
+);
+page.share();
+page.query = "changed search";
+page.resourceSubmitted({ success: true, pending: false });
+assert.equal(listRequests.length, 0, "Changed search must not be overwritten");
+page.share();
+page.selectedCourseId = "other-course";
+page.resourceSubmitted({ success: true, pending: false });
+assert.equal(listRequests.length, 0, "Changed course must not be overwritten");
+page.selectedCourseId = courseId;
+page.query = "";
+page.share();
+page.resourceSubmitted({ success: true, pending: false });
+assert.equal(
+  listRequests.length,
+  1,
+  "Published resources should refresh the matching list"
+);
+await Promise.resolve();
+page.site.isbf_learning.link_sharing = false;
+page.share();
+assert.equal(
+  page.shareContext,
+  null,
+  "Old backend must not open unsupported sharing"
+);
 console.log(
-  "Learning composer scope, draft/edit hydration, payloads, safe URLs, all-library search and private upload transport OK",
+  "Link-only sharing, duplicate submit, retry and late response guards, safe card title links, legacy composer/upload helpers and all-library search OK"
 );

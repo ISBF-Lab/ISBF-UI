@@ -6,7 +6,6 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
-import Composer from "discourse/models/composer";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
@@ -17,10 +16,10 @@ import {
 import ISBFLearningCourseDialog from "./isbf-learning-course-dialog";
 import ISBFLearningGradePicker from "./isbf-learning-grade-picker";
 import ISBFLearningResource from "./isbf-learning-resource";
+import ISBFLearningShareDialog from "./isbf-learning-share-dialog";
 
 export default class ISBFLearning extends Component {
   @service appEvents;
-  @service composer;
   @service currentUser;
   @service site;
 
@@ -35,13 +34,15 @@ export default class ISBFLearning extends Component {
   @tracked resourcesError = false;
   @tracked resourcesLoading = false;
   @tracked hasMore = false;
-  @tracked shareError = false;
+  @tracked shareContext = null;
+  @tracked sharePending = false;
 
   #coursesRequest = 0;
   #courseTrigger;
   #page = 0;
   #resourcesRequest = 0;
   #searchTimer;
+  #shareTrigger;
 
   constructor() {
     super(...arguments);
@@ -76,6 +77,10 @@ export default class ISBFLearning extends Component {
 
   get selectedCourse() {
     return this.courses.find((course) => course.id === this.selectedCourseId);
+  }
+
+  get shareDisabled() {
+    return !this.selectedCourse || this.config?.link_sharing !== true;
   }
 
   get searching() {
@@ -184,21 +189,41 @@ export default class ISBFLearning extends Component {
   }
 
   @action
-  async share() {
-    this.shareError = false;
-    try {
-      await this.composer.open({
-        action: Composer.CREATE_TOPIC,
-        draftKey: this.composer.topicDraftKey,
-        draftSequence: 0,
-        categoryId: this.config.category_id,
-        isbf_learning_course_id: this.selectedCourseId || "",
-        isbf_learning_files: "[]",
-      });
-    } catch {
-      if (!this.isDestroying && !this.isDestroyed) {
-        this.shareError = true;
-      }
+  share() {
+    if (this.shareDisabled || this.shareContext) {
+      return;
+    }
+    this.#shareTrigger = document.activeElement;
+    this.sharePending = false;
+    this.shareContext = {
+      course: this.selectedCourse,
+      query: this.query.trim(),
+      coursesRequest: this.#coursesRequest,
+    };
+  }
+
+  @action
+  closeShareDialog() {
+    this.shareContext = null;
+    this.#shareTrigger?.focus();
+  }
+
+  @action
+  resourceSubmitted(response) {
+    if (this.isDestroying || this.isDestroyed || !this.shareContext) {
+      return;
+    }
+    const context = this.shareContext;
+    this.closeShareDialog();
+    this.sharePending = response.pending === true;
+    if (
+      !this.sharePending &&
+      context.course.id === this.selectedCourseId &&
+      context.query === this.query.trim() &&
+      context.coursesRequest === this.#coursesRequest
+    ) {
+      clearTimeout(this.#searchTimer);
+      this.#loadResources();
     }
   }
 
@@ -279,6 +304,11 @@ export default class ISBFLearning extends Component {
             (themePrefix "isbf_v2.learning_unavailable")
           }}</p>
       {{else if this.currentUser}}
+        {{#if this.shareContext}}<ISBFLearningShareDialog
+            @course={{this.shareContext.course}}
+            @onClose={{this.closeShareDialog}}
+            @onSubmitted={{this.resourceSubmitted}}
+          />{{/if}}
         {{#if this.showCourseDialog}}<ISBFLearningCourseDialog
             @grade={{this.grade}}
             @grades={{this.config.grades}}
@@ -347,13 +377,22 @@ export default class ISBFLearning extends Component {
               <DButton
                 class="btn-primary isbf-learning__share"
                 @action={{this.share}}
+                @disabled={{this.shareDisabled}}
                 @translatedLabel={{i18n (themePrefix "isbf_v2.learning_share")}}
               />
             </div>
-            {{#if this.shareError}}<p
+            {{#unless this.config.link_sharing}}<p
                 class="isbf-learning__notice"
-                role="alert"
-              >{{i18n (themePrefix "isbf_v2.action_failed")}}</p>{{/if}}
+                role="status"
+              >{{i18n
+                  (themePrefix "isbf_v2.learning_share_unavailable")
+                }}</p>{{/unless}}
+            {{#if this.sharePending}}<p
+                class="isbf-learning__notice"
+                role="status"
+              >{{i18n
+                  (themePrefix "isbf_v2.learning_share_pending")
+                }}</p>{{/if}}
             {{#if this.searching}}<p class="isbf-learning__hint">{{i18n
                   (themePrefix "isbf_v2.learning_search_hint")
                 }}</p>{{/if}}
