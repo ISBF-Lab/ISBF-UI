@@ -79,7 +79,7 @@ export default class ISBFLearningCourseDialog extends Component {
         <label>
           <span>{{i18n (themePrefix "isbf_v2.learning_course_name")}}</span>
           <input
-            maxlength="120"
+            maxlength="80"
             required
             type="text"
             value={{this.name}}
