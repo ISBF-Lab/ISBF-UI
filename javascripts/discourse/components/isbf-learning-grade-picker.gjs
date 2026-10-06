@@ -14,6 +14,16 @@ export default class ISBFLearningGradePicker extends Component {
   }
 
   @action
+  configureMenu(menu) {
+    menu.options = {
+      ...menu.options,
+      constrainHeightToViewport: true,
+      crossAxisShift: false,
+      strategy: "fixed",
+    };
+  }
+
+  @action
   async select(menu, id) {
     this.args.onChange(id);
     await menu.close();
@@ -25,8 +35,12 @@ export default class ISBFLearningGradePicker extends Component {
       @contentClass="isbf-learning-grade-menu"
       @icon="chevron-down"
       @label={{this.label}}
+      @matchTriggerMinWidth={{true}}
+      @modalForMobile={{false}}
+      @onRegisterApi={{this.configureMenu}}
       @placement="bottom-start"
       @triggerClass="btn-flat isbf-learning__grade"
+      @visibilityOptimizer="none"
     >
       <:content as |menu|>
         <DDropdownMenu as |dropdown|>

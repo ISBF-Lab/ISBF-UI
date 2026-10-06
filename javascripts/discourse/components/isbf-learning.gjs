@@ -6,6 +6,7 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
+import { not } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
@@ -275,8 +276,10 @@ export default class ISBFLearning extends Component {
           aria-label={{i18n (themePrefix "isbf_v2.learning_back")}}
           class="isbf-learning__back"
           href="/isbf/workbench"
-        >{{dIcon "arrow-left"}}</a>
-        <h1>{{i18n (themePrefix "isbf_v2.workbench_learning_resources")}}</h1>
+        >
+          {{dIcon "arrow-left"}}
+          <h1>{{i18n (themePrefix "isbf_v2.workbench_learning_resources")}}</h1>
+        </a>
         {{#if this.currentUser}}
           {{#if this.config}}
             <div class="isbf-learning__search">
@@ -299,7 +302,7 @@ export default class ISBFLearning extends Component {
           {{/if}}
         {{/if}}
       </header>
-      {{#unless this.config}}
+      {{#if (not this.config)}}
         <p class="isbf-learning__notice">{{i18n
             (themePrefix "isbf_v2.learning_unavailable")
           }}</p>
@@ -433,7 +436,7 @@ export default class ISBFLearning extends Component {
             @translatedLabel={{i18n "log_in"}}
           />
         </div>
-      {{/unless}}
+      {{/if}}
     </main>
   </template>
 }
