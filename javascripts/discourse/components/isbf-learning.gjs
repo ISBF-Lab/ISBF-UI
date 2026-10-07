@@ -24,6 +24,7 @@ export default class ISBFLearning extends Component {
   @service currentUser;
   @service site;
 
+  @tracked coursePending = false;
   @tracked courses = [];
   @tracked coursesError = false;
   @tracked coursesLoading = false;
@@ -65,6 +66,23 @@ export default class ISBFLearning extends Component {
 
   get canManageCourses() {
     return Boolean(this.currentUser?.admin || this.currentUser?.moderator);
+  }
+
+  get canSubmitCourses() {
+    return Boolean(
+      this.currentUser &&
+      (this.canManageCourses || this.config?.course_requests === true),
+    );
+  }
+
+  get courseActionLabel() {
+    return i18n(
+      themePrefix(
+        this.canManageCourses
+          ? "isbf_v2.learning_add_course"
+          : "isbf_v2.learning_request_course",
+      ),
+    );
   }
 
   get courseItems() {
@@ -172,6 +190,10 @@ export default class ISBFLearning extends Component {
 
   @action
   openCourseDialog() {
+    if (!this.canSubmitCourses || this.showCourseDialog) {
+      return;
+    }
+    this.coursePending = false;
     this.#courseTrigger = document.activeElement;
     this.showCourseDialog = true;
   }
@@ -183,10 +205,16 @@ export default class ISBFLearning extends Component {
   }
 
   @action
-  courseCreated(grade) {
+  courseSubmitted(response, grade) {
+    if (this.isDestroying || !this.showCourseDialog) {
+      return;
+    }
     this.closeCourseDialog();
-    this.grade = grade;
-    this.loadCourses();
+    this.coursePending = response.pending === true;
+    if (!this.coursePending) {
+      this.grade = grade;
+      this.loadCourses();
+    }
   }
 
   @action
@@ -211,6 +239,8 @@ export default class ISBFLearning extends Component {
 
   @action
   resourceSubmitted(response) {
+    // Preserve both flags for this existing late submission callback guard.
+    // eslint-disable-next-line discourse/no-redundant-destroyed-check
     if (this.isDestroying || this.isDestroyed || !this.shareContext) {
       return;
     }
@@ -316,7 +346,8 @@ export default class ISBFLearning extends Component {
             @grade={{this.grade}}
             @grades={{this.config.grades}}
             @onClose={{this.closeCourseDialog}}
-            @onCreated={{this.courseCreated}}
+            @onSubmitted={{this.courseSubmitted}}
+            @request={{not this.canManageCourses}}
           />{{/if}}
         <div class="isbf-learning__body">
           <aside
@@ -361,14 +392,18 @@ export default class ISBFLearning extends Component {
                 {{/each}}
               </nav>
             {{/if}}
-            {{#if this.canManageCourses}}<DButton
+            {{#if this.canSubmitCourses}}<DButton
                 class="btn-flat isbf-learning__add-course"
                 @action={{this.openCourseDialog}}
                 @icon="plus"
-                @translatedLabel={{i18n
-                  (themePrefix "isbf_v2.learning_add_course")
-                }}
+                @translatedLabel={{this.courseActionLabel}}
               />{{/if}}
+            {{#if this.coursePending}}<p
+                class="isbf-learning__notice"
+                role="status"
+              >{{i18n
+                  (themePrefix "isbf_v2.learning_course_pending")
+                }}</p>{{/if}}
           </aside>
           <section
             aria-busy={{this.resourcesLoading}}

@@ -1,5 +1,6 @@
 import { apiInitializer } from "discourse/lib/api";
 import Composer from "discourse/models/composer";
+import ISBFLearningComposer from "../components/isbf-learning-composer";
 import {
   isLearningComposer,
   LEARNING_FIELDS,
@@ -8,9 +9,14 @@ import {
   restoreLearning,
 } from "../lib/learning-composer";
 import LearningUpload from "../lib/learning-upload";
-import ISBFLearningComposer from "../components/isbf-learning-composer";
 
 export default apiInitializer((api) => {
+  api.registerReviewableComponent(
+    "ReviewableIsbfLearningCourse",
+    async () =>
+      (await import("../components/reviewable-isbf-learning-course")).default,
+  );
+
   for (const [index, field] of LEARNING_FIELDS.entries()) {
     const property = index
       ? "isbfLearningFilesPayload"

@@ -8,11 +8,11 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 const context = vm.createContext({});
 const composer = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-composer.js"),
-  { context }
+  { context },
 );
 const resources = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-resources.js"),
-  { context }
+  { context },
 );
 await composer.link(() => {});
 await resources.link(() => {});
@@ -47,7 +47,7 @@ assert.equal(learningConfig({ isbf_learning: config }), config);
 assert.equal(learningConfig({}), null);
 assert.equal(
   learningConfig({ isbf_learning: { ...config, category_id: 0 } }),
-  null
+  null,
 );
 assert.equal(isLearningComposer(model()), true);
 assert.equal(
@@ -56,9 +56,9 @@ assert.equal(
       creatingTopic: false,
       editingPost: true,
       post: { post_number: 1 },
-    })
+    }),
   ),
-  true
+  true,
 );
 for (const excluded of [
   model({ site: {} }),
@@ -75,7 +75,7 @@ for (const excluded of [
   assert.equal(
     isLearningComposer(excluded),
     false,
-    "Replies must not inherit learning metadata"
+    "Replies must not inherit learning metadata",
   );
   assert.equal(learningPayload(excluded, "isbf_learning_course_id"), undefined);
   assert.equal(learningPayload(excluded, "isbf_learning_files"), undefined);
@@ -98,7 +98,7 @@ assert.equal(fresh.isbf_anonymous, false);
 assert.equal(learningPayload(fresh, "isbf_learning_course_id"), courseId);
 assert.equal(
   learningPayload(fresh, "isbf_learning_files"),
-  JSON.stringify([fileId])
+  JSON.stringify([fileId]),
 );
 const draft = model({
   isbf_learning_course_id: courseId,
@@ -114,7 +114,7 @@ restoreLearning(draft, {
 assert.equal(
   draft.isbf_learning_course_id,
   "",
-  "Explicit empty selections must replace drafts"
+  "Explicit empty selections must replace drafts",
 );
 assert.equal(draft.isbf_learning_files, "[]");
 const edited = model({
@@ -137,7 +137,7 @@ assert.deepEqual(plain(learningFileIds([fileId, fileId, "bad", null])), [
 ]);
 const manyIds = Array.from(
   { length: 25 },
-  (_, index) => `${String(index).padStart(8, "0")}-1111-4111-8111-111111111111`
+  (_, index) => `${String(index).padStart(8, "0")}-1111-4111-8111-111111111111`,
 );
 assert.equal(learningFileIds(manyIds).length, 20);
 assert.deepEqual(plain(learningResourceQuery(courseId, " campus ", 2)), {
@@ -193,18 +193,18 @@ const getUrl = new vm.SyntheticModule(
   function () {
     this.setExport("default", (path) => `/forum${path}`);
   },
-  { context }
+  { context },
 );
 const uploadBase = new vm.SyntheticModule(
   ["UploadPreProcessorPlugin"],
   function () {
     this.setExport("UploadPreProcessorPlugin", UploadPreProcessorPlugin);
   },
-  { context }
+  { context },
 );
 const upload = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-upload.js"),
-  { context }
+  { context },
 );
 await upload.link((specifier) => {
   if (specifier === "discourse/lib/get-url") {
@@ -248,7 +248,7 @@ preprocessor.process(["native-file"]);
 assert.equal(
   uploader.opts.endpoint,
   nativeEndpoint,
-  "Leaving learning must restore native uploads"
+  "Leaving learning must restore native uploads",
 );
 uploadModel.categoryId = config.category_id;
 preprocessor.process(["second-learning-file"]);
@@ -259,7 +259,7 @@ preprocessor.process(["reply-file"]);
 assert.equal(
   uploader.opts.endpoint,
   nativeEndpoint,
-  "Reply attachments must use native transport"
+  "Reply attachments must use native transport",
 );
 uploadModel.creatingTopic = true;
 uploadModel.isbf_learning_course_id = "";
@@ -268,7 +268,7 @@ transport = null;
 uploadModel.isbf_learning_course_id = courseId;
 assert.throws(
   () => preprocessor.process(["missing-transport"]),
-  /authenticated upload transport/
+  /authenticated upload transport/,
 );
 uploadModel.categoryId = 11;
 assert.doesNotThrow(() => preprocessor.process(["native-without-xhr"]));
@@ -276,7 +276,7 @@ preprocessor.uninstall();
 assert.equal(preprocessor.installed, null);
 
 const initializer = read(
-  "javascripts/discourse/api-initializers/isbf-learning.gjs"
+  "javascripts/discourse/api-initializers/isbf-learning.gjs",
 );
 for (const hook of [
   "serializeOnCreate",
@@ -286,7 +286,7 @@ for (const hook of [
 ]) {
   assert.ok(
     initializer.includes(hook),
-    `Learning initializer must register ${hook}`
+    `Learning initializer must register ${hook}`,
   );
 }
 function componentClass(path, globals = {}) {
@@ -295,7 +295,7 @@ function componentClass(path, globals = {}) {
   const body = source
     .slice(
       source.indexOf("export default class"),
-      source.indexOf("  <template>")
+      source.indexOf("  <template>"),
     )
     .replace("export default class", "class")
     .replace(/@service (\w+);/g, "$1;")
@@ -336,10 +336,12 @@ const makeDialog = () => {
     onClose: () => closed++,
     onSubmitted: (response) => submitted.push(response),
   });
+  dialog.site = { isbf_learning: { resource_description: true } };
   dialog.siteSettings = {
     min_topic_title_length: 5,
     max_topic_title_length: 80,
   };
+  dialog.description = "Useful notes\nSecond line";
   dialog.title = " Resource title ";
   dialog.link = " https://example.edu/resource ";
   return dialog;
@@ -364,13 +366,29 @@ form.title = "a".repeat(81);
 assert.equal(form.saveDisabled, true);
 form.title = " Resource title ";
 assert.equal(form.saveDisabled, false);
+form.description = "😀".repeat(300);
+assert.equal(form.saveDisabled, false, "300 Unicode code points are allowed");
+form.description += "😀";
+assert.equal(
+  form.saveDisabled,
+  true,
+  "301 Unicode code points exceed the limit",
+);
+form.site.isbf_learning.resource_description = false;
+assert.equal(
+  form.saveDisabled,
+  false,
+  "Old backend does not validate hidden fields",
+);
+form.site.isbf_learning.resource_description = true;
+form.description = "Useful notes\nSecond line";
 const submitEvent = { preventDefault() {} };
 let saving = form.save(submitEvent);
 await form.save(submitEvent);
 assert.equal(
   submissions.length,
   1,
-  "Repeated submit must not send a second POST"
+  "Repeated submit must not send a second POST",
 );
 assert.deepEqual(plain(submissions[0]), {
   url: "/isbf/learning/resources",
@@ -379,12 +397,16 @@ assert.deepEqual(plain(submissions[0]), {
     course_id: courseId,
     title: "Resource title",
     link: "https://example.edu/resource",
+    description: "Useful notes\nSecond line",
   },
 });
 rejectSubmission({ jqXHR: { responseJSON: { errors: ["Please retry"] } } });
 await saving;
 assert.equal(form.error, "Please retry");
 assert.equal(form.saving, false);
+assert.equal(form.title, " Resource title ");
+assert.equal(form.link, " https://example.edu/resource ");
+assert.equal(form.description, "Useful notes\nSecond line");
 saving = form.save(submitEvent);
 completeSubmission({ success: true });
 await saving;
@@ -431,24 +453,146 @@ card.args.resource.link_only = true;
 assert.equal(
   card.additionalLinks.length,
   0,
-  "New cards must not repeat their title link"
+  "New cards must not repeat their title link",
 );
 assert.equal(card.files.length, 1, "Legacy attachments must remain accessible");
 card.args.resource.links = [];
 assert.equal(
   card.titleUrl,
   undefined,
-  "File-only cards must not navigate to a topic"
+  "File-only cards must not navigate to a topic",
 );
 const shareTemplate = read(
-  "javascripts/discourse/components/isbf-learning-share-dialog.gjs"
+  "javascripts/discourse/components/isbf-learning-share-dialog.gjs",
 ).split("  <template>")[1];
 assert.equal((shareTemplate.match(/<input\b/g) || []).length, 2);
 assert.ok(shareTemplate.includes("<DModal"));
-assert.ok(!/textarea|Composer|Upload|TagChooser/.test(shareTemplate));
+assert.ok(!/Composer|Upload|TagChooser/.test(shareTemplate));
+assert.ok(shareTemplate.includes("{{#if this.descriptionEnabled}}"));
+assert.equal((shareTemplate.match(/<textarea\b/g) || []).length, 1);
+assert.ok(
+  !shareTemplate.includes('maxlength="300"'),
+  "UTF-16 maxlength would reject valid emoji",
+);
+const oldBackend = makeDialog();
+oldBackend.site.isbf_learning.resource_description = false;
+saving = oldBackend.save(submitEvent);
+assert.ok(!("description" in submissions.at(-1).data));
+completeSubmission({ success: true, pending: true });
+await saving;
+
+const courseSubmissions = [];
+const courseResults = [];
+let finishCourse;
+let failCourse;
+const CourseDialog = componentClass("isbf-learning-course-dialog", {
+  ajax: (url, options) => {
+    courseSubmissions.push({ url, ...options });
+    return new Promise((resolve, reject) => {
+      finishCourse = resolve;
+      failCourse = reject;
+    });
+  },
+});
+const makeCourseDialog = (request = true) => {
+  const dialog = new CourseDialog({
+    grade: 1,
+    request,
+    onClose() {},
+    onSubmitted: (response, grade) => courseResults.push({ response, grade }),
+  });
+  dialog.name = " Economics ";
+  return dialog;
+};
+const requestForm = makeCourseDialog();
+assert.equal(requestForm.title, "isbf_v2.learning_request_course");
+assert.equal(requestForm.submitLabel, "isbf_v2.learning_submit_request");
+const staffForm = makeCourseDialog(false);
+assert.equal(staffForm.title, "isbf_v2.learning_add_course");
+assert.equal(staffForm.submitLabel, "isbf_v2.learning_save");
+saving = requestForm.save(submitEvent);
+await requestForm.save(submitEvent);
+requestForm.changeGrade(2);
+assert.equal(requestForm.grade, 1, "Saving must retain submitted grade");
+assert.equal(
+  courseSubmissions.length,
+  1,
+  "Duplicate course submits send one POST",
+);
+assert.deepEqual(plain(courseSubmissions[0]), {
+  url: "/isbf/learning/courses",
+  type: "POST",
+  data: { name: "Economics", grade: 1 },
+});
+failCourse({ jqXHR: { responseJSON: { errors: ["Duplicate course"] } } });
+await saving;
+assert.equal(requestForm.error, "Duplicate course");
+assert.equal(requestForm.name, " Economics ");
+assert.equal(requestForm.grade, 1);
+assert.equal(requestForm.saving, false);
+saving = requestForm.save(submitEvent);
+finishCourse({ success: true, pending: true });
+await saving;
+assert.equal(courseResults.length, 0, "Malformed course response allows retry");
+saving = requestForm.save(submitEvent);
+finishCourse({ success: true, pending: true, reviewable_id: 7 });
+await saving;
+assert.deepEqual(plain(courseResults[0]), {
+  response: { success: true, pending: true, reviewable_id: 7 },
+  grade: 1,
+});
+saving = staffForm.save(submitEvent);
+finishCourse({ success: true, pending: false, course: { id: courseId } });
+await saving;
+assert.equal(courseResults.length, 2);
+const abandonedCourse = makeCourseDialog();
+saving = abandonedCourse.save(submitEvent);
+abandonedCourse.willDestroy();
+finishCourse({ success: true, pending: true, reviewable_id: 8 });
+await saving;
+assert.equal(
+  courseResults.length,
+  2,
+  "Destroyed dialog ignores late course success",
+);
+const failedDestroyedCourse = makeCourseDialog();
+saving = failedDestroyedCourse.save(submitEvent);
+failedDestroyedCourse.willDestroy();
+failCourse(new Error("Late failure"));
+await saving;
+assert.equal(failedDestroyedCourse.error, null);
+const closedCourse = makeCourseDialog();
+closedCourse.close();
+await closedCourse.save(submitEvent);
+assert.equal(courseSubmissions.length, 6, "Closed dialog ignores later submit");
+const legacyStaffForm = makeCourseDialog(false);
+saving = legacyStaffForm.save(submitEvent);
+finishCourse({ course: { id: courseId } });
+await saving;
+assert.deepEqual(
+  plain(courseResults.at(-1).response),
+  {
+    course: { id: courseId },
+    success: true,
+    pending: false,
+  },
+  "Staff may create courses against the previous backend",
+);
+const strictRequestForm = makeCourseDialog();
+const resultsBeforeInvalidRequest = courseResults.length;
+saving = strictRequestForm.save(submitEvent);
+finishCourse({ course: { id: courseId } });
+await saving;
+assert.equal(
+  courseResults.length,
+  resultsBeforeInvalidRequest,
+  "Ordinary course requests must require the review response contract",
+);
+assert.equal(strictRequestForm.saving, false);
+assert.equal(strictRequestForm.name, " Economics ");
 const learningPage = read("javascripts/discourse/components/isbf-learning.gjs");
 assert.ok(
-  !learningPage.includes("Composer") && !learningPage.includes("this.composer")
+  !learningPage.includes("Composer") && !learningPage.includes("this.composer"),
 );
 
 const listRequests = [];
@@ -464,7 +608,43 @@ const LearningPage = componentClass("isbf-learning", {
   },
 });
 const page = new LearningPage();
+assert.equal(page.canSubmitCourses, false, "Guests cannot request courses");
 page.site = { isbf_learning: { ...config, link_sharing: true } };
+page.currentUser = {};
+assert.equal(
+  page.canSubmitCourses,
+  false,
+  "Old backends retain staff course creation",
+);
+page.site.isbf_learning.course_requests = true;
+assert.equal(page.canSubmitCourses, true);
+assert.equal(page.courseActionLabel, "isbf_v2.learning_request_course");
+page.courses = [{ id: courseId, grade: 1, name: "Economics" }];
+page.openCourseDialog();
+page.courseSubmitted({ success: true, pending: true }, 2);
+assert.equal(page.coursePending, true);
+assert.equal(page.grade, 1);
+assert.equal(
+  page.courses.length,
+  1,
+  "Pending requests create no phantom courses",
+);
+assert.equal(
+  listRequests.length,
+  0,
+  "Pending requests do not reload the directory",
+);
+page.currentUser = { moderator: true };
+page.site.isbf_learning.course_requests = false;
+assert.equal(page.canSubmitCourses, true);
+assert.equal(page.courseActionLabel, "isbf_v2.learning_add_course");
+page.openCourseDialog();
+page.courseSubmitted({ success: true, pending: false }, 1);
+assert.equal(page.coursePending, false);
+assert.equal(listRequests[0].url, "/isbf/learning/courses");
+await Promise.resolve();
+await Promise.resolve();
+listRequests.length = 0;
 page.courses = [{ id: courseId, grade: 1, name: "Economics" }];
 page.selectedCourseId = courseId;
 page.share();
@@ -473,7 +653,7 @@ assert.equal(page.sharePending, true);
 assert.equal(
   listRequests.length,
   0,
-  "Pending resources must not refresh the list"
+  "Pending resources must not refresh the list",
 );
 page.share();
 page.query = "changed search";
@@ -490,16 +670,65 @@ page.resourceSubmitted({ success: true, pending: false });
 assert.equal(
   listRequests.length,
   1,
-  "Published resources should refresh the matching list"
+  "Published resources should refresh the matching list",
 );
 await Promise.resolve();
+page.share();
+const contextBeforeDestroyedResponse = page.shareContext;
+page.isDestroyed = true;
+page.resourceSubmitted({ success: true, pending: false });
+assert.equal(page.shareContext, contextBeforeDestroyedResponse);
+assert.equal(
+  listRequests.length,
+  1,
+  "Destroyed page must ignore late resource responses",
+);
+page.isDestroyed = false;
+page.closeShareDialog();
 page.site.isbf_learning.link_sharing = false;
 page.share();
 assert.equal(
   page.shareContext,
   null,
-  "Old backend must not open unsupported sharing"
+  "Old backend must not open unsupported sharing",
+);
+const gradePicker = read(
+  "javascripts/discourse/components/isbf-learning-grade-picker.gjs",
+);
+assert.ok(gradePicker.includes('@placement="bottom-start"'));
+assert.ok(gradePicker.includes('@visibilityOptimizer="none"'));
+assert.ok(gradePicker.includes('strategy: "fixed"'));
+const learningStyles = read("stylesheets/learning-resources.scss");
+assert.match(
+  learningStyles,
+  /\.isbf-learning__grade\s*\{[\s\S]*?justify-content: flex-start;[\s\S]*?order: -1;/,
+);
+assert.match(
+  learningStyles,
+  /\.isbf-learning-resource__description\s*\{[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: pre-wrap;/,
+);
+const reviewSource = read(
+  "javascripts/discourse/components/reviewable-isbf-learning-course.gjs",
+);
+assert.ok(reviewSource.includes("{{@reviewable.payload.course_name}}"));
+assert.ok(!reviewSource.includes("htmlSafe") && !reviewSource.includes("{{{"));
+assert.ok(initializer.includes('"ReviewableIsbfLearningCourse"'));
+assert.ok(
+  initializer.includes(
+    'import("../components/reviewable-isbf-learning-course")',
+  ),
+);
+const ReviewDetail = componentClass("reviewable-isbf-learning-course");
+for (const grade of [1, 2, 3, 4]) {
+  assert.equal(
+    new ReviewDetail({ reviewable: { payload: { grade } } }).gradeLabel,
+    `isbf_v2.learning_grade_${grade}`,
+  );
+}
+assert.equal(
+  new ReviewDetail({ reviewable: { payload: { grade: 9 } } }).gradeLabel,
+  "",
 );
 console.log(
-  "Link-only sharing, duplicate submit, retry and late response guards, safe card title links, legacy composer/upload helpers and all-library search OK"
+  "Course requests, review details, Unicode descriptions, submission lifecycle, safe links and learning helpers OK",
 );

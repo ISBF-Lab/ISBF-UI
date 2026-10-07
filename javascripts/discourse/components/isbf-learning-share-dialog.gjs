@@ -2,8 +2,8 @@ import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
-import { service } from "@ember/service";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
+import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
 import DButton from "discourse/ui-kit/d-button";
@@ -11,8 +11,10 @@ import DModal from "discourse/ui-kit/d-modal";
 import { i18n } from "discourse-i18n";
 
 export default class ISBFLearningShareDialog extends Component {
+  @service site;
   @service siteSettings;
 
+  @tracked description = "";
   @tracked error = null;
   @tracked link = "";
   @tracked saving = false;
@@ -23,6 +25,10 @@ export default class ISBFLearningShareDialog extends Component {
   willDestroy() {
     super.willDestroy(...arguments);
     this.#closed = true;
+  }
+
+  get descriptionEnabled() {
+    return this.site?.isbf_learning?.resource_description === true;
   }
 
   get minimumTitleLength() {
@@ -40,7 +46,8 @@ export default class ISBFLearningShareDialog extends Component {
       !this.args.course?.id ||
       length < this.minimumTitleLength ||
       length > this.maximumTitleLength ||
-      !this.validLink
+      !this.validLink ||
+      (this.descriptionEnabled && [...this.description].length > 300)
     );
   }
 
@@ -59,6 +66,11 @@ export default class ISBFLearningShareDialog extends Component {
     } catch {
       return false;
     }
+  }
+
+  @action
+  changeDescription(event) {
+    this.description = event.target.value;
   }
 
   @action
@@ -97,9 +109,10 @@ export default class ISBFLearningShareDialog extends Component {
           course_id: this.args.course.id,
           title: this.title.trim(),
           link: this.link.trim(),
+          ...(this.descriptionEnabled ? { description: this.description } : {}),
         },
       });
-      if (this.#closed || this.isDestroying || this.isDestroyed) {
+      if (this.#closed || this.isDestroying) {
         return;
       }
       if (response?.success !== true || typeof response.pending !== "boolean") {
@@ -108,13 +121,13 @@ export default class ISBFLearningShareDialog extends Component {
       this.#closed = true;
       this.args.onSubmitted(response);
     } catch (error) {
-      if (!this.#closed && !this.isDestroying && !this.isDestroyed) {
+      if (!this.#closed && !this.isDestroying) {
         this.error =
           error?.jqXHR?.responseJSON?.errors?.[0] ||
           i18n(themePrefix("isbf_v2.learning_share_error"));
       }
     } finally {
-      if (!this.#closed && !this.isDestroying && !this.isDestroyed) {
+      if (!this.#closed && !this.isDestroying) {
         this.saving = false;
       }
     }
@@ -145,6 +158,22 @@ export default class ISBFLearningShareDialog extends Component {
               {{didInsert this.focusTitle}}
             />
           </label>
+          {{#if this.descriptionEnabled}}
+            <label>
+              <span>{{i18n
+                  (themePrefix "isbf_v2.learning_resource_description")
+                }}</span>
+              <textarea
+                disabled={{this.saving}}
+                rows="3"
+                value={{this.description}}
+                {{on "input" this.changeDescription}}
+              ></textarea>
+              <span>{{i18n
+                  (themePrefix "isbf_v2.learning_description_hint")
+                }}</span>
+            </label>
+          {{/if}}
           <label>
             <span>{{i18n (themePrefix "isbf_v2.learning_resource_link")}}</span>
             <input
