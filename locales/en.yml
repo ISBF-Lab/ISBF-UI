@@ -2,6 +2,15 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    learning_request_course: "Request a course"
+    learning_submit_request: "Submit request"
+    learning_course_pending: "Course request submitted and awaiting review"
+    learning_resource_description: "Brief introduction (optional)"
+    learning_description_hint: "Up to 300 characters"
+    learning_grade_1: "Year 1"
+    learning_grade_2: "Year 2"
+    learning_grade_3: "Year 3"
+    learning_grade_4: "Year 4"
     learning_grade: "Year"
     learning_back: "Back to workbench"
     learning_search: "Search all learning resources"

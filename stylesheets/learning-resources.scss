@@ -144,7 +144,7 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
   padding-inline: 0;
 
   .d-icon {
-    order: 1;
+    order: -1;
     margin: 0;
   }
 }
@@ -226,6 +226,7 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
 }
 
 .isbf-learning-resource__description {
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
@@ -295,7 +296,8 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
     gap: var(--isbf-v2-space-4);
   }
 
-  input {
+  input,
+  textarea {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -306,6 +308,7 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
   }
 
   input:focus-visible,
+  textarea:focus-visible,
   button:focus-visible {
     outline: 2px solid var(--isbf-v2-focus-ring);
     outline-offset: 2px;

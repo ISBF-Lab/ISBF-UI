@@ -2,6 +2,15 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    learning_request_course: "申请添加课程"
+    learning_submit_request: "提交申请"
+    learning_course_pending: "课程申请已提交，审核通过后展示"
+    learning_resource_description: "简要介绍（选填）"
+    learning_description_hint: "最多 300 字"
+    learning_grade_1: "大一"
+    learning_grade_2: "大二"
+    learning_grade_3: "大三"
+    learning_grade_4: "大四"
     learning_grade: "年级"
     learning_back: "返回工作台"
     learning_search: "搜索全部学习资源"
