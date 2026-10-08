@@ -1895,8 +1895,12 @@ body:has(.isbf-v2-shell--workbench) {
   font-weight: 700;
 }
 
-.isbf-v2-workbench__actions {
+.isbf-v2-workbench__more {
   display: none;
+}
+
+.isbf-v2-more-menu--workbench {
+  max-height: max(44px, calc(100dvh - 160px - env(safe-area-inset-bottom)));
 }
 
 .isbf-v2-calendar__heading,
@@ -2311,40 +2315,45 @@ body:has(.isbf-v2-shell--workbench) {
     }
   }
 
-  .isbf-v2-workbench__actions {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .isbf-v2-workbench__more {
+    display: flex;
+    justify-content: flex-end;
     flex-shrink: 0;
-    gap: var(--isbf-v2-space-2);
     margin-top: auto;
+    margin-inline: calc(-1 * var(--isbf-v2-space-4));
     padding-top: var(--isbf-v2-space-6);
   }
 
-  .isbf-v2-workbench__action {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .isbf-v2-workbench__more-control {
+    width: 25%;
+    min-width: 44px;
+  }
+
+  .isbf-v2-workbench__more-trigger {
+    display: grid;
+    align-content: center;
+    justify-items: center;
     box-sizing: border-box;
-    gap: var(--isbf-v2-space-2);
-    min-width: 0;
+    gap: 0;
+    width: 100%;
+    min-width: 44px;
     min-height: 44px;
-    padding: var(--isbf-v2-space-2);
+    padding: 0;
     border: 0;
     border-radius: var(--isbf-v2-radius-pill);
     background: transparent;
     color: var(--isbf-v2-text);
     font-family: inherit;
-    font-size: var(--isbf-v2-font-sm);
-    line-height: 1.35;
+    font-size: 10px;
     overflow-wrap: anywhere;
 
     .d-icon {
-      width: 24px;
-      height: 24px;
+      width: 23px;
+      height: 23px;
       flex: none;
-      margin: 0;
+      margin: 0 0 3px;
       color: inherit;
-      font-size: 24px;
+      font-size: 23px;
     }
 
     .d-button-label {

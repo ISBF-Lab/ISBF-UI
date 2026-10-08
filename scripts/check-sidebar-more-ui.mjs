@@ -174,17 +174,36 @@ for (const method of ["openSettings", "openFeedback", "openJoin"]) {
 const desktopMenuSource = read("components/isbf-v2-more-menu.gjs");
 assert.match(desktopMenuSource, /<DMenu\s/);
 assert.match(desktopMenuSource, /<ISBFV2UtilityActions @menu=\{\{menu\}\} \/>/);
-assert.match(desktopMenuSource, /@placement="top-start"/);
+assert.match(desktopMenuSource, /@placement=\{\{this.placement\}\}/);
+assert.match(desktopMenuSource, /@modalForMobile=\{\{false\}\}/);
+assert.match(
+  desktopMenuSource,
+  /@visibilityOptimizer=\{\{this.visibilityOptimizer\}\}/,
+);
+const MoreMenu = await loadComponent("components/isbf-v2-more-menu.gjs");
+const desktopMenu = new MoreMenu();
+const mobileMenu = new MoreMenu({ workbench: true });
+assert.equal(desktopMenu.placement, "top-start");
+assert.equal(desktopMenu.visibilityOptimizer, "flip");
+assert.equal(desktopMenu.contentClass, "isbf-v2-more-menu");
+assert.equal(desktopMenu.triggerClass, "btn-flat isbf-v2-side__more");
+assert.equal(mobileMenu.placement, "top-end");
+assert.equal(mobileMenu.visibilityOptimizer, "none");
+assert.match(mobileMenu.contentClass, /isbf-v2-more-menu--workbench/);
+assert.match(mobileMenu.triggerClass, /isbf-v2-workbench__more-trigger/);
+assert.notEqual(mobileMenu.identifier, desktopMenu.identifier);
 const workbenchSource = read("components/isbf-v2-workbench.gjs");
-assert.match(workbenchSource, /<\/section>\s*<ISBFV2UtilityActions \/>/);
+assert.match(workbenchSource, /<ISBFV2MoreMenu @workbench=\{\{true\}\} \/>/);
+assert.doesNotMatch(workbenchSource, /ISBFV2UtilityActions/);
 for (const page of ["isbf-learning.gjs", "isbf-alumni.gjs"]) {
-  assert.doesNotMatch(read(`components/${page}`), /ISBFV2UtilityActions/);
+  assert.doesNotMatch(read(`components/${page}`), /ISBFV2MoreMenu/);
 }
 const styles = readFileSync(
   new URL("../common/common.scss", import.meta.url),
   "utf8",
 );
-assert.match(styles, /\.isbf-v2-workbench__actions\s*\{\s*display: none;/);
+assert.match(styles, /\.isbf-v2-workbench__more\s*\{\s*display: none;/);
+assert.doesNotMatch(styles, /\.isbf-v2-workbench__actions\s*\{/);
 const mobileStyles = styles.slice(
   styles.indexOf(
     "@media (width <= 600px)",
@@ -200,27 +219,25 @@ assert.match(
   /padding-bottom: calc\(\s*64px \+ var\(--isbf-v2-space-4\) \+ env\(safe-area-inset-bottom\)\s*\);/,
 );
 const footerStyles = mobileStyles.match(
-  /\.isbf-v2-workbench__actions\s*\{([^}]+)\}/,
+  /\.isbf-v2-workbench__more\s*\{([^}]+)\}/,
 )[1];
-assert.match(
-  footerStyles,
-  /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
-);
+assert.match(footerStyles, /display: flex;\s*justify-content: flex-end;/);
 assert.match(footerStyles, /margin-top: auto;/);
 assert.match(footerStyles, /padding-top: var\(--isbf-v2-space-6\);/);
 assert.doesNotMatch(footerStyles, /position: (?:fixed|absolute|sticky)/);
 const actionStyles = mobileStyles.match(
-  /\.isbf-v2-workbench__action\s*\{([\s\S]+?)\n  \}/,
+  /\.isbf-v2-workbench__more-trigger\s*\{([\s\S]+?)\n  \}/,
 )[1];
 assert.match(actionStyles, /min-height: 44px;/);
-assert.match(actionStyles, /min-width: 0;/);
-assert.match(actionStyles, /width: 24px;\s*height: 24px;/);
-assert.match(actionStyles, /font-size: var\(--isbf-v2-font-sm\);/);
+assert.match(actionStyles, /min-width: 44px;/);
+assert.match(actionStyles, /display: grid;/);
+assert.match(actionStyles, /width: 23px;\s*height: 23px;/);
+assert.match(actionStyles, /font-size: 10px;/);
+assert.match(actionStyles, /color: var\(--isbf-v2-text\);/);
 assert.match(actionStyles, /&:hover,\s*&:focus-visible/);
 for (const width of [390, 430]) {
-  const cellWidth = (width - 2 * 16 - 2 * 8) / 3;
-  const largestItem = 24 + 8 + 4 * 15 + 2 * 8;
-  assert.ok(cellWidth >= largestItem, `${width}px fits icon and longest label`);
+  const cellWidth = width / 4;
+  assert.ok(cellWidth >= 44, `${width}px retains a 44px target`);
 }
 
 const Shell = await loadComponent("components/isbf-v2-shell.gjs");
