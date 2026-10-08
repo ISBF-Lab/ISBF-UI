@@ -306,6 +306,7 @@ function componentClass(path, globals = {}) {
       constructor(args = {}) {
         this.args = args;
       }
+
       willDestroy() {}
     },
     URL,
@@ -430,9 +431,81 @@ rejectSubmission(new Error("Late failure"));
 await saving;
 assert.equal(destroyed.error, null, "Destroyed form must ignore late errors");
 
+const contributorForm = makeDialog();
+contributorForm.site.isbf_learning.resource_contributor = true;
+contributorForm.site.isbf_learning.resource_admin_management = true;
+contributorForm.currentUser = { name: "😀".repeat(20), username: "username" };
+assert.equal(contributorForm.contributorValue, "😀".repeat(20));
+assert.equal(
+  contributorForm.saveDisabled,
+  false,
+  "Default display names are not constrained",
+);
+assert.equal(contributorForm.shareLabel, "isbf_v2.learning_apply_share");
+assert.equal(contributorForm.submitLabel, "isbf_v2.learning_submit_request");
+contributorForm.currentUser.moderator = true;
+assert.equal(
+  contributorForm.shareLabel,
+  "isbf_v2.learning_apply_share",
+  "Moderators also apply",
+);
+contributorForm.currentUser.admin = true;
+assert.equal(contributorForm.shareLabel, "isbf_v2.learning_share");
+assert.equal(contributorForm.submitLabel, "isbf_v2.learning_share");
+contributorForm.currentUser.admin = false;
+contributorForm.changeContributor({ target: { value: "😀".repeat(15) } });
+assert.equal(contributorForm.saveDisabled, false);
+contributorForm.changeContributor({ target: { value: "😀".repeat(16) } });
+assert.equal(contributorForm.saveDisabled, true);
+contributorForm.site.isbf_learning.resource_contributor = false;
+assert.equal(
+  contributorForm.saveDisabled,
+  false,
+  "Unsupported fields cannot block submit",
+);
+contributorForm.site.isbf_learning.resource_contributor = true;
+contributorForm.changeContributor({ target: { value: "  Contributor  " } });
+saving = contributorForm.save(submitEvent);
+assert.equal(submissions.at(-1).data.contributor, "Contributor");
+rejectSubmission(new Error("Retry"));
+await saving;
+assert.equal(contributorForm.contributorValue, "  Contributor  ");
+contributorForm.changeContributor({ target: { value: "   " } });
+saving = contributorForm.save(submitEvent);
+assert.equal(
+  submissions.at(-1).data.contributor,
+  "",
+  "Blank uses backend display name fallback",
+);
+completeSubmission({ success: true, pending: true });
+await saving;
+const defaultContributorForm = makeDialog();
+defaultContributorForm.site.isbf_learning.resource_contributor = true;
+defaultContributorForm.currentUser = {
+  name: "Long display name beyond the limit",
+};
+saving = defaultContributorForm.save(submitEvent);
+assert.equal(
+  submissions.at(-1).data.contributor,
+  "",
+  "Unedited defaults are resolved by backend",
+);
+completeSubmission({ success: true, pending: false });
+await saving;
+
+const deletions = [];
+let completeDeletion;
+let rejectDeletion;
 const ResourceCard = componentClass("isbf-learning-resource", {
   learningSafeUrl,
   learningFileSize: resources.namespace.learningFileSize,
+  ajax: (url, options) => {
+    deletions.push({ url, ...options });
+    return new Promise((resolve, reject) => {
+      completeDeletion = resolve;
+      rejectDeletion = reject;
+    });
+  },
 });
 const card = new ResourceCard({
   resource: {
@@ -462,13 +535,147 @@ assert.equal(
   undefined,
   "File-only cards must not navigate to a topic",
 );
+assert.equal(card.contributor, "isbf_v2.learning_unknown_contributor");
+card.args.resource.author = { username: "legacy", name: "Legacy Author" };
+assert.equal(card.contributor, "Legacy Author");
+card.args.resource.author.name = "";
+assert.equal(card.contributor, "legacy");
+card.args.resource.contributor = "<script>credit</script>";
+assert.equal(card.contributor, "<script>credit</script>");
+let deletedCards = 0;
+const makeDeleteCard = () => {
+  const resource = new ResourceCard({
+    resource: { id: "resource-id", can_delete: true },
+    onDeleted: () => deletedCards++,
+  });
+  resource.currentUser = { admin: true };
+  resource.site = { isbf_learning: { resource_admin_management: true } };
+  resource.dialog = { confirm: async () => true };
+  return resource;
+};
+const deleteCard = makeDeleteCard();
+for (const user of [{}, { moderator: true }, null]) {
+  deleteCard.currentUser = user;
+  assert.equal(deleteCard.canDelete, false);
+  await deleteCard.deleteResource();
+}
+assert.equal(deletions.length, 0);
+deleteCard.currentUser = { admin: true };
+deleteCard.site.isbf_learning.resource_admin_management = false;
+assert.equal(deleteCard.canDelete, false);
+deleteCard.site.isbf_learning.resource_admin_management = true;
+for (const permission of [false, undefined, "true"]) {
+  deleteCard.args.resource.can_delete = permission;
+  assert.equal(deleteCard.canDelete, false);
+}
+deleteCard.args.resource.can_delete = true;
+deleteCard.dialog.confirm = async () => false;
+await deleteCard.deleteResource();
+assert.equal(deletions.length, 0, "Cancelled deletion makes no request");
+assert.equal(deleteCard.deleting, false);
+deleteCard.dialog.confirm = async () => true;
+let deleting = deleteCard.deleteResource();
+await new Promise(setImmediate);
+await deleteCard.deleteResource();
+assert.equal(deletions.length, 1, "Duplicate clicks send one DELETE");
+assert.deepEqual(plain(deletions[0]), {
+  url: "/isbf/learning/resources/resource-id",
+  type: "DELETE",
+});
+rejectDeletion({ jqXHR: { responseJSON: { errors: ["Delete denied"] } } });
+await deleting;
+assert.equal(deleteCard.deleteError, "Delete denied");
+assert.equal(deleteCard.deleting, false);
+assert.equal(
+  deleteCard.args.resource.id,
+  "resource-id",
+  "Failures retain card for retry",
+);
+assert.equal(deletedCards, 0, "Failures never remove cards optimistically");
+deleting = deleteCard.deleteResource();
+await new Promise(setImmediate);
+completeDeletion({ success: false });
+await deleting;
+assert.equal(deleteCard.deleting, false);
+assert.equal(deletedCards, 0);
+deleting = deleteCard.deleteResource();
+await new Promise(setImmediate);
+completeDeletion({ success: true });
+await deleting;
+assert.equal(deletedCards, 1);
+await deleteCard.deleteResource();
+assert.equal(deletions.length, 3, "Successful deletion cannot repeat");
+const revokedPermission = makeDeleteCard();
+let confirmRevoked;
+revokedPermission.dialog.confirm = () =>
+  new Promise((resolve) => {
+    confirmRevoked = resolve;
+  });
+deleting = revokedPermission.deleteResource();
+revokedPermission.currentUser = { moderator: true };
+confirmRevoked(true);
+await deleting;
+assert.equal(
+  deletions.length,
+  3,
+  "Permissions are rechecked after confirmation",
+);
+const staleConfirmation = makeDeleteCard();
+let confirmLater;
+staleConfirmation.dialog.confirm = () =>
+  new Promise((resolve) => {
+    confirmLater = resolve;
+  });
+deleting = staleConfirmation.deleteResource();
+staleConfirmation.willDestroy();
+confirmLater(true);
+await deleting;
+assert.equal(
+  deletions.length,
+  3,
+  "Navigation during confirmation cancels the request",
+);
+const staleDelete = makeDeleteCard();
+deleting = staleDelete.deleteResource();
+await new Promise(setImmediate);
+staleDelete.willDestroy();
+completeDeletion({ success: true });
+await deleting;
+assert.equal(deletedCards, 1, "Destroyed cards cannot reload another page");
+const staleFailure = makeDeleteCard();
+deleting = staleFailure.deleteResource();
+await new Promise(setImmediate);
+staleFailure.willDestroy();
+rejectDeletion(new Error("Late error"));
+await deleting;
+assert.equal(staleFailure.deleteError, null);
+const cardTemplate = read(
+  "javascripts/discourse/components/isbf-learning-resource.gjs",
+).split("  <template>")[1];
+assert.ok(cardTemplate.includes("{{this.contributor}}"));
+assert.ok(!/dAvatar|htmlSafe|\{\{\{/.test(cardTemplate));
+assert.ok(cardTemplate.includes("{{#if this.canDelete}}"));
+
 const shareTemplate = read(
   "javascripts/discourse/components/isbf-learning-share-dialog.gjs",
 ).split("  <template>")[1];
-assert.equal((shareTemplate.match(/<input\b/g) || []).length, 2);
+assert.equal((shareTemplate.match(/<input\b/g) || []).length, 3);
 assert.ok(shareTemplate.includes("<DModal"));
 assert.ok(!/Composer|Upload|TagChooser/.test(shareTemplate));
 assert.ok(shareTemplate.includes("{{#if this.descriptionEnabled}}"));
+assert.ok(shareTemplate.includes("{{#if this.contributorEnabled}}"));
+assert.ok(
+  !shareTemplate.includes('maxlength="15"'),
+  "Contributor limit uses Unicode code points",
+);
+assert.ok(
+  shareTemplate.indexOf("this.descriptionEnabled") <
+    shareTemplate.indexOf("this.changeLink"),
+);
+assert.ok(
+  shareTemplate.indexOf("this.changeLink") <
+    shareTemplate.indexOf("this.contributorEnabled"),
+);
 assert.equal((shareTemplate.match(/<textarea\b/g) || []).length, 1);
 assert.ok(
   !shareTemplate.includes('maxlength="300"'),
@@ -478,6 +685,7 @@ const oldBackend = makeDialog();
 oldBackend.site.isbf_learning.resource_description = false;
 saving = oldBackend.save(submitEvent);
 assert.ok(!("description" in submissions.at(-1).data));
+assert.ok(!("contributor" in submissions.at(-1).data));
 completeSubmission({ success: true, pending: true });
 await saving;
 
@@ -642,8 +850,7 @@ page.openCourseDialog();
 page.courseSubmitted({ success: true, pending: false }, 1);
 assert.equal(page.coursePending, false);
 assert.equal(listRequests[0].url, "/isbf/learning/courses");
-await Promise.resolve();
-await Promise.resolve();
+await new Promise(setImmediate);
 listRequests.length = 0;
 page.courses = [{ id: courseId, grade: 1, name: "Economics" }];
 page.selectedCourseId = courseId;
@@ -692,6 +899,46 @@ assert.equal(
   null,
   "Old backend must not open unsupported sharing",
 );
+page.site.isbf_learning.link_sharing = true;
+page.site.isbf_learning.resource_admin_management = true;
+page.currentUser = { moderator: true };
+assert.equal(page.shareLabel, "isbf_v2.learning_apply_share");
+page.currentUser = { admin: true };
+assert.equal(page.shareLabel, "isbf_v2.learning_share");
+page.site.isbf_learning.resource_admin_management = false;
+page.currentUser = {};
+assert.equal(
+  page.shareLabel,
+  "isbf_v2.learning_share",
+  "Old backend retains its existing label",
+);
+page.query = "search at deletion completion";
+page.loadMore();
+await Promise.resolve();
+assert.equal(listRequests.at(-1).options.data.page, 1);
+page.resourceDeleted();
+assert.equal(
+  listRequests.at(-1).options.data.page,
+  0,
+  "Deletion resets pagination",
+);
+assert.equal(
+  listRequests.at(-1).options.data.q,
+  page.query,
+  "Deletion reloads current search",
+);
+await Promise.resolve();
+page.query = "";
+page.resourceDeleted();
+assert.equal(
+  listRequests.at(-1).options.data.course_id,
+  courseId,
+  "Deletion reloads current course",
+);
+const requestsBeforeDestroy = listRequests.length;
+page.isDestroying = true;
+page.resourceDeleted();
+assert.equal(listRequests.length, requestsBeforeDestroy);
 const gradePicker = read(
   "javascripts/discourse/components/isbf-learning-grade-picker.gjs",
 );
@@ -730,5 +977,5 @@ assert.equal(
   "",
 );
 console.log(
-  "Course requests, review details, Unicode descriptions, submission lifecycle, safe links and learning helpers OK",
+  "Course requests, contributor limits, admin deletion lifecycle, review details, Unicode descriptions, safe links and learning helpers OK",
 );

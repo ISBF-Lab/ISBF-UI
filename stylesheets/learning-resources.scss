@@ -168,6 +168,7 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
 
 .isbf-learning__share {
   flex: 0 0 auto;
+  min-height: 44px;
   border-radius: var(--isbf-v2-radius-pill);
 }
 
@@ -202,22 +203,33 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
   }
 }
 
-.isbf-learning-resource__author {
+.isbf-learning-resource__metadata {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--isbf-v2-space-2);
   margin-bottom: var(--isbf-v2-space-3);
   color: var(--isbf-v2-muted);
   font-size: var(--isbf-v2-font-xs);
 
-  span {
+  time {
     overflow-wrap: anywhere;
   }
+}
 
-  time {
-    margin-left: auto;
-  }
+.isbf-learning-resource__delete.btn {
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--danger);
+}
+
+.isbf-learning-resource__credit {
+  margin: var(--isbf-v2-space-3) 0 0;
+  color: var(--isbf-v2-muted);
+  font-size: var(--isbf-v2-font-xs);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .isbf-learning-resource__context {
@@ -325,6 +337,10 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--isbf-v2-space-2);
+
+  .btn {
+    min-height: 44px;
+  }
 }
 
 .isbf-v2-workbench a.isbf-v2-workbench__card {
