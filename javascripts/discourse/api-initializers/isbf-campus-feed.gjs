@@ -1,16 +1,24 @@
 import { scheduleOnce } from "@ember/runloop";
+import { themePrefix } from "virtual:theme";
 import { apiInitializer } from "discourse/lib/api";
 import Composer from "discourse/models/composer";
 import { i18n } from "discourse-i18n";
-import { themePrefix } from "virtual:theme";
-
 import ISBFV2ComposerCancel from "../components/isbf-v2-composer-cancel";
 import ISBFV2ComposerOptions from "../components/isbf-v2-composer-options";
 import ISBFV2ComposerTitle from "../components/isbf-v2-composer-title";
 import ISBFV2Shell from "../components/isbf-v2-shell";
 import { canPublishAnonymously } from "../lib/anonymous-post-scope";
-import { isQuickPost } from "../lib/quick-post-scope";
+import { extendComposerMethod } from "../lib/composer-model-extensions";
 import { prepareOptionalTopicTitle } from "../lib/optional-topic-title";
+import { isQuickPost } from "../lib/quick-post-scope";
+
+function focusComposer() {
+  document
+    .querySelector(
+      "#reply-control.open.composer-action-create-topic .d-editor-input",
+    )
+    ?.focus();
+}
 
 export default apiInitializer((api) => {
   api.modifyClass("controller:user", {
@@ -20,21 +28,19 @@ export default apiInitializer((api) => {
 
   Composer.serializeOnCreate(
     "isbf_repost_source_topic_id",
-    "isbf_repost_source_topic_id"
+    "isbf_repost_source_topic_id",
   );
   Composer.serializeToDraft(
     "isbf_repost_source_topic_id",
-    "isbf_repost_source_topic_id"
+    "isbf_repost_source_topic_id",
   );
   Composer.serializeOnCreate("isbf_anonymous", "isbf_anonymous");
   Composer.serializeToDraft("isbf_anonymous", "isbf_anonymous");
   Composer.serializeToDraft("isbf_optional_title", "isbf_optional_title");
-  api.modifyClass("model:composer", {
-    pluginId: "isbf-ui-optional-topic-title",
-    clearState() {
-      this._super(...arguments);
-      this.set("isbf_optional_title", null);
-    },
+  extendComposerMethod(api, "clearState", function (next, ...args) {
+    const result = next(...args);
+    this.set("isbf_optional_title", null);
+    return result;
   });
   api.renderInOutlet("before-main-outlet", ISBFV2Shell);
   api.renderInOutlet("before-composer-controls", ISBFV2ComposerCancel);
@@ -56,7 +62,7 @@ export default apiInitializer((api) => {
       !canPublishAnonymously(
         model,
         api.container.lookup("service:current-user"),
-        api.container.lookup("service:site-settings")
+        api.container.lookup("service:site-settings"),
       )
     ) {
       model.set("isbf_anonymous", false);
@@ -68,13 +74,7 @@ export default apiInitializer((api) => {
     if (isQuickPost(model)) {
       prepareOptionalTopicTitle(model);
     }
-    scheduleOnce("afterRender", () => {
-      document
-        .querySelector(
-          "#reply-control.open.composer-action-create-topic .d-editor-input"
-        )
-        ?.focus();
-    });
+    scheduleOnce("afterRender", focusComposer);
   });
 
   api.registerValueTransformer(
@@ -84,7 +84,7 @@ export default apiInitializer((api) => {
       return isQuickPost(model) && !model.requiredCategoryMissing
         ? themePrefix("isbf_v2.compose_prompt")
         : value;
-    }
+    },
   );
 
   // Discourse's own mobile topic renderer already has an avatar, title,
@@ -92,7 +92,7 @@ export default apiInitializer((api) => {
   api.registerValueTransformer(
     "topic-list-item-mobile-layout",
     ({ value, context }) =>
-      context?.listContext === "discovery" ? true : value
+      context?.listContext === "discovery" ? true : value,
   );
 
   api.registerValueTransformer(
@@ -105,12 +105,12 @@ export default apiInitializer((api) => {
       return value.includes("isbf-v2-topic")
         ? value
         : [...value, "isbf-v2-topic"];
-    }
+    },
   );
 
   api.registerValueTransformer(
     "topic-list-item-expand-pinned",
     ({ value, context }) =>
-      context?.listContext === "discovery" ? true : value
+      context?.listContext === "discovery" ? true : value,
   );
 });

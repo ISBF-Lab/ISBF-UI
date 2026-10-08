@@ -1,6 +1,7 @@
 import { apiInitializer } from "discourse/lib/api";
 import Composer from "discourse/models/composer";
 import ISBFLearningComposer from "../components/isbf-learning-composer";
+import { extendComposerMethod } from "../lib/composer-model-extensions";
 import {
   isLearningComposer,
   LEARNING_FIELDS,
@@ -26,43 +27,37 @@ export default apiInitializer((api) => {
     Composer.serializeToDraft(field, field);
   }
 
-  api.modifyClass("model:composer", {
-    pluginId: "isbf-ui-learning-resources",
+  api.addModelGetter("composer", "isbfLearningCoursePayload", function () {
+    return learningPayload(this, LEARNING_FIELDS[0]);
+  });
+  api.addModelGetter("composer", "isbfLearningFilesPayload", function () {
+    return learningPayload(this, LEARNING_FIELDS[1]);
+  });
 
-    get isbfLearningCoursePayload() {
-      return learningPayload(this, LEARNING_FIELDS[0]);
-    },
-
-    get isbfLearningFilesPayload() {
-      return learningPayload(this, LEARNING_FIELDS[1]);
-    },
-
-    clearState() {
-      this._super(...arguments);
-      this.setProperties({
-        isbf_learning_course_id: null,
-        isbf_learning_files: null,
-      });
-    },
-
-    open(options = {}) {
-      return this._super(...arguments).then((result) => {
-        restoreLearning(this, options);
-        return result;
-      });
-    },
-
-    save() {
-      if (
-        isLearningComposer(this) &&
-        (!this.title?.trim() ||
-          this.title.includes("[isbf-untitled:") ||
-          !this.isbf_learning_course_id)
-      ) {
-        return Promise.resolve(this.dialog.alert("请填写资料标题并选择课程。"));
-      }
-      return this._super(...arguments);
-    },
+  extendComposerMethod(api, "clearState", function (next, ...args) {
+    const result = next(...args);
+    this.setProperties({
+      isbf_learning_course_id: null,
+      isbf_learning_files: null,
+    });
+    return result;
+  });
+  extendComposerMethod(api, "open", function (next, options = {}) {
+    return next(options).then((result) => {
+      restoreLearning(this, options);
+      return result;
+    });
+  });
+  extendComposerMethod(api, "save", function (next, ...args) {
+    if (
+      isLearningComposer(this) &&
+      (!this.title?.trim() ||
+        this.title.includes("[isbf-untitled:") ||
+        !this.isbf_learning_course_id)
+    ) {
+      return Promise.resolve(this.dialog.alert("请填写资料标题并选择课程。"));
+    }
+    return next(...args);
   });
 
   api.renderInOutlet("before-composer-fields", ISBFLearningComposer);
