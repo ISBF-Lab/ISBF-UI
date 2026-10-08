@@ -70,33 +70,17 @@ export default class ISBFV2UtilityActions extends Component {
   }
 
   <template>
-    {{#if @menu}}
-      <DDropdownMenu as |dropdown|>
-        {{#each this.items key="key" as |item|}}
-          <dropdown.item>
-            <DButton
-              class="btn-flat isbf-v2-more-menu__item"
-              @action={{item.action}}
-              @icon={{item.icon}}
-              @translatedLabel={{item.label}}
-            />
-          </dropdown.item>
-        {{/each}}
-      </DDropdownMenu>
-    {{else}}
-      <nav
-        aria-label={{i18n (themePrefix "isbf_v2.navigation_label")}}
-        class="isbf-v2-workbench__actions"
-      >
-        {{#each this.items key="key" as |item|}}
+    <DDropdownMenu as |dropdown|>
+      {{#each this.items key="key" as |item|}}
+        <dropdown.item>
           <DButton
-            class="btn-flat isbf-v2-workbench__action"
+            class="btn-flat isbf-v2-more-menu__item"
             @action={{item.action}}
             @icon={{item.icon}}
             @translatedLabel={{item.label}}
           />
-        {{/each}}
-      </nav>
-    {{/if}}
+        </dropdown.item>
+      {{/each}}
+    </DDropdownMenu>
   </template>
 }
