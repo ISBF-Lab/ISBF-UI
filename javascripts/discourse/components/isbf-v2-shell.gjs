@@ -14,6 +14,7 @@ import {
 import { notificationsEnabled } from "../lib/notification-groups";
 import { officialConfig } from "../lib/official-filters";
 import { isFeedStyleTopic } from "../lib/topic-card-scope";
+import ISBFAlumni from "./isbf-alumni";
 import ISBFExplore from "./isbf-explore";
 import ISBFLearning from "./isbf-learning";
 import ISBFNotifications from "./isbf-notifications";
@@ -66,6 +67,9 @@ export default class ISBFV2Shell extends Component {
     }
     if (path === "/isbf/workbench") {
       return "workbench";
+    }
+    if (path === "/isbf/alumni") {
+      return "alumni";
     }
     if (path === "/isbf/learning") {
       return "learning";
@@ -147,7 +151,11 @@ export default class ISBFV2Shell extends Component {
   }
 
   get isWorkbench() {
-    return ["workbench", "learning"].includes(this.pageKind);
+    return ["workbench", "learning", "alumni"].includes(this.pageKind);
+  }
+
+  get isAlumni() {
+    return this.pageKind === "alumni";
   }
 
   get isLearning() {
@@ -158,6 +166,7 @@ export default class ISBFV2Shell extends Component {
     return (
       !this.isFeed &&
       ![
+        "alumni",
         "calendar",
         "explore",
         "learning",
@@ -447,7 +456,8 @@ export default class ISBFV2Shell extends Component {
 
         {{#if this.isAnonymousPosts}}<ISBFV2AnonymousPosts />{{/if}}
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
-        {{#if this.isLearning}}<ISBFLearning />
+        {{#if this.isAlumni}}<ISBFAlumni />
+        {{else if this.isLearning}}<ISBFLearning />
         {{else if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
 
         {{#if this.showMobileCompose}}

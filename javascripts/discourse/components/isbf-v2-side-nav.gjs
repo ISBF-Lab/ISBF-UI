@@ -3,14 +3,13 @@ import { service } from "@ember/service";
 import { settings, themePrefix } from "virtual:theme";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
-
-import ISBFV2AccountMenu from "./isbf-v2-account-menu";
-import ISBFV2MoreMenu from "./isbf-v2-more-menu";
 import {
   feedbackCategory,
   feedbackComposeHref,
   isFeedbackPath,
 } from "../lib/feedback-category";
+import ISBFV2AccountMenu from "./isbf-v2-account-menu";
+import ISBFV2MoreMenu from "./isbf-v2-more-menu";
 
 export default class ISBFV2SideNav extends Component {
   @service currentUser;
@@ -83,7 +82,7 @@ export default class ISBFV2SideNav extends Component {
   }
 
   get workbenchActive() {
-    return /^\/isbf\/(workbench|learning)(\/|\?|$)/.test(
+    return /^\/isbf\/(workbench|learning|alumni)(\/|\?|$)/.test(
       this.router.currentURL ?? "",
     );
   }
@@ -101,15 +100,15 @@ export default class ISBFV2SideNav extends Component {
 
   <template>
     <aside
-      class="isbf-v2-side"
       aria-label={{i18n (themePrefix "isbf_v2.navigation_label")}}
+      class="isbf-v2-side"
     >
       <a
+        aria-label={{settings.brand_name}}
         class="isbf-v2-brand"
         href="/latest"
-        aria-label={{settings.brand_name}}
       >
-        <span class="isbf-v2-brand__mark" aria-hidden="true">I</span>
+        <span aria-hidden="true" class="isbf-v2-brand__mark">I</span>
         <span class="isbf-v2-brand__name">{{settings.brand_name}}</span>
       </a>
 

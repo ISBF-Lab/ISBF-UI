@@ -3,6 +3,7 @@ import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import { alumniConfig } from "../lib/alumni";
 import { learningConfig } from "../lib/learning-resources";
 
 const CARDS = [
@@ -20,13 +21,17 @@ export default class ISBFV2Workbench extends Component {
   @service site;
 
   get cards() {
-    return CARDS.map((card) => ({
+    return CARDS.filter(
+      (card) => card.key !== "alumni" || alumniConfig(this.site),
+    ).map((card) => ({
       ...card,
       label: i18n(themePrefix(`isbf_v2.workbench_${card.key}`)),
       href:
         card.key === "learning_resources" && learningConfig(this.site)
           ? "/isbf/learning"
-          : null,
+          : card.key === "alumni"
+            ? "/isbf/alumni"
+            : null,
     }));
   }
 
