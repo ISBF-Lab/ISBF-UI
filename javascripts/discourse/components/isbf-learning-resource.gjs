@@ -1,10 +1,45 @@
 import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
+import { action } from "@ember/object";
+import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
-import dAvatar from "discourse/ui-kit/helpers/d-avatar";
+import { ajax } from "discourse/lib/ajax";
+import DButton from "discourse/ui-kit/d-button";
 import { i18n } from "discourse-i18n";
 import { learningFileSize, learningSafeUrl } from "../lib/learning-resources";
 
 export default class ISBFLearningResource extends Component {
+  @service currentUser;
+  @service dialog;
+  @service site;
+
+  @tracked deleteError = null;
+  @tracked deleting = false;
+
+  #closed = false;
+
+  willDestroy() {
+    super.willDestroy(...arguments);
+    this.#closed = true;
+  }
+
+  get canDelete() {
+    return Boolean(
+      this.currentUser?.admin &&
+      this.site?.isbf_learning?.resource_admin_management === true &&
+      this.args.resource.can_delete === true,
+    );
+  }
+
+  get contributor() {
+    return (
+      this.args.resource.contributor ||
+      this.args.resource.author?.name ||
+      this.args.resource.author?.username ||
+      i18n(themePrefix("isbf_v2.learning_unknown_contributor"))
+    );
+  }
+
   get createdAtLabel() {
     const date = new Date(this.args.resource.created_at);
     return Number.isNaN(date.getTime())
@@ -25,7 +60,7 @@ export default class ISBFLearningResource extends Component {
 
   get gradeLabel() {
     return this.args.grades.find(
-      (grade) => grade.id === this.args.resource.grade
+      (grade) => grade.id === this.args.resource.grade,
     )?.label;
   }
 
@@ -51,19 +86,60 @@ export default class ISBFLearningResource extends Component {
     return this.args.resource.link_only ? [] : this.links;
   }
 
+  @action
+  async deleteResource() {
+    if (this.#closed || this.isDestroying || this.deleting || !this.canDelete) {
+      return;
+    }
+    this.deleting = true;
+    this.deleteError = null;
+    try {
+      const confirmed = await this.dialog.confirm({
+        message: i18n(themePrefix("isbf_v2.learning_delete_confirm")),
+        confirmButtonLabel: themePrefix("isbf_v2.learning_delete"),
+      });
+      if (!confirmed || this.#closed || this.isDestroying || !this.canDelete) {
+        return;
+      }
+      const response = await ajax(
+        `/isbf/learning/resources/${encodeURIComponent(this.args.resource.id)}`,
+        { type: "DELETE" },
+      );
+      if (this.#closed || this.isDestroying) {
+        return;
+      }
+      if (response?.success !== true) {
+        throw new Error("Unexpected learning delete response");
+      }
+      this.#closed = true;
+      this.args.onDeleted();
+    } catch (error) {
+      if (!this.#closed && !this.isDestroying) {
+        this.deleteError =
+          error?.jqXHR?.responseJSON?.errors?.[0] ||
+          i18n(themePrefix("isbf_v2.learning_delete_error"));
+      }
+    } finally {
+      if (!this.#closed && !this.isDestroying) {
+        this.deleting = false;
+      }
+    }
+  }
+
   <template>
     <article class="isbf-learning-resource">
-      <div class="isbf-learning-resource__author">
-        {{#if @resource.author.avatar_template}}
-          {{dAvatar @resource.author imageSize="small"}}
-        {{/if}}
-        <span>{{if
-            @resource.author.name
-            @resource.author.name
-            @resource.author.username
-          }}</span>
+      <div class="isbf-learning-resource__metadata">
         <time datetime={{@resource.created_at}}>{{this.createdAtLabel}}</time>
+        {{#if this.canDelete}}
+          <DButton
+            class="btn-flat isbf-learning-resource__delete"
+            @action={{this.deleteResource}}
+            @disabled={{this.deleting}}
+            @translatedLabel={{i18n (themePrefix "isbf_v2.learning_delete")}}
+          />
+        {{/if}}
       </div>
+      {{#if this.deleteError}}<p role="alert">{{this.deleteError}}</p>{{/if}}
       <h3>{{#if this.titleUrl}}<a
             href={{this.titleUrl}}
             rel="noopener noreferrer"
@@ -97,6 +173,9 @@ export default class ISBFLearningResource extends Component {
               >{{url}}</a></li>{{/each}}
         </ul>
       {{/if}}
+      <p class="isbf-learning-resource__credit"><span>{{i18n
+            (themePrefix "isbf_v2.learning_contributor_credit")
+          }}</span>{{this.contributor}}</p>
     </article>
   </template>
 }

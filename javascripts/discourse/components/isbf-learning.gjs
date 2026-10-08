@@ -98,6 +98,17 @@ export default class ISBFLearning extends Component {
     return this.courses.find((course) => course.id === this.selectedCourseId);
   }
 
+  get shareLabel() {
+    return i18n(
+      themePrefix(
+        this.config?.resource_admin_management === true &&
+          !this.currentUser?.admin
+          ? "isbf_v2.learning_apply_share"
+          : "isbf_v2.learning_share",
+      ),
+    );
+  }
+
   get shareDisabled() {
     return !this.selectedCourse || this.config?.link_sharing !== true;
   }
@@ -258,6 +269,15 @@ export default class ISBFLearning extends Component {
     }
   }
 
+  @action
+  resourceDeleted() {
+    if (this.isDestroying) {
+      return;
+    }
+    clearTimeout(this.#searchTimer);
+    this.#loadResources();
+  }
+
   #restoreCourse() {
     if (!this.courseItems.some((course) => course.selected)) {
       this.selectedCourseId = this.courseItems[0]?.id || null;
@@ -416,7 +436,7 @@ export default class ISBFLearning extends Component {
                 class="btn-primary isbf-learning__share"
                 @action={{this.share}}
                 @disabled={{this.shareDisabled}}
-                @translatedLabel={{i18n (themePrefix "isbf_v2.learning_share")}}
+                @translatedLabel={{this.shareLabel}}
               />
             </div>
             {{#unless this.config.link_sharing}}<p
@@ -436,6 +456,7 @@ export default class ISBFLearning extends Component {
                 }}</p>{{/if}}
             {{#each this.resources key="id" as |resource|}}<ISBFLearningResource
                 @grades={{this.config.grades}}
+                @onDeleted={{this.resourceDeleted}}
                 @resource={{resource}}
                 @searching={{this.searching}}
               />{{/each}}

@@ -11,9 +11,11 @@ import DModal from "discourse/ui-kit/d-modal";
 import { i18n } from "discourse-i18n";
 
 export default class ISBFLearningShareDialog extends Component {
+  @service currentUser;
   @service site;
   @service siteSettings;
 
+  @tracked contributor = null;
   @tracked description = "";
   @tracked error = null;
   @tracked link = "";
@@ -25,6 +27,35 @@ export default class ISBFLearningShareDialog extends Component {
   willDestroy() {
     super.willDestroy(...arguments);
     this.#closed = true;
+  }
+
+  get contributorEnabled() {
+    return this.site?.isbf_learning?.resource_contributor === true;
+  }
+
+  get contributorValue() {
+    return (
+      this.contributor ??
+      (this.currentUser?.name || this.currentUser?.username || "")
+    );
+  }
+
+  get shareLabel() {
+    return i18n(
+      themePrefix(
+        this.site?.isbf_learning?.resource_admin_management === true &&
+          !this.currentUser?.admin
+          ? "isbf_v2.learning_apply_share"
+          : "isbf_v2.learning_share",
+      ),
+    );
+  }
+
+  get submitLabel() {
+    return this.site?.isbf_learning?.resource_admin_management === true &&
+      !this.currentUser?.admin
+      ? i18n(themePrefix("isbf_v2.learning_submit_request"))
+      : this.shareLabel;
   }
 
   get descriptionEnabled() {
@@ -47,7 +78,10 @@ export default class ISBFLearningShareDialog extends Component {
       length < this.minimumTitleLength ||
       length > this.maximumTitleLength ||
       !this.validLink ||
-      (this.descriptionEnabled && [...this.description].length > 300)
+      (this.descriptionEnabled && [...this.description].length > 300) ||
+      (this.contributorEnabled &&
+        this.contributor !== null &&
+        [...this.contributor.trim()].length > 15)
     );
   }
 
@@ -66,6 +100,11 @@ export default class ISBFLearningShareDialog extends Component {
     } catch {
       return false;
     }
+  }
+
+  @action
+  changeContributor(event) {
+    this.contributor = event.target.value;
   }
 
   @action
@@ -110,6 +149,9 @@ export default class ISBFLearningShareDialog extends Component {
           title: this.title.trim(),
           link: this.link.trim(),
           ...(this.descriptionEnabled ? { description: this.description } : {}),
+          ...(this.contributorEnabled
+            ? { contributor: this.contributor?.trim() || "" }
+            : {}),
         },
       });
       if (this.#closed || this.isDestroying) {
@@ -138,7 +180,7 @@ export default class ISBFLearningShareDialog extends Component {
       class="isbf-learning-share-dialog"
       @closeModal={{this.close}}
       @submitOnEnter={{false}}
-      @title={{i18n (themePrefix "isbf_v2.learning_share")}}
+      @title={{this.shareLabel}}
     >
       <:body>
         <p class="isbf-learning-share-dialog__course">{{@course.name}}</p>
@@ -186,6 +228,22 @@ export default class ISBFLearningShareDialog extends Component {
               {{on "input" this.changeLink}}
             />
           </label>
+          {{#if this.contributorEnabled}}
+            <label>
+              <span>{{i18n
+                  (themePrefix "isbf_v2.learning_resource_contributor")
+                }}</span>
+              <input
+                disabled={{this.saving}}
+                type="text"
+                value={{this.contributorValue}}
+                {{on "input" this.changeContributor}}
+              />
+              <span>{{i18n
+                  (themePrefix "isbf_v2.learning_contributor_hint")
+                }}</span>
+            </label>
+          {{/if}}
           {{#if this.error}}<p role="alert">{{this.error}}</p>{{/if}}
           <div class="isbf-learning-share-dialog__actions">
             <DButton
@@ -195,7 +253,7 @@ export default class ISBFLearningShareDialog extends Component {
             <DButton
               class="btn-primary"
               @disabled={{this.saveDisabled}}
-              @translatedLabel={{i18n (themePrefix "isbf_v2.learning_share")}}
+              @translatedLabel={{this.submitLabel}}
               @type="submit"
             />
           </div>
