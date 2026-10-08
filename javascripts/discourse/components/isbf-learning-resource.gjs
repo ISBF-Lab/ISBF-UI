@@ -1,10 +1,13 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { fn } from "@ember/helper";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
+import DMenu from "discourse/float-kit/components/d-menu";
 import { ajax } from "discourse/lib/ajax";
 import DButton from "discourse/ui-kit/d-button";
+import DDropdownMenu from "discourse/ui-kit/d-dropdown-menu";
 import { i18n } from "discourse-i18n";
 import { learningFileSize, learningSafeUrl } from "../lib/learning-resources";
 
@@ -15,6 +18,8 @@ export default class ISBFLearningResource extends Component {
 
   @tracked deleteError = null;
   @tracked deleting = false;
+
+  menuTriggers = { desktop: ["hover", "click"], mobile: ["click"] };
 
   #closed = false;
 
@@ -38,6 +43,10 @@ export default class ISBFLearningResource extends Component {
       this.args.resource.author?.username ||
       i18n(themePrefix("isbf_v2.learning_unknown_contributor"))
     );
+  }
+
+  get menuIdentifier() {
+    return `isbf-learning-resource-more-${this.args.resource.id}`;
   }
 
   get createdAtLabel() {
@@ -87,6 +96,15 @@ export default class ISBFLearningResource extends Component {
   }
 
   @action
+  async deleteFromMenu(menu) {
+    if (this.deleting || !this.canDelete) {
+      return;
+    }
+    await menu.close();
+    await this.deleteResource();
+  }
+
+  @action
   async deleteResource() {
     if (this.#closed || this.isDestroying || this.deleting || !this.canDelete) {
       return;
@@ -128,29 +146,59 @@ export default class ISBFLearningResource extends Component {
 
   <template>
     <article class="isbf-learning-resource">
-      <div class="isbf-learning-resource__metadata">
-        <time datetime={{@resource.created_at}}>{{this.createdAtLabel}}</time>
-        {{#if this.canDelete}}
-          <DButton
-            class="btn-flat isbf-learning-resource__delete"
-            @action={{this.deleteResource}}
-            @disabled={{this.deleting}}
-            @translatedLabel={{i18n (themePrefix "isbf_v2.learning_delete")}}
-          />
-        {{/if}}
+      <div class="isbf-learning-resource__header">
+        <h3>{{#if this.titleUrl}}<a
+              href={{this.titleUrl}}
+              rel="noopener noreferrer"
+              target="_blank"
+            >{{@resource.title}}</a>{{else}}{{@resource.title}}{{/if}}</h3>
+        <div class="isbf-learning-resource__metadata">
+          <time datetime={{@resource.created_at}}>{{this.createdAtLabel}}</time>
+          {{#if this.canDelete}}
+            <DMenu
+              @ariaLabel={{i18n "more"}}
+              @autofocus={{false}}
+              @contentClass="isbf-learning-resource-menu"
+              @disabled={{this.deleting}}
+              @hoverGracePeriod={{300}}
+              @icon="ellipsis"
+              @identifier={{this.menuIdentifier}}
+              @interactive={{true}}
+              @modalForMobile={{false}}
+              @placement="bottom-end"
+              @title={{i18n "more"}}
+              @triggerClass="btn-flat isbf-learning-resource__more"
+              @triggers={{this.menuTriggers}}
+              @untriggers={{this.menuTriggers}}
+            >
+              <:content as |menu|>
+                <DDropdownMenu as |dropdown|>
+                  <dropdown.item>
+                    <DButton
+                      class="btn-flat isbf-learning-resource__delete"
+                      @action={{fn this.deleteFromMenu menu}}
+                      @disabled={{this.deleting}}
+                      @translatedLabel={{i18n
+                        (themePrefix "isbf_v2.learning_delete")
+                      }}
+                    />
+                  </dropdown.item>
+                </DDropdownMenu>
+              </:content>
+            </DMenu>
+          {{/if}}
+        </div>
       </div>
-      {{#if this.deleteError}}<p role="alert">{{this.deleteError}}</p>{{/if}}
-      <h3>{{#if this.titleUrl}}<a
-            href={{this.titleUrl}}
-            rel="noopener noreferrer"
-            target="_blank"
-          >{{@resource.title}}</a>{{else}}{{@resource.title}}{{/if}}</h3>
-      {{#if @searching}}<p
-          class="isbf-learning-resource__context"
-        >{{this.gradeLabel}} · {{@resource.course.name}}</p>{{/if}}
       {{#if @resource.description}}<p
           class="isbf-learning-resource__description"
         >{{@resource.description}}</p>{{/if}}
+      {{#if @searching}}<p
+          class="isbf-learning-resource__context"
+        >{{this.gradeLabel}} · {{@resource.course.name}}</p>{{/if}}
+      {{#if this.deleteError}}<p
+          class="isbf-learning-resource__error"
+          role="alert"
+        >{{this.deleteError}}</p>{{/if}}
       {{#if this.files.length}}
         <ul
           aria-label={{i18n (themePrefix "isbf_v2.learning_files")}}
