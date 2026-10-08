@@ -25,3 +25,4 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-sidebar-more-ui.mjs
       - run: node --experimental-vm-modules scripts/check-official-ui.mjs
       - run: node --experimental-vm-modules scripts/check-learning-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-alumni-ui.mjs

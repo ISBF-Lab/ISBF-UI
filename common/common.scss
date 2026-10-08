@@ -1786,6 +1786,7 @@ html.composer-open
 
 body:has(.isbf-v2-shell--calendar),
 body:has(.isbf-v2-shell--anonymous-posts),
+body:has(.isbf-v2-shell--alumni),
 body:has(.isbf-v2-shell--workbench) {
   #main-outlet {
     display: none;
@@ -1798,6 +1799,7 @@ body:has(.isbf-v2-shell--workbench) {
 
 .isbf-v2-shell--calendar,
 .isbf-v2-shell--anonymous-posts,
+.isbf-v2-shell--alumni,
 .isbf-v2-shell--workbench {
   height: auto;
 }
@@ -4610,3 +4612,196 @@ body:has(.isbf-v2-shell):has(.isbf-v2-shell--feedback) {
 @import "learning-resources";
 @import "learning-composer";
 @import "official-calendar";
+
+.isbf-alumni {
+  box-sizing: border-box;
+  width: var(--isbf-v2-feature-width);
+  min-height: 100dvh;
+  margin-left: var(--isbf-v2-feed-left);
+  padding-bottom: 80px;
+  border-inline: 1px solid var(--isbf-v2-border);
+  background: var(--isbf-v2-surface);
+  color: var(--isbf-v2-text);
+}
+
+.isbf-alumni__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--isbf-v2-border);
+}
+
+.isbf-alumni__back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--isbf-v2-text);
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+  }
+}
+
+.isbf-alumni__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+
+  label {
+    display: grid;
+    flex: 1 1 140px;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    color: var(--isbf-v2-text);
+    background: var(--isbf-v2-surface);
+  }
+}
+
+.isbf-alumni-map {
+  padding: 0 16px;
+
+  .leaflet-container {
+    color: var(--isbf-v2-text);
+    background: var(--isbf-v2-hover);
+    font: inherit;
+  }
+
+  .leaflet-tooltip,
+  .leaflet-bar a {
+    color: var(--isbf-v2-text);
+    background: var(--isbf-v2-surface);
+    border-color: var(--isbf-v2-border);
+  }
+
+  .leaflet-bar a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+  }
+
+  .leaflet-control {
+    z-index: 1;
+  }
+
+  .leaflet-pane {
+    z-index: 0;
+  }
+}
+
+.isbf-alumni-map__canvas {
+  position: relative;
+  width: 100%;
+  height: 360px;
+  border: 1px solid var(--isbf-v2-border);
+  border-radius: 16px;
+  isolation: isolate;
+}
+
+.isbf-alumni-map__country,
+.isbf-alumni-map__region {
+  fill: var(--isbf-v2-accent);
+  stroke: var(--isbf-v2-text);
+}
+
+.isbf-alumni-map__city {
+  fill: var(--isbf-v2-accent);
+  stroke: var(--isbf-v2-surface);
+}
+
+.isbf-alumni-map__credit {
+  display: block;
+  margin-block: 8px;
+  color: var(--isbf-v2-muted);
+}
+
+.isbf-alumni__directory,
+.isbf-alumni__notice {
+  padding: 16px;
+}
+
+.isbf-alumni__person {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  gap: 12px;
+  padding-block: 16px;
+  border-bottom: 1px solid var(--isbf-v2-border);
+  overflow-wrap: anywhere;
+
+  a {
+    font-weight: 700;
+  }
+}
+
+.isbf-alumni-profile {
+  form,
+  label {
+    display: grid;
+    gap: 8px;
+  }
+
+  form {
+    gap: 16px;
+  }
+
+  input,
+  select {
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+  }
+
+  .isbf-alumni-profile__visible {
+    display: flex;
+    align-items: center;
+  }
+
+  .isbf-alumni-profile__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+}
+
+@media (width <= 600px) {
+  .isbf-alumni {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .isbf-alumni__header {
+    padding: 8px 12px;
+
+    .btn {
+      min-height: 44px;
+    }
+  }
+
+  .isbf-alumni__back h1 {
+    font-size: 18px;
+  }
+
+  .isbf-alumni-map__canvas {
+    height: 280px;
+  }
+
+  .isbf-alumni__person {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+}
+
+.isbf-alumni-map__reset {
+  min-height: 44px;
+  margin-bottom: 8px;
+}
