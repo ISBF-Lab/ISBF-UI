@@ -133,6 +133,7 @@ en:
     account_username: "Target account username"
     account_username_placeholder: "Enter a username"
     send_link_request: "Send link request"
+    account_link_sent: "Link request sent. Awaiting developer approval."
     account_link_pending: "Awaiting developer approval"
     verify_device: "Verify this device"
     switch_now: "Switch"

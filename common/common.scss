@@ -3290,7 +3290,6 @@ body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
 }
 
 .isbf-v2-account-menu__linked-account > button,
-.isbf-v2-account-menu__link-form button,
 .isbf-v2-account-menu__verify button {
   min-height: 36px;
   padding: 6px 10px;
@@ -3303,7 +3302,6 @@ body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
 }
 
 .isbf-v2-account-menu__linked-account > button:disabled,
-.isbf-v2-account-menu__link-form button:disabled,
 .isbf-v2-account-menu__verify button:disabled {
   opacity: 0.55;
   cursor: default;
@@ -3314,7 +3312,6 @@ body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
   text-align: right;
 }
 
-.isbf-v2-account-menu__link-form,
 .isbf-v2-account-menu__verify {
   display: grid;
   grid-column: 1 / -1;
@@ -3322,7 +3319,7 @@ body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
   padding: 8px;
 }
 
-.isbf-v2-account-menu__link-form label,
+.isbf-v2-account-link-modal label,
 .isbf-v2-account-menu__verify label {
   display: grid;
   gap: 4px;
@@ -3330,7 +3327,7 @@ body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
   font-size: var(--isbf-v2-font-xs);
 }
 
-.isbf-v2-account-menu__link-form input,
+.isbf-v2-account-link-modal input,
 .isbf-v2-account-menu__verify input,
 .isbf-v2-account-menu__verify select {
   box-sizing: border-box;
@@ -3344,7 +3341,7 @@ body.user-activity-bookmarks-page #main-outlet .user-navigation-secondary {
   color: var(--isbf-v2-text);
 }
 
-.isbf-v2-account-menu__link-form input:focus,
+.isbf-v2-account-link-modal input:focus,
 .isbf-v2-account-menu__verify input:focus,
 .isbf-v2-account-menu__verify select:focus {
   border-color: var(--isbf-v2-accent);
@@ -4878,4 +4875,21 @@ body:has(.isbf-v2-shell):has(.isbf-v2-shell--feedback) {
 .isbf-alumni-map__reset {
   min-height: 44px;
   margin-bottom: 8px;
+}
+
+.isbf-v2-account-link-modal form {
+  display: grid;
+  gap: 16px;
+}
+
+.isbf-v2-account-link-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.isbf-v2-account-link-modal__error {
+  margin: 0;
+  color: var(--danger);
 }

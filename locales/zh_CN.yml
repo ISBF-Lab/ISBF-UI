@@ -133,6 +133,7 @@ zh_CN:
     account_username: "目标账号用户名"
     account_username_placeholder: "输入用户名"
     send_link_request: "发送关联申请"
+    account_link_sent: "关联申请已发送，等待开发者批准。"
     account_link_pending: "等待开发者批准"
     verify_device: "验证此设备"
     switch_now: "切换"
