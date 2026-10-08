@@ -205,6 +205,14 @@ export default class ISBFAlumniMap extends Component {
       const regions =
         this.args.config.countries.find((item) => item.code === country)
           ?.regions || [];
+      const selectedRegion = regions.find((item) => item.code === region);
+      const hasSelectedBoundary = data.features.some(
+        (feature) => feature.properties.code === region,
+      );
+      if (!hasSelectedBoundary && selectedRegion?.cities?.length) {
+        const point = selectedRegion.cities[0];
+        this.#map.setView([point.lat, point.lng], 7);
+      }
       const points = regions
         .filter((item) => !region || item.code === region)
         .flatMap((item) =>
