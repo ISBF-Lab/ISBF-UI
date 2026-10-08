@@ -5,6 +5,7 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { alumniConfig } from "../lib/alumni";
 import { learningConfig } from "../lib/learning-resources";
+import ISBFV2UtilityActions from "./isbf-v2-utility-actions";
 
 const CARDS = [
   { key: "learning_resources", icon: "book-open", tone: "blue" },
@@ -64,6 +65,7 @@ export default class ISBFV2Workbench extends Component {
           {{/each}}
         </div>
       </section>
+      <ISBFV2UtilityActions />
     </main>
   </template>
 }
