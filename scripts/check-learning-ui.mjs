@@ -649,12 +649,85 @@ staleFailure.willDestroy();
 rejectDeletion(new Error("Late error"));
 await deleting;
 assert.equal(staleFailure.deleteError, null);
+const menuCard = makeDeleteCard();
+const requestsBeforeMenu = deletions.length;
+const menuEvents = [];
+let finishMenuClose;
+const closingMenu = {
+  close: () => {
+    menuEvents.push("closing");
+    return new Promise((resolve) => {
+      finishMenuClose = () => {
+        menuEvents.push("closed");
+        resolve();
+      };
+    });
+  },
+};
+menuCard.dialog.confirm = async () => {
+  menuEvents.push("confirm");
+  return false;
+};
+const fromMenu = menuCard.deleteFromMenu(closingMenu);
+await new Promise(setImmediate);
+assert.deepEqual(menuEvents, ["closing"]);
+finishMenuClose();
+await fromMenu;
+assert.deepEqual(menuEvents, ["closing", "closed", "confirm"]);
+assert.equal(
+  deletions.length,
+  requestsBeforeMenu,
+  "Menu cancellation makes no request",
+);
+const menuRevoked = makeDeleteCard();
+const revokedMenuEvents = [];
+menuRevoked.dialog.confirm = async () => {
+  revokedMenuEvents.push("confirm");
+  return true;
+};
+await menuRevoked.deleteFromMenu({
+  close: async () => {
+    menuRevoked.currentUser = { moderator: true };
+  },
+});
+assert.deepEqual(revokedMenuEvents, []);
+assert.equal(
+  deletions.length,
+  requestsBeforeMenu,
+  "Menu close rechecks current permissions",
+);
+await menuRevoked.deleteFromMenu({
+  close: async () => {
+    throw new Error("Unauthorized users cannot operate the menu");
+  },
+});
+assert.deepEqual(plain(menuCard.menuTriggers), {
+  desktop: ["hover", "click"],
+  mobile: ["click"],
+});
+assert.notEqual(
+  menuCard.menuIdentifier,
+  new ResourceCard({ resource: { id: "another-resource" } }).menuIdentifier,
+  "Each card must own a separate native menu",
+);
 const cardTemplate = read(
   "javascripts/discourse/components/isbf-learning-resource.gjs",
 ).split("  <template>")[1];
 assert.ok(cardTemplate.includes("{{this.contributor}}"));
 assert.ok(!/dAvatar|htmlSafe|\{\{\{/.test(cardTemplate));
 assert.ok(cardTemplate.includes("{{#if this.canDelete}}"));
+assert.ok(cardTemplate.includes("<DMenu"));
+assert.ok(cardTemplate.includes('@icon="ellipsis"'));
+assert.ok(cardTemplate.includes("@autofocus={{false}}"));
+assert.ok(cardTemplate.includes("@hoverGracePeriod={{300}}"));
+assert.ok(cardTemplate.includes("@triggers={{this.menuTriggers}}"));
+assert.ok(cardTemplate.includes("@untriggers={{this.menuTriggers}}"));
+assert.ok(cardTemplate.indexOf("<h3>") < cardTemplate.indexOf("<time"));
+assert.ok(
+  cardTemplate.indexOf("@resource.description") <
+    cardTemplate.indexOf("@searching"),
+  "Descriptions must follow the title before search context",
+);
 
 const shareTemplate = read(
   "javascripts/discourse/components/isbf-learning-share-dialog.gjs",
@@ -953,6 +1026,18 @@ assert.match(
 assert.match(
   learningStyles,
   /\.isbf-learning-resource__description\s*\{[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: pre-wrap;/,
+);
+assert.match(
+  learningStyles,
+  /\.isbf-learning-resource__header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;[^}]*align-items: baseline;/,
+);
+assert.match(
+  learningStyles,
+  /\.isbf-learning-resource__more\.btn\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/,
+);
+assert.match(
+  learningStyles,
+  /\.isbf-learning-resource p\.isbf-learning-resource__credit\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/,
 );
 const reviewSource = read(
   "javascripts/discourse/components/reviewable-isbf-learning-course.gjs",
