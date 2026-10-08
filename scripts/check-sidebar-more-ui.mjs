@@ -106,35 +106,122 @@ async function loadComponent(path) {
   await module.evaluate();
   return module.namespace.default;
 }
-const Menu = await loadComponent("components/isbf-v2-more-menu.gjs");
-const menu = new Menu();
+const UtilityActions = await loadComponent(
+  "components/isbf-v2-utility-actions.gjs",
+);
 const calls = [];
 const native = { close: async () => calls.push("close") };
-menu.router = { transitionTo: (path) => calls.push(path) };
-menu.dialog = { alert: async (message) => calls.push(message) };
-menu.modal = { show: (component) => calls.push(component) };
-menu.site = site;
-await menu.openSettings(native);
-assert.deepEqual(calls.splice(0), ["close", "/login"]);
-for (const role of [
-  { username: "student" },
-  { username: "moderator", moderator: true },
-  { username: "developer", admin: true },
-]) {
-  menu.currentUser = role;
-  await menu.openSettings(native);
+for (const menu of [native, undefined]) {
+  const actions = new UtilityActions({ menu });
+  actions.router = { transitionTo: (path) => calls.push(path) };
+  actions.dialog = { alert: async (message) => calls.push(message) };
+  actions.modal = { show: (component) => calls.push(component) };
+  actions.site = site;
+  const before = menu ? ["close"] : [];
+  assert.deepEqual(
+    Array.from(actions.items, (item) => item.key),
+    ["settings", "feedback", "join"],
+  );
+  await actions.openSettings();
+  assert.deepEqual(calls.splice(0), [...before, "/login"]);
+  for (const role of [
+    { username: "student" },
+    { username: "moderator", moderator: true },
+    { username: "developer", admin: true },
+    { username: "名字 /?" },
+  ]) {
+    actions.currentUser = role;
+    await actions.openSettings();
+    assert.deepEqual(calls.splice(0), [
+      ...before,
+      `/u/${encodeURIComponent(role.username)}/preferences`,
+    ]);
+  }
+  await actions.openFeedback();
+  assert.deepEqual(calls.splice(0), [...before, "/c/site-feedback/2/l/latest"]);
+  actions.site = { categories: [] };
+  await actions.openFeedback();
   assert.deepEqual(calls.splice(0), [
-    "close",
-    `/u/${role.username}/preferences`,
+    ...before,
+    "isbf_v2.feedback_unavailable",
   ]);
+  await actions.openJoin();
+  assert.deepEqual(calls.splice(0), [...before, Component]);
 }
-await menu.openFeedback(native);
-assert.deepEqual(calls.splice(0), ["close", "/c/site-feedback/2/l/latest"]);
-menu.site = { categories: [] };
-await menu.openFeedback(native);
-assert.deepEqual(calls.splice(0), ["close", "isbf_v2.feedback_unavailable"]);
-await menu.openJoin(native);
-assert.deepEqual(calls.splice(0), ["close", Component]);
+
+for (const method of ["openSettings", "openFeedback", "openJoin"]) {
+  let finishClosing;
+  const actions = new UtilityActions({
+    menu: {
+      close: () =>
+        new Promise((resolve) => {
+          finishClosing = resolve;
+        }),
+    },
+  });
+  actions.router = { transitionTo: (path) => calls.push(path) };
+  actions.modal = { show: (component) => calls.push(component) };
+  actions.site = site;
+  const pending = actions[method]();
+  await Promise.resolve();
+  assert.equal(calls.length, 0, `${method} waits for the desktop menu`);
+  finishClosing();
+  await pending;
+  assert.equal(calls.length, 1);
+  calls.splice(0);
+}
+
+const desktopMenuSource = read("components/isbf-v2-more-menu.gjs");
+assert.match(desktopMenuSource, /<DMenu\s/);
+assert.match(desktopMenuSource, /<ISBFV2UtilityActions @menu=\{\{menu\}\} \/>/);
+assert.match(desktopMenuSource, /@placement="top-start"/);
+const workbenchSource = read("components/isbf-v2-workbench.gjs");
+assert.match(workbenchSource, /<\/section>\s*<ISBFV2UtilityActions \/>/);
+for (const page of ["isbf-learning.gjs", "isbf-alumni.gjs"]) {
+  assert.doesNotMatch(read(`components/${page}`), /ISBFV2UtilityActions/);
+}
+const styles = readFileSync(
+  new URL("../common/common.scss", import.meta.url),
+  "utf8",
+);
+assert.match(styles, /\.isbf-v2-workbench__actions\s*\{\s*display: none;/);
+const mobileStyles = styles.slice(
+  styles.indexOf(
+    "@media (width <= 600px)",
+    styles.indexOf(".isbf-v2-workbench__name"),
+  ),
+);
+assert.match(
+  mobileStyles,
+  /\.isbf-v2-workbench\s*\{\s*display: flex;\s*flex-direction: column;\s*min-height: 100dvh;/,
+);
+assert.match(
+  mobileStyles,
+  /padding-bottom: calc\(\s*64px \+ var\(--isbf-v2-space-4\) \+ env\(safe-area-inset-bottom\)\s*\);/,
+);
+const footerStyles = mobileStyles.match(
+  /\.isbf-v2-workbench__actions\s*\{([^}]+)\}/,
+)[1];
+assert.match(
+  footerStyles,
+  /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
+);
+assert.match(footerStyles, /margin-top: auto;/);
+assert.match(footerStyles, /padding-top: var\(--isbf-v2-space-6\);/);
+assert.doesNotMatch(footerStyles, /position: (?:fixed|absolute|sticky)/);
+const actionStyles = mobileStyles.match(
+  /\.isbf-v2-workbench__action\s*\{([\s\S]+?)\n  \}/,
+)[1];
+assert.match(actionStyles, /min-height: 44px;/);
+assert.match(actionStyles, /min-width: 0;/);
+assert.match(actionStyles, /width: 24px;\s*height: 24px;/);
+assert.match(actionStyles, /font-size: var\(--isbf-v2-font-sm\);/);
+assert.match(actionStyles, /&:hover,\s*&:focus-visible/);
+for (const width of [390, 430]) {
+  const cellWidth = (width - 2 * 16 - 2 * 8) / 3;
+  const largestItem = 24 + 8 + 4 * 15 + 2 * 8;
+  assert.ok(cellWidth >= largestItem, `${width}px fits icon and longest label`);
+}
 
 const Shell = await loadComponent("components/isbf-v2-shell.gjs");
 const shell = new Shell();
