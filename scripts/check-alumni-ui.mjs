@@ -12,8 +12,7 @@ const helpers = new vm.SourceTextModule(
 );
 await helpers.link(() => {});
 await helpers.evaluate();
-const { alumniConfig, alumniRegions, alumniCities, alumniLocation } =
-  helpers.namespace;
+const { alumniConfig, alumniRegions, alumniLocation } = helpers.namespace;
 const config = {
   enabled: true,
   geography_url: "/isbf/alumni/geography",
@@ -24,11 +23,27 @@ const config = {
       regions: [
         {
           code: "GD",
-          name: "广东",
-          cities: [{ code: "ZH", name: "珠海", lat: 22.27, lng: 113.57 }],
+          name: "广东省",
+          center: { lat: 23, lng: 113 },
+        },
+        {
+          code: "HK",
+          name: "香港特别行政区",
+          center: { lat: 22.3, lng: 114.2 },
+        },
+        {
+          code: "MO",
+          name: "澳门特别行政区",
+          center: { lat: 22.2, lng: 113.5 },
+        },
+        {
+          code: "INVALID",
+          name: "Invalid center",
+          center: { lat: null, lng: 1 },
         },
       ],
     },
+    { code: "US", name: "美国", regions: [{ code: "CA", name: "California" }] },
   ],
 };
 assert.equal(
@@ -37,14 +52,15 @@ assert.equal(
 );
 assert.equal(alumniConfig({ isbf_alumni: config }), config);
 assert.equal(alumniRegions(config, "CN")[0].code, "GD");
-assert.equal(alumniCities(config, "CN", "GD")[0].code, "ZH");
+assert.deepEqual(plain(alumniRegions(config, "US")), []);
 assert.equal(
   alumniLocation({
+    country_code: "CN",
     country_name: "中国",
-    region_name: "广东",
+    region_name: "广东省",
     city_name: "珠海",
   }),
-  "中国 · 广东 · 珠海",
+  "中国 · 广东省",
 );
 
 function componentClass(name, globals = {}) {
@@ -75,7 +91,6 @@ const pending = [];
 const Page = componentClass("isbf-alumni", {
   alumniConfig,
   alumniRegions,
-  alumniCities,
   alumniLocation,
   ajax: (url, options) =>
     new Promise((resolve, reject) =>
@@ -90,10 +105,10 @@ page.selectLocation({ country: "CN", region: "GD", city: "ZH" });
 assert.deepEqual(plain(pending[0].options.data), {
   country: "CN",
   region: "GD",
-  city: "ZH",
   page: 1,
 });
-page.selectLocation({ country: "US" });
+page.selectLocation({ country: "US", region: "CA" });
+assert.equal(page.region, "");
 pending[0].resolve({ users: [{ id: 1 }], has_more: true });
 await new Promise((resolve) => setImmediate(resolve));
 assert.equal(page.users.length, 0);
@@ -132,7 +147,6 @@ let failProfile;
 const requests = [];
 const Profile = componentClass("isbf-alumni-profile", {
   alumniRegions,
-  alumniCities,
   ajax: (url, options) =>
     new Promise((resolve, reject) => {
       requests.push({ url, options });
@@ -161,7 +175,17 @@ assert.equal(profile.profile.display_name, "Member");
 assert.equal(profile.disabled, false);
 profile.change("country_code", { target: { value: "US" } });
 assert.equal(profile.profile.region_code, "");
-assert.equal(profile.profile.city_code, "");
+assert.equal(profile.profile.city_code, undefined);
+const save = profile.save({ preventDefault() {} });
+assert.deepEqual(plain(requests.at(-1).options.data), {
+  display_name: "Member",
+  country_code: "US",
+  region_code: "",
+  industry: "Education",
+  visible: true,
+});
+finishProfile({});
+await save;
 
 const MapComponent = componentClass("isbf-alumni-map", {
   COUNTRY_VIEWS: {},
@@ -174,6 +198,156 @@ await map.initialize();
 assert.equal(map.error, true);
 assert.equal(map.loading, false);
 map.willDestroy();
+const selections = [];
+const markers = [];
+const mapRequests = [];
+const featureLayers = [];
+const bounds = {
+  getNorthWest: () => ({ x: 0, y: 0 }),
+  getSouthEast: () => ({ x: 100, y: 50 }),
+  intersects: () => true,
+};
+const fakeMap = {
+  setView(center, zoom) {
+    this.center = center;
+    this.zoom = zoom;
+    return this;
+  },
+  fitBounds() {},
+  getBounds: () => bounds,
+  getZoom() {
+    return this.zoom;
+  },
+  latLngToContainerPoint: (point) => point,
+  on() {},
+  remove() {},
+  invalidateSize() {},
+};
+const L = {
+  map: () => fakeMap,
+  geoJSON(data, options) {
+    const layers = data.features.map((feature) => {
+      const layer = {
+        feature,
+        bindTooltip(label) {
+          this.label = label.textContent;
+        },
+        on(event, callback) {
+          this[event] = callback;
+        },
+        getBounds: () => bounds,
+        setStyle() {},
+        openTooltip() {},
+        closeTooltip() {},
+      };
+      featureLayers.push(layer);
+      options.onEachFeature(feature, layer);
+      return layer;
+    });
+    return {
+      eachLayer(callback) {
+        layers.forEach(callback);
+      },
+      addTo() {
+        return this;
+      },
+      remove() {},
+    };
+  },
+  circleMarker(center, options) {
+    const marker = {
+      center,
+      options,
+      bindTooltip(label, tooltipOptions) {
+        this.label = label.textContent;
+        this.tooltipOptions = tooltipOptions;
+      },
+      on(event, callback) {
+        this[event] = callback;
+      },
+    };
+    markers.push(marker);
+    return marker;
+  },
+  layerGroup(items) {
+    return {
+      items,
+      addTo() {
+        this.visible = true;
+        return this;
+      },
+      remove() {
+        this.visible = false;
+      },
+    };
+  },
+};
+const workingConfig = {
+  ...config,
+  world_map_url: "/world.json",
+  region_map_urls: { CN: "/cn.json", US: "/us.json" },
+};
+const WorkingMap = componentClass("isbf-alumni-map", {
+  COUNTRY_VIEWS: { CN: { center: [35, 105], zoom: 3 } },
+  leaflet: async () => L,
+  window: { L },
+  document: { createElement: () => ({}) },
+  ResizeObserver: class {
+    observe() {}
+    disconnect() {}
+  },
+  sameOriginPath: (url) => url,
+  ajax: async (url) => {
+    mapRequests.push(url);
+    return {
+      features: (url === "/world.json"
+        ? [
+            { code: "CN", name: "中国" },
+            { code: "US", name: "美国" },
+          ]
+        : [{ code: "GD", name: "广东省" }]
+      ).map((properties) => ({ properties })),
+    };
+  },
+});
+const workingMap = new WorkingMap({
+  config: workingConfig,
+  country: "CN",
+  region: "",
+  onSelect: (value) => selections.push(value),
+});
+await workingMap.initialize();
+assert.equal(workingMap.error, false);
+assert.deepEqual(plain(markers.map((item) => item.label)), [
+  "香港特别行政区",
+  "澳门特别行政区",
+]);
+assert.ok(markers.every((item) => item.tooltipOptions.permanent));
+markers[0].click();
+assert.deepEqual(plain(selections.at(-1)), { country: "CN", region: "HK" });
+featureLayers.find((item) => item.feature.properties.code === "GD").click();
+assert.deepEqual(plain(selections.at(-1)), { country: "CN", region: "GD" });
+workingMap.args.region = "HK";
+await workingMap.updateSelection();
+assert.deepEqual(plain(fakeMap.center), [22.3, 114.2]);
+assert.equal(fakeMap.zoom, 7);
+workingMap.args.country = "US";
+workingMap.args.region = "";
+await workingMap.updateSelection();
+assert.deepEqual(mapRequests, ["/world.json", "/cn.json"]);
+workingMap.returnToChina();
+assert.deepEqual(plain(selections.at(-1)), { country: "CN" });
+workingMap.willDestroy();
+assert.equal(
+  alumniLocation({
+    country_code: "US",
+    country_name: "美国",
+    region_name: "California",
+    city_name: "LA",
+  }),
+  "美国",
+);
+
 const mapSource = read("javascripts/discourse/components/isbf-alumni-map.gjs");
 assert.ok(mapSource.includes("label.textContent"));
 assert.ok(mapSource.includes("Natural Earth · Leaflet"));
@@ -185,5 +359,5 @@ const pageSource = read("javascripts/discourse/components/isbf-alumni.gjs");
 assert.ok(pageSource.includes("isbf_alumni_member"));
 assert.ok(pageSource.includes("this.profileSaved"));
 process.stdout.write(
-  "Alumni capability, directory races/pagination, profile failures, safe labels and map initialization failure OK\n",
+  "Alumni capability, directory races/pagination, profile failures, safe labels and country/province marker selection and map initialization failure OK\n",
 );

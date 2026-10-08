@@ -62,7 +62,7 @@ export default class ISBFAlumniMap extends Component {
   #map;
   #world;
   #detail;
-  #cities;
+  #regionMarkers;
   #observer;
   #request = 0;
   #layers = new Map();
@@ -128,7 +128,7 @@ export default class ISBFAlumniMap extends Component {
 
   @action
   returnToChina() {
-    if (this.args.country === "CN" && !this.args.region && !this.args.city) {
+    if (this.args.country === "CN" && !this.args.region) {
       this.updateSelection();
     } else {
       this.args.onSelect({ country: "CN" });
@@ -142,13 +142,12 @@ export default class ISBFAlumniMap extends Component {
     }
     const request = ++this.#request;
     this.#detail?.remove();
-    this.#cities?.remove();
+    this.#regionMarkers?.remove();
     this.#detail = null;
-    this.#cities = null;
+    this.#regionMarkers = null;
     this.error = false;
     const country = this.args.country;
     const region = this.args.region;
-    const city = this.args.city;
     let countryLayer;
     this.#world.eachLayer((layer) => {
       const code =
@@ -172,7 +171,7 @@ export default class ISBFAlumniMap extends Component {
     } else if (!country) {
       this.#map.setView([20, 0], 1);
     }
-    const url = this.args.config.region_map_urls?.[country];
+    const url = country === "CN" ? this.args.config.region_map_urls?.CN : null;
     if (!url) {
       this.#refreshLabels();
       return;
@@ -205,42 +204,31 @@ export default class ISBFAlumniMap extends Component {
       const regions =
         this.args.config.countries.find((item) => item.code === country)
           ?.regions || [];
-      const selectedRegion = regions.find((item) => item.code === region);
-      const hasSelectedBoundary = data.features.some(
-        (feature) => feature.properties.code === region,
+      const boundaries = new Set(
+        data.features.map((feature) => feature.properties.code),
       );
-      if (!hasSelectedBoundary && selectedRegion?.cities?.length) {
-        const point = selectedRegion.cities[0];
-        this.#map.setView([point.lat, point.lng], 7);
-      }
-      const points = regions
-        .filter((item) => !region || item.code === region)
-        .flatMap((item) =>
-          (item.cities || []).map((point) => ({ ...point, region: item.code })),
-        );
-      this.#cities = L.layerGroup(
-        points
+      this.#regionMarkers = L.layerGroup(
+        regions
           .filter(
-            (point) => Number.isFinite(point.lat) && Number.isFinite(point.lng),
+            (item) =>
+              !boundaries.has(item.code) &&
+              Number.isFinite(item.center?.lat) &&
+              Number.isFinite(item.center?.lng),
           )
-          .map((point) => {
-            const marker = L.circleMarker([point.lat, point.lng], {
-              radius: point.code === city ? 7 : 5,
-              className: "isbf-alumni-map__city",
+          .map((item) => {
+            const marker = L.circleMarker([item.center.lat, item.center.lng], {
+              radius: item.code === region ? 7 : 5,
+              className: "isbf-alumni-map__region",
             });
-            marker.bindTooltip(this.#label(point.name), {
-              permanent: Boolean(region),
+            marker.bindTooltip(this.#label(item.name), {
+              permanent: true,
               direction: "top",
             });
             marker.on("click", () =>
-              this.args.onSelect({
-                country,
-                region: point.region,
-                city: point.code,
-              }),
+              this.args.onSelect({ country, region: item.code }),
             );
-            if (point.code === city) {
-              this.#map.setView([point.lat, point.lng], 7);
+            if (item.code === region) {
+              this.#map.setView([item.center.lat, item.center.lng], 7);
             }
             return marker;
           }),
@@ -273,17 +261,15 @@ export default class ISBFAlumniMap extends Component {
         layer.closeTooltip();
       }
     };
-    this.#world?.eachLayer((layer) => show(layer, !this.#detail));
-    this.#detail?.eachLayer((layer) => show(layer, this.#map.getZoom() >= 4));
-    if (this.#cities) {
-      const visible = Boolean(this.args.region) || this.#map.getZoom() >= 5;
-      if (visible && !this.#map.hasLayer(this.#cities)) {
-        this.#cities.addTo(this.#map);
-      }
-      if (!visible && this.#map.hasLayer(this.#cities)) {
-        this.#cities.remove();
-      }
-    }
+    this.#world?.eachLayer((layer) =>
+      show(
+        layer,
+        !this.#detail ||
+          (layer.feature.properties.country_code ||
+            layer.feature.properties.code) !== "CN",
+      ),
+    );
+    this.#detail?.eachLayer((layer) => show(layer, true));
   }
 
   #label(name) {
@@ -320,7 +306,7 @@ export default class ISBFAlumniMap extends Component {
         aria-label={{i18n (themePrefix "isbf_v2.alumni_map")}}
         class="isbf-alumni-map__canvas"
         {{didInsert this.insert}}
-        {{didUpdate this.updateSelection @country @region @city}}
+        {{didUpdate this.updateSelection @country @region}}
       ></div>
       {{#if this.loading}}<p role="status">{{i18n
             (themePrefix "isbf_v2.learning_loading")

@@ -10,7 +10,7 @@ import { eq } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import DModal from "discourse/ui-kit/d-modal";
 import { i18n } from "discourse-i18n";
-import { alumniCities, alumniRegions } from "../lib/alumni";
+import { alumniRegions } from "../lib/alumni";
 
 export default class ISBFAlumniProfile extends Component {
   @service currentUser;
@@ -20,7 +20,6 @@ export default class ISBFAlumniProfile extends Component {
     display_name: "",
     country_code: "CN",
     region_code: "",
-    city_code: "",
     industry: "",
     visible: false,
   };
@@ -38,14 +37,6 @@ export default class ISBFAlumniProfile extends Component {
     return alumniRegions(this.args.config, this.profile.country_code);
   }
 
-  get cities() {
-    return alumniCities(
-      this.args.config,
-      this.profile.country_code,
-      this.profile.region_code,
-    );
-  }
-
   get disabled() {
     return !this.loaded || this.loading || this.saving;
   }
@@ -61,7 +52,10 @@ export default class ISBFAlumniProfile extends Component {
       }
       this.profile = {
         ...this.profile,
-        ...response,
+        country_code: response.country_code || "CN",
+        region_code: response.country_code === "CN" ? response.region_code : "",
+        industry: response.industry || "",
+        visible: response.visible === true,
         display_name:
           response.display_name ||
           this.currentUser.name ||
@@ -86,10 +80,6 @@ export default class ISBFAlumniProfile extends Component {
     const next = { ...this.profile, [field]: value };
     if (field === "country_code") {
       next.region_code = "";
-      next.city_code = "";
-    }
-    if (field === "region_code") {
-      next.city_code = "";
     }
     this.profile = next;
   }
@@ -165,21 +155,6 @@ export default class ISBFAlumniProfile extends Component {
                       selected={{eq this.profile.region_code region.code}}
                       value={{region.code}}
                     >{{region.name}}</option>{{/each}}
-                </select></label>{{/if}}
-            {{#if this.cities.length}}<label>{{i18n
-                  (themePrefix "isbf_v2.alumni_city")
-                }}<select
-                  disabled={{this.saving}}
-                  value={{this.profile.city_code}}
-                  {{on "change" (fn this.change "city_code")}}
-                >
-                  <option value="">{{i18n
-                      (themePrefix "isbf_v2.alumni_city_optional")
-                    }}</option>
-                  {{#each this.cities as |city|}}<option
-                      selected={{eq this.profile.city_code city.code}}
-                      value={{city.code}}
-                    >{{city.name}}</option>{{/each}}
                 </select></label>{{/if}}
             <label>{{i18n (themePrefix "isbf_v2.alumni_industry")}}<input
                 disabled={{this.saving}}

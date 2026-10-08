@@ -10,12 +10,7 @@ import { eq } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
-import {
-  alumniCities,
-  alumniConfig,
-  alumniLocation,
-  alumniRegions,
-} from "../lib/alumni";
+import { alumniConfig, alumniLocation, alumniRegions } from "../lib/alumni";
 import ISBFAlumniMap from "./isbf-alumni-map";
 import ISBFAlumniProfile from "./isbf-alumni-profile";
 
@@ -26,7 +21,6 @@ export default class ISBFAlumni extends Component {
 
   @tracked country = "CN";
   @tracked region = "";
-  @tracked city = "";
   @tracked users = [];
   @tracked loading = false;
   @tracked error = false;
@@ -72,10 +66,6 @@ export default class ISBFAlumni extends Component {
     return alumniRegions(this.mapConfig, this.country);
   }
 
-  get cities() {
-    return alumniCities(this.mapConfig, this.country, this.region);
-  }
-
   get directoryUsers() {
     return this.users.map((user) => ({
       ...user,
@@ -115,19 +105,9 @@ export default class ISBFAlumni extends Component {
   }
 
   @action
-  cityChanged(event) {
-    this.selectLocation({
-      country: this.country,
-      region: this.region,
-      city: event.target.value,
-    });
-  }
-
-  @action
-  selectLocation({ country = "", region = "", city = "" }) {
+  selectLocation({ country = "", region = "" }) {
     this.country = country;
-    this.region = region;
-    this.city = city;
+    this.region = country === "CN" ? region : "";
     this.loadDirectory();
   }
 
@@ -149,7 +129,6 @@ export default class ISBFAlumni extends Component {
         data: {
           country: this.country,
           region: this.region,
-          city: this.city,
           page,
         },
       });
@@ -251,24 +230,8 @@ export default class ISBFAlumni extends Component {
                     >{{region.name}}</option>{{/each}}
                 </select>
               </label>{{/if}}
-            {{#if this.cities.length}}<label>{{i18n
-                  (themePrefix "isbf_v2.alumni_city")
-                }}
-                <select
-                  value={{this.city}}
-                  {{on "change" this.cityChanged}}
-                ><option value="">{{i18n
-                      (themePrefix "isbf_v2.alumni_all")
-                    }}</option>
-                  {{#each this.cities as |city|}}<option
-                      selected={{eq this.city city.code}}
-                      value={{city.code}}
-                    >{{city.name}}</option>{{/each}}
-                </select>
-              </label>{{/if}}
           </div>
           {{#if this.mapConfig}}<ISBFAlumniMap
-              @city={{this.city}}
               @config={{this.mapConfig}}
               @country={{this.country}}
               @onSelect={{this.selectLocation}}

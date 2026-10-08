@@ -6,20 +6,16 @@ export function alumniConfig(site) {
 }
 
 export function alumniRegions(config, country) {
-  return (
-    config?.countries?.find((item) => item.code === country)?.regions || []
-  );
-}
-
-export function alumniCities(config, country, region) {
-  return (
-    alumniRegions(config, country).find((item) => item.code === region)
-      ?.cities || []
-  );
+  return country === "CN"
+    ? config?.countries?.find((item) => item.code === country)?.regions || []
+    : [];
 }
 
 export function alumniLocation(user) {
-  return [user.country_name, user.region_name, user.city_name]
+  return [
+    user.country_name,
+    user.country_code === "CN" ? user.region_name : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 }
