@@ -7,7 +7,6 @@
   --isbf-v2-font-xl: 20px;
   --isbf-v2-weight-medium: 600;
   --isbf-v2-weight-bold: 750;
-
   --isbf-v2-space-1: 4px;
   --isbf-v2-space-2: 8px;
   --isbf-v2-space-3: 12px;
@@ -20,7 +19,6 @@
   --isbf-v2-radius-pill: 999px;
   --isbf-v2-border-width: 1px;
   --isbf-v2-transition-fast: 120ms ease;
-
   --isbf-v2-background: var(--secondary);
   --isbf-v2-surface: var(--secondary);
   --isbf-v2-text: var(--primary);
@@ -31,14 +29,20 @@
   --isbf-v2-active-surface: var(--primary-very-low);
   --isbf-v2-accent: var(--tertiary);
   --isbf-v2-accent-contrast: var(--secondary);
-  --isbf-v2-focus-ring: color-mix(in srgb, var(--isbf-v2-accent) 65%, var(--isbf-v2-text));
+  --isbf-v2-focus-ring: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 65%,
+    var(--isbf-v2-text)
+  );
   --isbf-v2-left-width: 260px;
   --isbf-v2-feed-width: 600px;
   --isbf-v2-rail-width: 340px;
   --isbf-v2-gap: 24px;
   --isbf-v2-layout-max: 1260px;
   --isbf-v2-page-left: max(16px, calc((100vw - var(--isbf-v2-layout-max)) / 2));
-  --isbf-v2-feed-left: calc(var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap));
+  --isbf-v2-feed-left: calc(
+    var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap)
+  );
 }
 
 body:has(.isbf-v2-shell) {
@@ -87,7 +91,7 @@ body:has(.isbf-v2-shell) {
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
-  @media (min-width: 601px) {
+  @media (width >= 601px) {
     &:has(.isbf-v2-shell--feed) #main-outlet {
       padding-top: 200px;
     }
@@ -146,6 +150,8 @@ body:has(.isbf-v2-shell) {
   align-items: center;
   gap: var(--isbf-v2-space-3);
   width: fit-content;
+  max-width: 100%;
+  min-width: 0;
   min-height: 56px;
   margin-bottom: 12px;
   padding: 0 12px;
@@ -160,16 +166,22 @@ body:has(.isbf-v2-shell) {
   background: var(--isbf-v2-hover);
 }
 
-.isbf-v2-brand__mark {
-  display: grid;
-  flex: none;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  font-size: 20px;
-  line-height: 1;
+.isbf-v2-brand__image {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.isbf-v2-brand__logo {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 2rem;
+  object-fit: contain;
+}
+
+.isbf-v2-brand.--compact .isbf-v2-brand__image {
+  width: 2rem;
 }
 
 .isbf-v2-brand__name {
@@ -232,7 +244,8 @@ body:has(.isbf-v2-shell) {
 .isbf-v2-side__links a,
 .isbf-v2-feed-header nav a,
 body:has(.isbf-v2-shell) tr.isbf-v2-topic {
-  transition: background-color var(--isbf-v2-transition-fast),
+  transition:
+    background-color var(--isbf-v2-transition-fast),
     filter var(--isbf-v2-transition-fast);
 }
 
@@ -291,7 +304,8 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
 }
 
 .isbf-v2-feed-header__avatar,
-.isbf-v2-feed-header__search {
+.isbf-v2-feed-header__search,
+.isbf-v2-feed-header__brand {
   display: none;
 }
 
@@ -399,7 +413,9 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
 }
 
 .isbf-v2-rail {
-  left: calc(var(--isbf-v2-feed-left) + var(--isbf-v2-feed-width) + var(--isbf-v2-gap));
+  left: calc(
+    var(--isbf-v2-feed-left) + var(--isbf-v2-feed-width) + var(--isbf-v2-gap)
+  );
   width: var(--isbf-v2-rail-width);
   padding-top: 8px;
 }
@@ -621,12 +637,14 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
   padding: 20px 16px;
 }
 
-@media (max-width: 1279px) {
+@media (width <= 1279px) {
   :root {
     --isbf-v2-left-width: 220px;
     --isbf-v2-feed-width: 600px;
     --isbf-v2-page-left: max(16px, calc((100vw - 844px) / 2));
-    --isbf-v2-feed-left: calc(var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap));
+    --isbf-v2-feed-left: calc(
+      var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap)
+    );
   }
 
   .isbf-v2-side {
@@ -638,13 +656,25 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
   }
 }
 
-@media (max-width: 1023px) {
+@media (width <= 1023px) {
   :root {
     --isbf-v2-left-width: 72px;
     --isbf-v2-gap: 8px;
     --isbf-v2-feed-width: min(600px, calc(100vw - 100px));
-    --isbf-v2-page-left: max(8px, calc((100vw - var(--isbf-v2-left-width) - var(--isbf-v2-gap) - var(--isbf-v2-feed-width)) / 2));
-    --isbf-v2-feed-left: calc(var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap));
+    --isbf-v2-page-left: max(
+      8px,
+      calc(
+        (
+            100vw - var(--isbf-v2-left-width) - var(--isbf-v2-gap) - var(
+                --isbf-v2-feed-width
+              )
+          ) /
+          2
+      )
+    );
+    --isbf-v2-feed-left: calc(
+      var(--isbf-v2-page-left) + var(--isbf-v2-left-width) + var(--isbf-v2-gap)
+    );
   }
 
   .isbf-v2-side {
@@ -652,13 +682,13 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
     padding-right: 0;
   }
 
-  .isbf-v2-brand__name,
+  .isbf-v2-side .isbf-v2-brand__name,
   .isbf-v2-side__links span,
   .isbf-v2-side__account span {
     display: none;
   }
 
-  .isbf-v2-brand,
+  .isbf-v2-side .isbf-v2-brand,
   .isbf-v2-side__links a,
   .isbf-v2-side__account {
     justify-content: center;
@@ -679,7 +709,7 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
   }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   :root {
     --isbf-v2-feed-width: 100vw;
     --isbf-v2-feed-left: 0px;
@@ -709,6 +739,17 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
 
   .isbf-v2-feed-header__title {
     justify-content: space-between;
+
+    > span {
+      display: none;
+    }
+  }
+
+  .isbf-v2-feed-header__brand {
+    display: flex;
+    min-height: 0;
+    max-width: 60%;
+    padding: 0;
   }
 
   .isbf-v2-feed-header__avatar,
@@ -816,11 +857,16 @@ html.composer-open .isbf-v2-mobile-compose {
   display: none;
 }
 
-html.composer-open body:has(.isbf-v2-shell) #topic-footer-buttons .btn-primary.create {
+html.composer-open
+  body:has(.isbf-v2-shell)
+  #topic-footer-buttons
+  .btn-primary.create {
   display: none;
 }
 
-html.composer-open body:has(.isbf-v2-shell) #reply-control.open.composer-action-create-topic:not(.isbf-event-composer) {
+html.composer-open
+  body:has(.isbf-v2-shell)
+  #reply-control.open.composer-action-create-topic:not(.isbf-event-composer) {
   .title-input {
     display: none;
   }
@@ -846,16 +892,21 @@ html.composer-open body:has(.isbf-v2-shell) #reply-control.open.composer-action-
   }
 }
 
-@media (min-width: 601px) {
-  html.composer-open body:has(.isbf-v2-shell):has(#reply-control.open.composer-action-create-topic:not(.isbf-event-composer))::before {
+@media (width >= 601px) {
+  html.composer-open
+    body:has(.isbf-v2-shell):has(
+      #reply-control.open.composer-action-create-topic:not(.isbf-event-composer)
+    )::before {
     position: fixed;
     inset: 0;
     z-index: 390;
-    background: rgba(0, 0, 0, 0.62);
+    background: rgb(0, 0, 0, 0.62);
     content: "";
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open.composer-action-create-topic:not(.isbf-event-composer) {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open.composer-action-create-topic:not(.isbf-event-composer) {
     position: fixed;
     top: 50%;
     right: auto;
@@ -874,7 +925,7 @@ html.composer-open body:has(.isbf-v2-shell) #reply-control.open.composer-action-
     border: 1px solid var(--isbf-v2-border);
     border-radius: var(--isbf-v2-radius-md);
     background: var(--isbf-v2-surface);
-    box-shadow: 0 18px 56px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 18px 56px rgb(0, 0, 0, 0.35);
 
     .grippie {
       display: none;
@@ -973,7 +1024,10 @@ html.composer-open body:has(.isbf-v2-shell) #reply-control.open.composer-action-
 }
 
 :root {
-  --isbf-v2-feature-width: min(920px, calc(100vw - var(--isbf-v2-feed-left) - 24px));
+  --isbf-v2-feature-width: min(
+    920px,
+    calc(100vw - var(--isbf-v2-feed-left) - 24px)
+  );
   --isbf-v2-personal: #56c6a9;
   --isbf-v2-community: var(--isbf-v2-accent);
 }
@@ -1061,7 +1115,11 @@ body:has(.isbf-v2-shell--workbench) {
   height: 62px;
   place-items: center;
   border-radius: 18px;
-  background: color-mix(in srgb, var(--isbf-v2-accent) 15%, var(--isbf-v2-surface));
+  background: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 15%,
+    var(--isbf-v2-surface)
+  );
   color: var(--isbf-v2-accent);
 }
 
@@ -1368,7 +1426,7 @@ body:has(.isbf-v2-shell--workbench) {
   overflow-y: auto;
   place-items: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0, 0, 0, 0.6);
 }
 
 .isbf-v2-calendar__editor {
@@ -1378,7 +1436,7 @@ body:has(.isbf-v2-shell--workbench) {
   border: 1px solid var(--isbf-v2-border);
   border-radius: var(--isbf-v2-radius-md);
   background: var(--isbf-v2-surface);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 20px 50px rgb(0, 0, 0, 0.32);
 }
 
 .isbf-v2-calendar__editor-heading h2 {
@@ -1445,7 +1503,7 @@ body:has(.isbf-v2-shell--workbench) {
   color: var(--isbf-v2-text);
 }
 
-@media (max-width: 1099px) {
+@media (width <= 1099px) {
   .isbf-v2-calendar__layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1455,7 +1513,7 @@ body:has(.isbf-v2-shell--workbench) {
   }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   :root {
     --isbf-v2-feature-width: 100vw;
   }
@@ -1569,7 +1627,11 @@ body:has(.isbf-v2-shell--profile) {
     right: 0;
     left: 0;
     height: 120px;
-    background: color-mix(in srgb, var(--isbf-v2-accent) 14%, var(--isbf-v2-surface));
+    background: color-mix(
+      in srgb,
+      var(--isbf-v2-accent) 14%,
+      var(--isbf-v2-surface)
+    );
     content: "";
   }
 
@@ -1641,7 +1703,7 @@ body:has(.isbf-v2-shell--bookmarks) {
   }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   body:has(.isbf-v2-shell--profile) #main-outlet .user-main .about {
     min-height: 200px;
     padding-top: 88px;
@@ -1679,11 +1741,18 @@ body:has(.isbf-v2-shell--bookmarks) {
     justify-content: flex-start;
   }
 
-  body:has(.isbf-v2-shell--topic) #topic-footer-buttons .topic-footer-main-buttons .btn-primary.create .d-button-label {
+  body:has(.isbf-v2-shell--topic)
+    #topic-footer-buttons
+    .topic-footer-main-buttons
+    .btn-primary.create
+    .d-button-label {
     display: inline;
   }
 
-  body:has(.isbf-v2-shell--topic) #topic-footer-buttons .btn-primary.create .d-icon {
+  body:has(.isbf-v2-shell--topic)
+    #topic-footer-buttons
+    .btn-primary.create
+    .d-icon {
     margin-left: auto;
     color: var(--isbf-v2-accent);
   }
@@ -1716,7 +1785,11 @@ body:has(.isbf-v2-shell--bookmarks) {
     background: var(--isbf-v2-surface);
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .reply-to .composer-action-title {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .reply-to
+    .composer-action-title {
     overflow: hidden;
     max-width: calc(100% - 210px);
     text-overflow: ellipsis;
@@ -1725,21 +1798,39 @@ body:has(.isbf-v2-shell--bookmarks) {
     font-weight: var(--isbf-v2-weight-bold);
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.composer-action-reply .composer-actions-reply-target-link {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.composer-action-reply
+    .composer-actions-reply-target-link {
     display: none;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .reply-to .composer-controls {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .reply-to
+    .composer-controls {
     position: absolute;
     left: 8px;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .reply-to .toggle-toolbar,
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .reply-to .toggle-minimize {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .reply-to
+    .toggle-toolbar,
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .reply-to
+    .toggle-minimize {
     display: none;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .save-or-cancel {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .save-or-cancel {
     display: flex;
     position: fixed;
     top: 0;
@@ -1753,13 +1844,21 @@ body:has(.isbf-v2-shell--bookmarks) {
     background: transparent;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .save-or-cancel .discard-button {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .save-or-cancel
+    .discard-button {
     position: fixed;
     top: calc(10px + env(safe-area-inset-top));
     left: 48px;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .save-or-cancel .btn-primary {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .save-or-cancel
+    .btn-primary {
     min-width: 68px;
     border-radius: 999px;
     background: var(--isbf-v2-accent);
@@ -1770,30 +1869,46 @@ body:has(.isbf-v2-shell--bookmarks) {
     display: none;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .title-and-category {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .title-and-category {
     gap: 8px;
     margin-bottom: 4px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .title-input input {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .title-input
+    input {
     border: 0;
     background: transparent;
     box-shadow: none;
     font-size: 18px;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .d-editor-textarea-wrapper {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .d-editor-textarea-wrapper {
     border: 0;
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .d-editor-button-bar__wrap {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .d-editor-button-bar__wrap {
     order: 2;
     border-top: 1px solid var(--isbf-v2-border);
   }
 
-  html.composer-open body:has(.isbf-v2-shell) #reply-control.open .d-editor-input {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open
+    .d-editor-input {
     order: 1;
     padding: 16px 0;
     font-size: 17px;
