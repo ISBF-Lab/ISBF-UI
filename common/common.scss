@@ -2704,6 +2704,164 @@ body:has(.isbf-v2-shell--bookmarks) {
     min-width: 0;
   }
 
+  body:has(.isbf-v2-shell--profile)
+    #main-outlet
+    .user-main
+    .about:not(.collapsed-info) {
+    --isbf-profile-avatar-size: 96px;
+    --isbf-profile-column-gap: 12px;
+    min-height: 0;
+
+    &.has-background {
+      padding-top: 0;
+    }
+
+    .details .primary {
+      display: grid;
+      grid-template-columns: var(--isbf-profile-avatar-size) minmax(0, 1fr);
+      gap: 8px var(--isbf-profile-column-gap);
+      align-items: start;
+      padding-block: 12px 8px;
+    }
+
+    .user-profile-avatar {
+      grid-area: 1 / 1;
+      width: var(--isbf-profile-avatar-size);
+      margin: 0;
+
+      img.avatar {
+        box-sizing: border-box;
+        width: var(--isbf-profile-avatar-size);
+        height: var(--isbf-profile-avatar-size);
+        margin: 0;
+      }
+    }
+
+    &.has-background .user-profile-avatar {
+      margin-top: -36px;
+    }
+
+    .primary-textual {
+      grid-area: 1 / 2;
+      min-width: 0;
+      width: auto;
+      margin: 0;
+      padding: 0;
+      overflow-wrap: anywhere;
+      text-align: left;
+    }
+
+    .user-profile-names,
+    .bio,
+    .featured-topic {
+      text-align: left;
+    }
+
+    .user-profile-names__primary,
+    .user-profile-names__secondary,
+    .user-profile-names__title {
+      overflow: visible;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .user-profile-names__primary {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .bio:has(> :not(:empty)),
+    .public-user-fields,
+    .primary-textual > span > :not(:empty) {
+      margin-top: 8px;
+    }
+
+    .bio > :first-child {
+      margin-top: 0;
+    }
+
+    .bio > :last-child {
+      margin-bottom: 0;
+    }
+
+    .user-profile__location-and-website {
+      justify-content: flex-start;
+      white-space: normal;
+    }
+
+    .user-profile-location,
+    .user-profile-website {
+      overflow: visible;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .controls {
+      grid-column: 1 / -1;
+      min-width: 0;
+      max-width: 100%;
+      margin: 0;
+
+      &:not(:has(a, button:not(.user-profile-toggle-btn))) {
+        display: none;
+      }
+
+      ul {
+        justify-content: flex-end;
+        gap: 8px;
+        margin: 0;
+      }
+
+      li,
+      ul > span {
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      a,
+      button {
+        box-sizing: border-box;
+        min-height: 44px;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+    }
+
+    .secondary {
+      box-sizing: border-box;
+      min-width: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+
+      dl {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+
+        > div {
+          min-width: 0;
+          max-width: 100%;
+          flex-wrap: wrap;
+          margin: 0;
+        }
+      }
+
+      dd,
+      a {
+        min-width: 0;
+        max-width: 100%;
+        flex-wrap: wrap;
+        overflow-wrap: anywhere;
+      }
+
+      dd {
+        margin-right: 0;
+      }
+    }
+  }
+
   body:has(.isbf-v2-shell--explore) #main-outlet .search-container {
     padding: 12px 16px;
   }
