@@ -5,6 +5,7 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { alumniConfig } from "../lib/alumni";
 import { learningConfig } from "../lib/learning-resources";
+import { marketplaceConfig } from "../lib/marketplace";
 import ISBFV2MoreMenu from "./isbf-v2-more-menu";
 
 const CARDS = [
@@ -16,6 +17,7 @@ const CARDS = [
   { key: "student_identity", icon: "id-card", tone: "rose" },
   { key: "library", icon: "database", tone: "indigo" },
   { key: "alumni", icon: "user-group", tone: "teal" },
+  { key: "marketplace", icon: "bag-shopping", tone: "amber" },
 ];
 
 export default class ISBFV2Workbench extends Component {
@@ -30,9 +32,11 @@ export default class ISBFV2Workbench extends Component {
       href:
         card.key === "learning_resources" && learningConfig(this.site)
           ? "/isbf/learning"
-          : card.key === "alumni"
-            ? "/isbf/alumni"
-            : null,
+          : card.key === "marketplace" && marketplaceConfig(this.site)
+            ? "/isbf/marketplace"
+            : card.key === "alumni"
+              ? "/isbf/alumni"
+              : null,
     }));
   }
 
