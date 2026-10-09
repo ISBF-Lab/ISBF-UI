@@ -1,6 +1,9 @@
 en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
+    settings:
+      brand_show_logo: "Show the logo from the native logo settings for the current layout and color mode."
+      brand_show_name: "Show the platform name, with or without its logo. Turning both switches off hides the brand area."
   isbf_v2:
     home: "Home"
     explore: "Explore"

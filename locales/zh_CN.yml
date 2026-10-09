@@ -1,6 +1,9 @@
 zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
+    settings:
+      brand_show_logo: "显示徽标：使用后台「徽标」页配置的对应场景图片及深色版本。"
+      brand_show_name: "显示名称：显示平台名称，可与徽标同时显示；两个开关均关闭时隐藏品牌区域。"
   isbf_v2:
     home: "首页"
     explore: "探索"
