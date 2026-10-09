@@ -72,7 +72,7 @@ export default apiInitializer((api) => {
         ? themePrefix("isbf_v2.marketplace_description")
         : value,
   );
-  api.renderInOutlet("post-metadata", ISBFMarketplacePrice);
+  api.renderAfterWrapperOutlet("post-metadata", ISBFMarketplacePrice);
   api.addComposerUploadPreProcessor(MarketplaceUpload, ({ composerModel }) => ({
     composerModel,
   }));

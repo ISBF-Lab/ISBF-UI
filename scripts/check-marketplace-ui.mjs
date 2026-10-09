@@ -197,6 +197,9 @@ const api = {
   renderInOutlet(name, component) {
     registrations.outlets.push([name, component]);
   },
+  renderAfterWrapperOutlet(name, component) {
+    this.renderInOutlet(`${name}__after`, component);
+  },
   customizeComposerText(options) {
     registrations.text = options;
   },
@@ -325,9 +328,13 @@ assert.ok(initializer.includes('extendComposerMethod(api, "save"'));
 assert.ok(!initializer.includes("modifyClass"));
 assert.ok(
   initializer.includes(
-    'api.renderInOutlet("post-metadata", ISBFMarketplacePrice)',
+    'api.renderAfterWrapperOutlet("post-metadata", ISBFMarketplacePrice)',
   ),
 );
+assert.ok(
+  registrations.outlets.some(([name]) => name === "post-metadata__after"),
+);
+assert.ok(!registrations.outlets.some(([name]) => name === "post-metadata"));
 const feed = read("javascripts/discourse/components/isbf-marketplace.gjs");
 assert.ok(feed.includes('this.store.findFiltered("topicList"'));
 assert.ok(feed.includes('filter: "filter"'));
