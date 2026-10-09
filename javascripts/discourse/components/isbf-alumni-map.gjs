@@ -8,6 +8,7 @@ import { ajax } from "discourse/lib/ajax";
 import loadScript from "discourse/lib/load-script";
 import DButton from "discourse/ui-kit/d-button";
 import { i18n } from "discourse-i18n";
+import { labelFontSize, visibleLabelLayers } from "../lib/alumni-map-labels";
 
 let leafletPromise;
 const COUNTRY_VIEWS = {
@@ -104,9 +105,12 @@ export default class ISBFAlumniMap extends Component {
         onEachFeature: (feature, layer) => {
           const code =
             feature.properties.country_code || feature.properties.code;
-          const name = feature.properties.name;
-          layer.bindTooltip(this.#label(name));
-          layer.on("click", () => this.args.onSelect({ country: code }));
+          if (code === "CN") {
+            this.#bindLabel(layer, feature.properties.name);
+          }
+          if (this.args.config.countries.some((item) => item.code === code)) {
+            layer.on("click", () => this.args.onSelect({ country: code }));
+          }
         },
       }).addTo(this.#map);
       this.#map.on("zoomend moveend", () => this.#refreshLabels());
@@ -189,7 +193,7 @@ export default class ISBFAlumniMap extends Component {
           fillOpacity: feature.properties.code === region ? 0.55 : 0.2,
         }),
         onEachFeature: (feature, layer) => {
-          layer.bindTooltip(this.#label(feature.properties.name));
+          this.#bindLabel(layer, feature.properties.name);
           layer.on("click", () =>
             this.args.onSelect({ country, region: feature.properties.code }),
           );
@@ -219,11 +223,9 @@ export default class ISBFAlumniMap extends Component {
             const marker = L.circleMarker([item.center.lat, item.center.lng], {
               radius: item.code === region ? 7 : 5,
               className: "isbf-alumni-map__region",
+              regionCode: item.code,
             });
-            marker.bindTooltip(this.#label(item.name), {
-              permanent: true,
-              direction: "top",
-            });
+            this.#bindLabel(marker, item.name);
             marker.on("click", () =>
               this.args.onSelect({ country, region: item.code }),
             );
@@ -241,35 +243,61 @@ export default class ISBFAlumniMap extends Component {
     }
   }
 
+  #bindLabel(layer, name) {
+    layer.bindTooltip(this.#label(name), {
+      className: "isbf-alumni-map__china-label",
+      direction: "center",
+      permanent: false,
+    });
+    layer.on("mouseout", () => this.#refreshLabels());
+  }
+
   #refreshLabels() {
     if (!this.#map) {
       return;
     }
-    const bounds = this.#map.getBounds();
-    const show = (layer, enabled) => {
-      const shape = layer.getBounds();
-      const left = this.#map.latLngToContainerPoint(shape.getNorthWest());
-      const right = this.#map.latLngToContainerPoint(shape.getSouthEast());
-      if (
-        enabled &&
-        shape.intersects(bounds) &&
-        Math.abs(right.x - left.x) > 60 &&
-        Math.abs(right.y - left.y) > 24
-      ) {
-        layer.openTooltip();
-      } else {
-        layer.closeTooltip();
-      }
-    };
-    this.#world?.eachLayer((layer) =>
-      show(
-        layer,
-        !this.#detail ||
-          (layer.feature.properties.country_code ||
-            layer.feature.properties.code) !== "CN",
-      ),
+    const zoom = this.#map.getZoom();
+    const fontSize = labelFontSize(zoom);
+    this.#element.style.setProperty(
+      "--isbf-alumni-label-size",
+      `${fontSize}px`,
     );
-    this.#detail?.eachLayer((layer) => show(layer, true));
+    this.#world?.eachLayer((layer) => layer.closeTooltip());
+    const candidates = [];
+    const bounds = this.#map.getBounds();
+    const context = document.createElement("canvas").getContext("2d");
+    context.font = `${fontSize}px sans-serif`;
+    const collect = (layer) => {
+      layer.closeTooltip();
+      if (zoom < 4) {
+        return;
+      }
+      const center = layer.getLatLng?.() || layer.getCenter();
+      if (!bounds.contains(center)) {
+        return;
+      }
+      const point = this.#map.latLngToContainerPoint(center);
+      const name = layer.getTooltip().getContent().textContent;
+      const width = context.measureText(name).width + 10;
+      const height = fontSize * 1.25 + 6;
+      candidates.push({
+        layer,
+        selected:
+          (layer.feature?.properties.code || layer.options.regionCode) ===
+          this.args.region,
+        box: {
+          left: point.x - width / 2,
+          right: point.x + width / 2,
+          top: point.y - height / 2,
+          bottom: point.y + height / 2,
+        },
+      });
+    };
+    this.#detail?.eachLayer(collect);
+    this.#regionMarkers?.eachLayer(collect);
+    visibleLabelLayers(candidates, this.#map.getSize()).forEach((layer) =>
+      layer.openTooltip(),
+    );
   }
 
   #label(name) {
