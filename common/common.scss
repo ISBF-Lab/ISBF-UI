@@ -172,6 +172,12 @@ body:has(.isbf-v2-shell) {
   max-width: 100%;
 }
 
+.isbf-v2-brand:not(.--compact)
+  .isbf-v2-brand__image:has(+ .isbf-v2-brand__name) {
+  flex-shrink: 0;
+  max-width: 50%;
+}
+
 .isbf-v2-brand__logo {
   display: block;
   width: auto;
