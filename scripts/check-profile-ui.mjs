@@ -41,22 +41,30 @@ assert.equal(
   "Profile override must stay inside its mobile media query",
 );
 assert.doesNotMatch(profile, /user-navigation|user-card|user-preferences/);
+assert.match(profile, /grid-template-columns:\s*minmax\(0, 1fr\) auto;/);
+assert.match(profile, /grid-template-rows:\s*min-content minmax\(0, 1fr\);/);
+assert.match(profile, /row-gap:\s*0;/);
 assert.match(
   profile,
-  /grid-template-columns:\s*var\(--isbf-profile-avatar-size\) minmax\(0, 1fr\)/,
+  /&:not\(\s*:has\(> \.controls a, > \.controls button:not\(\.user-profile-toggle-btn\)\)\s*\)\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);/,
+  "Profiles without visible native actions must retain full-width details",
 );
-assert.match(profile, /\.primary-textual\s*\{[^}]*display:\s*contents;/);
-assert.match(profile, /\.controls\s*\{[^}]*grid-column:\s*1 \/ -1;/);
-assert.equal(
-  [...profile.matchAll(/display:\s*contents;/g)].length,
-  1,
-  "Only the native generic text wrapper may be flattened",
-);
-assert.match(profile, /> \.user-profile-names\s*\{[^}]*grid-area:\s*1 \/ 2;/);
 assert.match(
   profile,
-  /> :not\(\.user-profile-names\)\s*\{[^}]*grid-column:\s*1 \/ -1;/,
+  /\.primary-textual\s*\{[^}]*display:\s*flex;[^}]*grid-column:\s*1;[^}]*grid-row:\s*1 \/ span 2;[^}]*flex-direction:\s*column;[^}]*gap:\s*8px;/,
+  "Keep profile details in one flowing column beside the actions",
 );
+assert.doesNotMatch(profile, /display:\s*contents;/);
+assert.match(
+  profile,
+  /> \.user-profile-names\s*\{[^}]*min-height:\s*calc\([\s\S]*var\(--isbf-profile-avatar-size\) - var\(--isbf-profile-avatar-overlap\)[\s\S]*margin-inline-start:\s*calc\(/,
+  "The flowing header must reserve only the visible avatar height",
+);
+assert.match(profile, /\.user-profile-avatar\s*\{[^}]*z-index:\s*1;/);
+assert.match(profile, /\.controls\s*\{[^}]*grid-column:\s*2;/);
+assert.doesNotMatch(profile, /\.controls\s*\{[^}]*grid-column:\s*1 \/ -1;/);
+assert.match(profile, /\.controls\s*\{[^}]*justify-self:\s*end;/);
+assert.match(profile, /\.controls\s*\{[^}]*margin:\s*8px 0 0;/);
 assert.match(profile, /\.controls\s*\{[^}]*grid-row:\s*2;/);
 assert.match(
   profile,
@@ -123,14 +131,28 @@ const avatar = number("--isbf-profile-avatar-size");
 const gap = number("--isbf-profile-column-gap");
 assert.equal(avatar, 96);
 assert.equal(gap, 12);
+assert.equal(number("--isbf-profile-avatar-overlap"), 0);
+assert.match(
+  profile,
+  /&\.has-background\s*\{[^}]*--isbf-profile-avatar-overlap:\s*36px;/,
+);
+for (const overlap of [0, 36]) {
+  assert.ok(
+    avatar - overlap > 0,
+    "Both banner states require visible avatar space",
+  );
+}
 for (const width of [390, 430]) {
   const available = width - 2 * 16;
-  assert.ok(
-    available - avatar - gap >= 200,
-    `${width}px must retain space for wrapping profile text`,
-  );
+  for (const actions of [0, 96, 128]) {
+    const details = available - actions - (actions ? gap : 0);
+    assert.ok(
+      details - avatar - gap >= 96,
+      `${width}px must retain wrapping name space beside ${actions}px actions`,
+    );
+  }
 }
 assert.ok(1024 > 600, "Desktop must remain outside the profile breakpoint");
 process.stdout.write(
-  "Mobile profile vertical details, ellipsis, expanding biography, metadata visibility, compact contacts, and responsive constraints passed.\n",
+  "Mobile profile details adjacent to the avatar, independent actions, banner states, ellipsis, metadata visibility, and responsive constraints passed.\n",
 );
