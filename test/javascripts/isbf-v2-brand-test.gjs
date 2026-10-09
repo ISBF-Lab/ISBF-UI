@@ -2,7 +2,8 @@ import { render, settled } from "@ember/test-helpers";
 import { module, test } from "qunit";
 import { settings } from "virtual:theme";
 import { setupRenderingTest } from "discourse/tests/helpers/component-test";
-import ISBFV2Brand from "../../javascripts/discourse/components/isbf-v2-brand";
+// Theme tests resolve imports from the compiled test directory.
+import ISBFV2Brand from "../discourse/components/isbf-v2-brand";
 
 const main = "/images/d-logo-sketch.png?main";
 const small = "/images/d-logo-sketch-small.png?small";
