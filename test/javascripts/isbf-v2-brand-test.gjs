@@ -91,11 +91,11 @@ module("Integration | Component | ISBFV2Brand", function (hooks) {
     ["mobile", { mobile: true }, mobile, mobileDark],
   ]) {
     test(`${label} logo supplies its own dark alternative`, async function (assert) {
-      this.args = args;
+      this.setProperties(args);
       this.session.set("darkModeAvailable", true);
       await render(
         <template>
-          <ISBFV2Brand @compact={{@compact}} @mobile={{@mobile}} />
+          <ISBFV2Brand @compact={{this.compact}} @mobile={{this.mobile}} />
         </template>
       );
       assert
