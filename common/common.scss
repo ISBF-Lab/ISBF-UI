@@ -2742,13 +2742,34 @@ body:has(.isbf-v2-shell--bookmarks) {
     }
 
     .primary-textual {
-      grid-area: 1 / 2;
-      min-width: 0;
-      width: auto;
-      margin: 0;
-      padding: 0;
+      display: contents;
       overflow-wrap: anywhere;
       text-align: left;
+
+      > .user-profile-names {
+        grid-area: 1 / 2;
+        min-width: 0;
+      }
+
+      > :not(.user-profile-names) {
+        grid-column: 1 / -1;
+        min-width: 0;
+        margin: 0;
+        text-align: left;
+      }
+
+      > :empty,
+      > .bio:not(:has(> :not(:empty))),
+      > span:not(:has(> :not(:empty))),
+      > .user-profile__location-and-website:not(
+          :has(
+            .user-profile-location,
+            .user-profile-website,
+            span > :not(:empty)
+          )
+        ) {
+        display: none;
+      }
     }
 
     .user-profile-names,
@@ -2768,12 +2789,6 @@ body:has(.isbf-v2-shell--bookmarks) {
     .user-profile-names__primary {
       font-size: 24px;
       font-weight: 700;
-    }
-
-    .bio:has(> :not(:empty)),
-    .public-user-fields,
-    .primary-textual > span > :not(:empty) {
-      margin-top: 8px;
     }
 
     .bio > :first-child {
@@ -2796,8 +2811,9 @@ body:has(.isbf-v2-shell--bookmarks) {
       overflow-wrap: anywhere;
     }
 
-    .controls {
+    .details > .primary > .controls {
       grid-column: 1 / -1;
+      grid-row: 2;
       min-width: 0;
       max-width: 100%;
       margin: 0;
@@ -2807,6 +2823,8 @@ body:has(.isbf-v2-shell--bookmarks) {
       }
 
       ul {
+        flex-direction: row;
+        flex-wrap: wrap;
         justify-content: flex-end;
         gap: 8px;
         margin: 0;
@@ -2816,16 +2834,33 @@ body:has(.isbf-v2-shell--bookmarks) {
       ul > span {
         flex: 0 1 auto;
         min-width: 0;
+        width: auto;
         max-width: 100%;
+
+        &:not(:has(a, button:not(.user-profile-toggle-btn))) {
+          display: none;
+        }
       }
 
       a,
       button {
+        display: inline-flex;
         box-sizing: border-box;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
         min-height: 44px;
+        width: auto;
         max-width: 100%;
+        padding-inline: 12px;
+        font-size: 14px;
         white-space: normal;
         overflow-wrap: anywhere;
+
+        .d-icon {
+          margin: 0;
+          font-size: 16px;
+        }
       }
     }
 

@@ -40,19 +40,32 @@ assert.equal(
   1,
   "Profile override must stay inside its mobile media query",
 );
-assert.doesNotMatch(
-  profile,
-  /user-navigation|user-card|user-preferences|display:\s*contents/,
-);
+assert.doesNotMatch(profile, /user-navigation|user-card|user-preferences/);
 assert.match(
   profile,
   /grid-template-columns:\s*var\(--isbf-profile-avatar-size\) minmax\(0, 1fr\)/,
 );
+assert.match(profile, /\.primary-textual\s*\{[^}]*display:\s*contents;/);
+assert.match(profile, /\.controls\s*\{[^}]*grid-column:\s*1 \/ -1;/);
+assert.equal(
+  [...profile.matchAll(/display:\s*contents;/g)].length,
+  1,
+  "Only the native generic text wrapper may be flattened",
+);
+assert.match(profile, /> \.user-profile-names\s*\{[^}]*grid-area:\s*1 \/ 2;/);
 assert.match(
   profile,
-  /\.primary-textual\s*\{[^}]*min-width:\s*0;[^}]*width:\s*auto;/,
+  /> :not\(\.user-profile-names\)\s*\{[^}]*grid-column:\s*1 \/ -1;/,
 );
-assert.match(profile, /\.controls\s*\{[^}]*grid-column:\s*1 \/ -1;/);
+assert.match(profile, /\.controls\s*\{[^}]*grid-row:\s*2;/);
+assert.match(
+  profile,
+  /ul\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap;[^}]*justify-content:\s*flex-end;/,
+);
+assert.match(profile, /button\s*\{[^}]*width:\s*auto;[^}]*font-size:\s*14px;/);
+assert.match(profile, /\.d-icon\s*\{[^}]*font-size:\s*16px;/);
+assert.match(profile, /> span:not\(:has\(> :not\(:empty\)\)\)/);
+assert.match(profile, /> \.bio:not\(:has\(> :not\(:empty\)\)\)/);
 assert.match(profile, /button:not\(\.user-profile-toggle-btn\)/);
 assert.match(profile, /\.secondary\s*\{[\s\S]*flex-wrap:\s*wrap;/);
 assert.doesNotMatch(
@@ -84,5 +97,5 @@ for (const width of [390, 430]) {
 }
 assert.ok(1024 > 600, "Desktop must remain outside the profile breakpoint");
 process.stdout.write(
-  "Mobile profile scope, responsive width, native visibility, and action constraints passed.\n",
+  "Mobile profile full-width details, compact contacts, visibility, and responsive constraints passed.\n",
 );
