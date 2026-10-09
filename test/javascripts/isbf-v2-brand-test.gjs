@@ -16,6 +16,11 @@ module("Integration | Component | ISBFV2Brand", function (hooks) {
   setupRenderingTest(hooks, { stubRouter: true });
 
   hooks.beforeEach(function () {
+    this.originalBrandSettings = {
+      brand_show_logo: settings.brand_show_logo,
+      brand_show_name: settings.brand_show_name,
+    };
+    Object.assign(settings, { brand_show_logo: true, brand_show_name: true });
     Object.assign(this.siteSettings, {
       site_logo_url: main,
       site_logo_small_url: small,
@@ -31,6 +36,7 @@ module("Integration | Component | ISBFV2Brand", function (hooks) {
   });
 
   hooks.afterEach(function () {
+    Object.assign(settings, this.originalBrandSettings);
     this.interfaceColor.useAutoMode({ adjustStylesheets: false });
     this.session.set("darkModeAvailable", null);
     this.session.set("defaultColorSchemeIsDark", null);
@@ -41,6 +47,12 @@ module("Integration | Component | ISBFV2Brand", function (hooks) {
     assert
       .dom(".isbf-v2-brand__logo")
       .hasAttribute("src", main, "uses the main logo");
+    assert
+      .dom(".isbf-v2-brand__name")
+      .hasText(
+        settings.brand_name,
+        "shows the name alongside the logo by default"
+      );
     assert
       .dom(".isbf-v2-brand")
       .hasAttribute("href", "/", "uses the native home link");
@@ -161,5 +173,71 @@ module("Integration | Component | ISBFV2Brand", function (hooks) {
     assert
       .dom(".isbf-v2-brand")
       .hasAttribute("aria-label", settings.brand_name, "labels the home link");
+  });
+
+  for (const [layout, args] of [
+    ["full", { compact: false }],
+    ["compact", { compact: true }],
+    ["mobile", { mobile: true }],
+  ]) {
+    test(`${layout} navigation can show only the logo`, async function (assert) {
+      this.setProperties(args);
+      settings.brand_show_name = false;
+      await render(
+        <template>
+          <ISBFV2Brand @compact={{this.compact}} @mobile={{this.mobile}} />
+        </template>
+      );
+      assert.dom(".isbf-v2-brand__logo").exists("keeps the enabled logo");
+      assert
+        .dom(".isbf-v2-brand__name")
+        .doesNotExist("hides the disabled name");
+      assert
+        .dom(".isbf-v2-brand")
+        .hasAttribute(
+          "aria-label",
+          settings.brand_name,
+          "keeps an accessible home link"
+        );
+    });
+
+    test(`${layout} navigation can show only the name`, async function (assert) {
+      this.setProperties(args);
+      settings.brand_show_logo = false;
+      await render(
+        <template>
+          <ISBFV2Brand @compact={{this.compact}} @mobile={{this.mobile}} />
+        </template>
+      );
+      assert
+        .dom(".isbf-v2-brand__logo")
+        .doesNotExist("hides the disabled logo");
+      assert
+        .dom(".isbf-v2-brand__name")
+        .hasText(settings.brand_name, "keeps the enabled name");
+    });
+
+    test(`${layout} navigation has no empty link when both switches are off`, async function (assert) {
+      this.setProperties(args);
+      Object.assign(settings, {
+        brand_show_logo: false,
+        brand_show_name: false,
+      });
+      await render(
+        <template>
+          <ISBFV2Brand @compact={{this.compact}} @mobile={{this.mobile}} />
+        </template>
+      );
+      assert
+        .dom(".isbf-v2-brand")
+        .doesNotExist("removes the hidden brand link");
+    });
+  }
+
+  test("a missing image and disabled name do not leave an empty link", async function (assert) {
+    this.siteSettings.site_logo_url = "";
+    settings.brand_show_name = false;
+    await render(<template><ISBFV2Brand @compact={{false}} /></template>);
+    assert.dom(".isbf-v2-brand").doesNotExist("does not render an empty brand");
   });
 });

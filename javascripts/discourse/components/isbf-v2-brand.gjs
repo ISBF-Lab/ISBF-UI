@@ -6,7 +6,6 @@ import Logo from "discourse/components/header/logo";
 import getURL from "discourse/lib/get-url";
 import { and, notEq } from "discourse/truth-helpers";
 import dConcatClass from "discourse/ui-kit/helpers/d-concat-class";
-import dIcon from "discourse/ui-kit/helpers/d-icon";
 
 class BrandImage extends Logo {
   <template>
@@ -50,21 +49,34 @@ export default class ISBFV2Brand extends HomeLogo {
     return settings.brand_name || super.title;
   }
 
+  get hasBrand() {
+    return this.showLogo || this.showName;
+  }
+
+  get showLogo() {
+    return settings.brand_show_logo && Boolean(this.imageUrl);
+  }
+
+  get showName() {
+    return settings.brand_show_name;
+  }
+
   <template>
-    <a
-      aria-label={{this.title}}
-      class={{dConcatClass "isbf-v2-brand" (if this.isCompact "--compact")}}
-      href={{this.href}}
-      ...attributes
-      {{on "click" this.click}}
-    >
-      {{#if this.imageUrl}}
-        <BrandImage @darkUrl={{this.imageDarkUrl}} @url={{this.imageUrl}} />
-      {{else if this.isCompact}}
-        {{dIcon "house"}}
-      {{else}}
-        <span class="isbf-v2-brand__name">{{this.title}}</span>
-      {{/if}}
-    </a>
+    {{#if this.hasBrand}}
+      <a
+        aria-label={{this.title}}
+        class={{dConcatClass "isbf-v2-brand" (if this.isCompact "--compact")}}
+        href={{this.href}}
+        ...attributes
+        {{on "click" this.click}}
+      >
+        {{#if this.showLogo}}
+          <BrandImage @darkUrl={{this.imageDarkUrl}} @url={{this.imageUrl}} />
+        {{/if}}
+        {{#if this.showName}}
+          <span class="isbf-v2-brand__name">{{this.title}}</span>
+        {{/if}}
+      </a>
+    {{/if}}
   </template>
 }

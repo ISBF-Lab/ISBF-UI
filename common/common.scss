@@ -180,11 +180,22 @@ body:has(.isbf-v2-shell) {
   object-fit: contain;
 }
 
-.isbf-v2-brand.--compact .isbf-v2-brand__image {
-  width: 2rem;
+.isbf-v2-brand.--compact {
+  flex-direction: column;
+  gap: var(--isbf-v2-space-1);
+
+  .isbf-v2-brand__image {
+    width: 2rem;
+  }
+
+  .isbf-v2-brand__name {
+    font-size: var(--font-down-1);
+  }
 }
 
 .isbf-v2-brand__name {
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -682,7 +693,6 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
     padding-right: 0;
   }
 
-  .isbf-v2-side .isbf-v2-brand__name,
   .isbf-v2-side__links span,
   .isbf-v2-side__account span {
     display: none;
