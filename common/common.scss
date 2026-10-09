@@ -2710,22 +2710,33 @@ body:has(.isbf-v2-shell--bookmarks) {
     .about:not(.collapsed-info) {
     --isbf-profile-avatar-size: 96px;
     --isbf-profile-column-gap: 12px;
+    --isbf-profile-avatar-overlap: 0px;
     min-height: 0;
 
     &.has-background {
+      --isbf-profile-avatar-overlap: 36px;
       padding-top: 0;
     }
 
     .details .primary {
       display: grid;
-      grid-template-columns: var(--isbf-profile-avatar-size) minmax(0, 1fr);
-      gap: 8px var(--isbf-profile-column-gap);
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: min-content minmax(0, 1fr);
+      row-gap: 0;
+      column-gap: var(--isbf-profile-column-gap);
       align-items: start;
       padding-block: 12px 8px;
+
+      &:not(
+        :has(> .controls a, > .controls button:not(.user-profile-toggle-btn))
+      ) {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
 
     .user-profile-avatar {
       grid-area: 1 / 1;
+      z-index: 1;
       width: var(--isbf-profile-avatar-size);
       margin: 0;
 
@@ -2738,21 +2749,33 @@ body:has(.isbf-v2-shell--bookmarks) {
     }
 
     &.has-background .user-profile-avatar {
-      margin-top: -36px;
+      margin-top: calc(-1 * var(--isbf-profile-avatar-overlap));
     }
 
     .primary-textual {
-      display: contents;
+      display: flex;
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+      margin: 0;
       overflow-wrap: anywhere;
       text-align: left;
 
       > .user-profile-names {
-        grid-area: 1 / 2;
+        box-sizing: border-box;
         min-width: 0;
+        min-height: calc(
+          var(--isbf-profile-avatar-size) - var(--isbf-profile-avatar-overlap)
+        );
+        margin: 0;
+        margin-inline-start: calc(
+          var(--isbf-profile-avatar-size) + var(--isbf-profile-column-gap)
+        );
       }
 
       > :not(.user-profile-names) {
-        grid-column: 1 / -1;
         min-width: 0;
         margin: 0;
         text-align: left;
@@ -2851,11 +2874,12 @@ body:has(.isbf-v2-shell--bookmarks) {
     }
 
     .details > .primary > .controls {
-      grid-column: 1 / -1;
+      grid-column: 2;
       grid-row: 2;
+      justify-self: end;
       min-width: 0;
       max-width: 100%;
-      margin: 0;
+      margin: 8px 0 0;
 
       &:not(:has(a, button:not(.user-profile-toggle-btn))) {
         display: none;
