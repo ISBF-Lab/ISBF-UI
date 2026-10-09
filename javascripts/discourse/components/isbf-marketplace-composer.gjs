@@ -7,7 +7,7 @@ import { isMarketplaceComposer } from "../lib/marketplace";
 
 export default class ISBFMarketplaceComposer extends Component {
   get model() {
-    return this.args.outletArgs?.composer;
+    return this.args.outletArgs?.model ?? this.args.outletArgs?.composer;
   }
 
   get visible() {
@@ -17,11 +17,6 @@ export default class ISBFMarketplaceComposer extends Component {
   @action
   changePrice(event) {
     this.model.set("isbf_marketplace_price", event.target.value);
-  }
-
-  @action
-  changeHome(event) {
-    this.model.set("isbf_marketplace_home", event.target.checked);
   }
 
   <template>
@@ -36,15 +31,36 @@ export default class ISBFMarketplaceComposer extends Component {
             {{on "input" this.changePrice}}
           />
         </label>
+      </div>
+    {{/if}}
+  </template>
+}
+
+export class ISBFMarketplaceHome extends Component {
+  get model() {
+    return this.args.outletArgs?.model ?? this.args.outletArgs?.composer;
+  }
+
+  get visible() {
+    return isMarketplaceComposer(this.model);
+  }
+
+  @action
+  changeHome(event) {
+    this.model.set("isbf_marketplace_home", event.target.checked);
+  }
+
+  <template>
+    {{#if this.visible}}
+      <div class="isbf-marketplace-composer-options">
         <label class="isbf-marketplace-composer__home">
           <input
             checked={{this.model.isbf_marketplace_home}}
             type="checkbox"
             {{on "change" this.changeHome}}
           />
-          {{i18n (themePrefix "isbf_v2.marketplace_home")}}
+          <span>{{i18n (themePrefix "isbf_v2.marketplace_home")}}</span>
         </label>
-        <p>{{i18n (themePrefix "isbf_v2.marketplace_composer_hint")}}</p>
       </div>
     {{/if}}
   </template>

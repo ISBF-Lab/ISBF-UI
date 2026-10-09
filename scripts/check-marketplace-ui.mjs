@@ -229,6 +229,8 @@ const initializerModule = new vm.SourceTextModule(
   read("javascripts/discourse/api-initializers/isbf-marketplace.gjs"),
   { context },
 );
+class ComposerOutlet {}
+class HomeOutlet {}
 await initializerModule.link((specifier) => {
   if (specifier === "../lib/marketplace") {
     return module;
@@ -250,6 +252,12 @@ await initializerModule.link((specifier) => {
   }
   if (specifier.includes("isbf-marketplace-card")) {
     return synthetic({ ISBFMarketplacePrice: class {} });
+  }
+  if (specifier.includes("isbf-marketplace-composer")) {
+    return synthetic({
+      default: ComposerOutlet,
+      ISBFMarketplaceHome: HomeOutlet,
+    });
   }
   return synthetic({ default: class {} });
 });
@@ -390,10 +398,18 @@ assert.equal(
 );
 assert.ok(read("settings.yml").includes('default: "bag-shopping"'));
 assert.ok(
-  registrations.outlets.some(([name]) => name === "after-composer-title-input"),
+  registrations.outlets.some(
+    ([name, component]) =>
+      name === "after-title-and-category" && component === ComposerOutlet,
+  ),
 );
 assert.ok(
   !registrations.outlets.some(([name]) => name === "before-composer-fields"),
+);
+assert.ok(
+  !registrations.outlets.some(
+    ([name]) => name === "after-composer-title-input",
+  ),
 );
 assert.equal(
   registrations.text.titlePlaceholder(model()),
@@ -421,9 +437,165 @@ const composerSource = read(
   "javascripts/discourse/components/isbf-marketplace-composer.gjs",
 );
 assert.ok(composerSource.includes("this.args.outletArgs?.composer"));
-assert.ok(styles.includes("#reply-control:has(.isbf-marketplace-composer)"));
-assert.ok(styles.includes(".title-and-category > .title-input"));
-assert.ok(styles.includes("flex-basis: 100%"));
+assert.ok(composerSource.includes("this.args.outletArgs?.model"));
+assert.ok(!composerSource.includes("marketplace_composer_hint"));
+assert.ok(!composerSource.includes("isbf_anonymous"));
+assert.ok(
+  registrations.outlets.some(
+    ([name, component]) =>
+      name === "after-title-and-category" && component === HomeOutlet,
+  ),
+);
+const composerModule = new vm.SourceTextModule(
+  composerSource
+    .replace(/<template>[\s\S]*?<\/template>/g, "")
+    .replace(/@action\s+/g, ""),
+  { context },
+);
+await composerModule.link((specifier) => {
+  if (specifier === "../lib/marketplace") {
+    return module;
+  }
+  if (specifier === "@glimmer/component") {
+    return synthetic({
+      default: class {
+        constructor(_owner, args) {
+          this.args = args;
+        }
+      },
+    });
+  }
+  if (specifier === "@ember/modifier") {
+    return synthetic({ on() {} });
+  }
+  if (specifier === "@ember/object") {
+    return synthetic({ action() {} });
+  }
+  if (specifier === "virtual:theme") {
+    return synthetic({ themePrefix: (key) => key });
+  }
+  if (specifier === "discourse-i18n") {
+    return synthetic({ i18n: (key) => key });
+  }
+  throw new Error(`Unexpected composer import: ${specifier}`);
+});
+await composerModule.evaluate();
+const { default: MarketplaceComposer, ISBFMarketplaceHome } =
+  composerModule.namespace;
+assert.equal(typeof ISBFMarketplaceHome, "function");
+assert.equal(new MarketplaceComposer(undefined, {}).visible, false);
+assert.equal(new ISBFMarketplaceHome(undefined, {}).visible, false);
+for (const outletArgument of ["model", "composer"]) {
+  const composerModel = model();
+  restoreMarketplace(composerModel);
+  const args = { outletArgs: { [outletArgument]: composerModel } };
+  const priceComponent = new MarketplaceComposer(undefined, args);
+  const homeComponent = new ISBFMarketplaceHome(undefined, args);
+  assert.equal(priceComponent.model, composerModel);
+  assert.equal(homeComponent.model, composerModel);
+  assert.equal(priceComponent.visible, true);
+  assert.equal(homeComponent.visible, true);
+  assert.equal(composerModel.isbf_marketplace_home, false);
+  priceComponent.changePrice({ target: { value: "8.50" } });
+  assert.equal(composerModel.isbf_marketplace_price, "8.50");
+  for (const checked of [true, false]) {
+    homeComponent.changeHome({ target: { checked, value: "on" } });
+    assert.equal(composerModel.isbf_marketplace_home, checked);
+    assert.equal(typeof composerModel.isbf_marketplace_home, "boolean");
+    const restoredDraft = model();
+    restoreMarketplace(restoredDraft, {
+      isbf_marketplace_home: marketplacePayload(
+        composerModel,
+        "isbf_marketplace_home",
+      ),
+    });
+    assert.equal(restoredDraft.isbf_marketplace_home, checked);
+  }
+  composerModel.categoryId = 43;
+  assert.equal(priceComponent.visible, false);
+  assert.equal(homeComponent.visible, false);
+}
+const homeSource = composerSource.slice(
+  composerSource.indexOf("export class ISBFMarketplaceHome"),
+);
+assert.match(homeSource, /<label\s+class="isbf-marketplace-composer__home"/);
+assert.match(homeSource, /checked=\{\{this\.model\.isbf_marketplace_home\}\}/);
+assert.match(homeSource, /type="checkbox"/);
+assert.match(homeSource, /\{\{on "change" this\.changeHome\}\}/);
+assert.match(homeSource, /<span>[\s\S]*?marketplace_home[\s\S]*?<\/span>/);
+assert.doesNotMatch(homeSource, /\{\{on "click"/);
+// Inspect only the relevant rule blocks; this does not compile SCSS or verify DOM layout.
+function styleRule(source, selector) {
+  const match = selector.exec(source);
+  assert.ok(match, `Missing style rule: ${selector}`);
+  const opening = source.indexOf("{", match.index);
+  let depth = 1;
+  let closing = opening + 1;
+  for (; depth && closing < source.length; closing++) {
+    if (source[closing] === "{") {
+      depth++;
+    } else if (source[closing] === "}") {
+      depth--;
+    }
+  }
+  assert.equal(depth, 0, `Unclosed style rule: ${selector}`);
+  return source.slice(opening + 1, closing - 1);
+}
+const composerScope =
+  /html\.composer-open\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-marketplace-composer\)\s*\{/;
+const desktopComposerStyles = styleRule(styles, composerScope);
+assert.match(
+  styleRule(desktopComposerStyles, /\.title-and-category\s*\{/),
+  /display:\s*grid\s*;/,
+);
+assert.match(
+  styleRule(
+    desktopComposerStyles,
+    /\.category-input,\s*\.tags-input,\s*\.isbf-marketplace-composer-options\s*\{/,
+  ),
+  /grid-row:\s*3\s*;/,
+);
+const homeStyles = styleRule(
+  desktopComposerStyles,
+  /\.isbf-marketplace-composer__home\s*\{/,
+);
+assert.match(homeStyles, /min-height:\s*44px\s*;/);
+assert.match(homeStyles, /gap:\s*8px\s*;/);
+const mobileStyles = styles.slice(
+  styles.lastIndexOf("@media (width <= 600px)"),
+);
+const mobileComposerStyles = styleRule(mobileStyles, composerScope);
+assert.match(
+  styleRule(mobileComposerStyles, /\.d-editor-textarea-column\s*\{/),
+  /display:\s*grid\s*;/,
+);
+const mobileFields = styleRule(
+  mobileComposerStyles,
+  /\.composer-fields,\s*\.title-and-category\s*\{/,
+);
+assert.match(mobileFields, /display:\s*contents\s*;/);
+assert.match(mobileFields, /position:\s*static\s*;/);
+for (const [selector, row] of [
+  [/\.title-input\s*\{/, 1],
+  [/\.d-editor-textarea-wrapper\s*\{/, 2],
+  [/\.isbf-marketplace-composer\s*\{/, 3],
+  [/\.category-input,\s*\.tags-input\s*\{/, 4],
+  [/\.isbf-marketplace-composer-options\s*\{/, 5],
+]) {
+  assert.match(
+    styleRule(mobileComposerStyles, selector),
+    new RegExp(`grid-row:\\s*${row}\\s*;`),
+  );
+}
+for (const selector of [
+  /\.category-input,\s*\.tags-input\s*\{/,
+  /\.select-kit\s*\{/,
+  /\.select-kit-header\s*\{/,
+]) {
+  const rule = styleRule(mobileComposerStyles, selector);
+  assert.match(rule, /min-width:\s*0\s*;/);
+  assert.match(rule, /max-width:\s*100%\s*;/);
+}
 assert.ok(feed.includes("this.config?.publishing_enabled !== false"));
 const capabilityGetter = feed.slice(
   feed.indexOf("  get canCreate()"),

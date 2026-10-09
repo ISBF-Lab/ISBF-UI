@@ -103,25 +103,20 @@
 }
 
 .isbf-marketplace-composer {
-  padding: var(--isbf-v2-space-3);
   color: var(--isbf-v2-text);
 
   label {
     display: flex;
     align-items: center;
     gap: var(--isbf-v2-space-2);
+    min-height: 44px;
+    margin: 0;
   }
 
   input[type="text"] {
     width: 120px;
-  }
-
-  &__home {
-    margin-top: var(--isbf-v2-space-2);
-  }
-
-  p {
-    color: var(--isbf-v2-muted);
+    min-width: 0;
+    margin: 0;
   }
 }
 
@@ -159,27 +154,196 @@
   }
 }
 
-body:has(.isbf-v2-shell) #reply-control:has(.isbf-marketplace-composer) {
+html.composer-open
+  body:has(.isbf-v2-shell)
+  #reply-control.open:has(.isbf-marketplace-composer) {
   .title-and-category {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: max-content minmax(120px, 1fr) max-content;
+    align-items: start;
+    gap: 8px;
+    max-height: none;
+    margin-bottom: 0;
+  }
+
+  .title-and-category > :has(.isbf-marketplace-composer),
+  .title-and-category > :has(.isbf-marketplace-composer-options) {
+    display: contents;
   }
 
   .title-and-category > .title-input,
   .composer-fields > .title-input {
-    display: flex;
-    flex-wrap: wrap;
-    flex-basis: 100%;
+    grid-column: 1 / -1;
+    grid-row: 1;
     width: 100%;
+    min-width: 0;
     max-width: none;
   }
 
-  .title-input > div:has(.isbf-marketplace-composer) {
-    flex-basis: 100%;
-    width: 100%;
+  .isbf-marketplace-composer {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .category-input,
+  .tags-input,
+  .isbf-marketplace-composer-options {
+    grid-row: 3;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .category-input {
+    grid-column: 1;
+  }
+
+  .tags-input {
+    grid-column: 2;
+  }
+
+  .isbf-marketplace-composer-options {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  .isbf-marketplace-composer__home {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: auto;
+    min-height: 44px;
+    margin: 0;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      flex: 0 0 16px;
+      width: 16px;
+      min-width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+
+    span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    &:focus-within {
+      outline: 2px solid var(--isbf-v2-focus-ring);
+      outline-offset: 2px;
+      border-radius: var(--isbf-v2-radius-sm);
+    }
   }
 
   .title-input > input {
     flex-basis: 100%;
     width: 100%;
+  }
+}
+
+@media (width <= 600px) {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-marketplace-composer) {
+    .d-editor-textarea-column {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto minmax(160px, 1fr) auto auto auto;
+      align-content: start;
+      align-items: start;
+      gap: 8px;
+      box-sizing: border-box;
+      height: 100%;
+      min-height: 0;
+      padding: 12px 16px 8px;
+      overflow-y: auto;
+      scroll-padding-block: 12px;
+    }
+
+    .composer-fields,
+    .title-and-category {
+      display: contents;
+      position: static;
+      inset: auto;
+      z-index: auto;
+      width: auto;
+      height: auto;
+      max-height: none;
+      padding: 0;
+      border: 0;
+      overflow: visible;
+    }
+
+    .title-input {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      margin: 0;
+    }
+
+    .d-editor-textarea-wrapper {
+      position: static;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      width: 100%;
+      min-height: 160px;
+      margin: 0;
+    }
+
+    .d-editor-input {
+      box-sizing: border-box;
+      min-height: 160px;
+      padding: 8px 0;
+    }
+
+    .isbf-marketplace-composer {
+      grid-column: 1 / -1;
+      grid-row: 3;
+
+      input[type="text"] {
+        flex: 1 1 120px;
+        width: 120px;
+      }
+    }
+
+    .category-input,
+    .tags-input {
+      grid-row: 4;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .isbf-marketplace-composer-options {
+      grid-column: 1 / -1;
+      grid-row: 5;
+      justify-self: start;
+      min-width: 0;
+    }
+
+    .select-kit {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .select-kit-header {
+      min-width: 0;
+      max-width: 100%;
+      min-height: 44px;
+    }
+
+    .wmd-controls {
+      box-sizing: border-box;
+      min-height: 0;
+      padding-bottom: calc(56px + env(safe-area-inset-bottom));
+    }
+  }
+
+  html.keyboard-visible
+    body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-marketplace-composer) {
+    .wmd-controls {
+      padding-bottom: 56px;
+    }
   }
 }
