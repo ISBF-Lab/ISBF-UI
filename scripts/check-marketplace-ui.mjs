@@ -515,6 +515,135 @@ for (const outletArgument of ["model", "composer"]) {
   assert.equal(priceComponent.visible, false);
   assert.equal(homeComponent.visible, false);
 }
+// Exercise the cancellation component with the real scope helpers, without rendering.
+context.document = { querySelector: () => ({}) };
+const quickPostModule = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/quick-post-scope.js"),
+  { context },
+);
+await quickPostModule.link((specifier) => {
+  if (specifier === "./marketplace") {
+    return module;
+  }
+  if (specifier === "virtual:theme") {
+    return synthetic({ settings: { calendar_category_id: 51 } });
+  }
+  throw new Error(`Unexpected quick-post import: ${specifier}`);
+});
+await quickPostModule.evaluate();
+const cancelSource = read(
+  "javascripts/discourse/components/isbf-v2-composer-cancel.gjs",
+);
+const cancelModule = new vm.SourceTextModule(
+  cancelSource
+    .replace(/<template>[\s\S]*?<\/template>/g, "")
+    .replace(/@action\s+/g, "")
+    .replace(/@service\s+/g, ""),
+  { context },
+);
+await cancelModule.link((specifier) => {
+  if (specifier === "../lib/marketplace") {
+    return module;
+  }
+  if (specifier === "../lib/quick-post-scope") {
+    return quickPostModule;
+  }
+  if (specifier === "@glimmer/component") {
+    return synthetic({
+      default: class {
+        constructor(_owner, args) {
+          this.args = args;
+        }
+      },
+    });
+  }
+  if (specifier === "@ember/object") {
+    return synthetic({ action() {} });
+  }
+  if (specifier === "@ember/service") {
+    return synthetic({ service() {} });
+  }
+  if (specifier === "virtual:theme") {
+    return synthetic({ themePrefix: (key) => key });
+  }
+  if (specifier === "discourse-i18n") {
+    return synthetic({ i18n: (key) => key });
+  }
+  if (specifier === "@ember/modifier") {
+    return synthetic({ on() {} });
+  }
+  throw new Error(`Unexpected cancel import: ${specifier}`);
+});
+await cancelModule.evaluate();
+const Cancel = cancelModule.namespace.default;
+assert.equal(new Cancel(undefined, {}).visible, false);
+for (const [name, composerModel, expected] of [
+  ["marketplace create", model({ action: "createTopic" }), true],
+  ["marketplace first-post edit", edit, true],
+  ["quick post", model({ action: "createTopic", categoryId: 43 }), true],
+  [
+    "ordinary first-post edit",
+    model({
+      categoryId: 43,
+      creatingTopic: false,
+      editingPost: true,
+      post: { post_number: 1 },
+    }),
+    false,
+  ],
+  [
+    "marketplace reply",
+    model({ creatingTopic: false, action: "reply" }),
+    false,
+  ],
+  [
+    "marketplace reply edit",
+    model({
+      creatingTopic: false,
+      editingPost: true,
+      post: { post_number: 2 },
+    }),
+    false,
+  ],
+  ["event create", model({ action: "createTopic", categoryId: 51 }), false],
+  [
+    "learning create",
+    model({
+      action: "createTopic",
+      categoryId: 52,
+      site: { isbf_marketplace: config, isbf_learning: { category_id: 52 } },
+    }),
+    false,
+  ],
+]) {
+  assert.equal(
+    isMarketplaceComposer(composerModel),
+    name.startsWith("marketplace") && !name.includes("reply"),
+    name,
+  );
+  const cancel = new Cancel(undefined, {
+    outletArgs: { model: composerModel },
+  });
+  assert.equal(cancel.visible, expected, name);
+}
+assert.match(cancelSource, /\{\{#if this\.visible\}\}/);
+assert.match(cancelSource, /\{\{on "click" this\.close\}\}/);
+assert.match(cancelSource, /type="button"/);
+const cancel = new Cancel(undefined, { outletArgs: { model: fresh } });
+const closeEvent = { type: "click" };
+let saveAndCloseCalls = 0;
+cancel.composer = {
+  saveAndClose(event) {
+    assert.equal(event, closeEvent);
+    saveAndCloseCalls++;
+  },
+};
+cancel.close(closeEvent);
+assert.equal(
+  saveAndCloseCalls,
+  1,
+  "Cancel must retain native draft save-and-close",
+);
 const homeSource = composerSource.slice(
   composerSource.indexOf("export class ISBFMarketplaceHome"),
 );
@@ -564,10 +693,105 @@ assert.match(homeStyles, /gap:\s*8px\s*;/);
 const mobileStyles = styles.slice(
   styles.lastIndexOf("@media (width <= 600px)"),
 );
-const mobileComposerStyles = styleRule(mobileStyles, composerScope);
+const mobileComposerScope =
+  /html\.composer-open\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):has\(\.isbf-marketplace-composer\)\s*\{/;
+const mobileComposerStyles = styleRule(mobileStyles, mobileComposerScope);
 assert.match(
   styleRule(mobileComposerStyles, /\.d-editor-textarea-column\s*\{/),
   /display:\s*grid\s*;/,
+);
+// The native viewport variable follows the keyboard; all overrides stay mobile
+// and require the marketplace fields rendered for creates or first-post edits.
+assert.match(
+  mobileComposerStyles,
+  /height:\s*calc\(var\(--composer-vh,\s*1dvh\)\s*\*\s*100\)\s*;/,
+);
+const mobileHeader = styleRule(mobileComposerStyles, /\.reply-to\s*\{/);
+const mobileActions = styleRule(mobileComposerStyles, /\.save-or-cancel\s*\{/);
+for (const rule of [mobileHeader, mobileActions]) {
+  assert.match(
+    rule,
+    /height:\s*calc\(48px\s*\+\s*env\(safe-area-inset-top\)\)\s*;/,
+  );
+  assert.match(rule, /min-height:\s*0\s*;/);
+}
+assert.match(
+  styleRule(mobileComposerStyles, /\.reply-area\s*\{/),
+  /padding:\s*calc\(48px\s*\+\s*env\(safe-area-inset-top\)\)\s+0\s+0\s*;/,
+);
+const duplicateControls = styleRule(
+  mobileComposerStyles,
+  /\.reply-to \.action-title,\s*\.reply-to \.composer-action-title,\s*\.reply-to \.composer-controls\s*\{/,
+);
+assert.match(duplicateControls, /display:\s*none\s*;/);
+const discard = styleRule(
+  mobileComposerStyles,
+  /(?:^|\})\s*\.save-or-cancel \.discard-button\s*\{/,
+);
+assert.match(discard, /position:\s*static\s*;/);
+assert.match(discard, /min-width:\s*44px\s*;/);
+assert.doesNotMatch(discard, /display:\s*none\s*;/);
+assert.match(
+  styleRule(
+    mobileComposerStyles,
+    /\.save-or-cancel \.btn-primary,\s*\.save-or-cancel \.discard-button\s*\{/,
+  ),
+  /min-height:\s*44px\s*;/,
+);
+assert.match(
+  mobileComposerStyles,
+  /container:\s*isbf-marketplace-composer\s*\/\s*size\s*;/,
+);
+const shortViewport = styleRule(
+  mobileStyles,
+  /@container isbf-marketplace-composer\s*\(height\s*<\s*360px\)\s*\{/,
+);
+assert.match(shortViewport, /:has\(\.isbf-marketplace-composer\)/);
+assert.match(
+  shortViewport,
+  /grid-template-rows:\s*auto\s+minmax\(44px,\s*1fr\)/,
+);
+const mobileGrid = styleRule(
+  mobileComposerStyles,
+  /\.d-editor-textarea-column\s*\{/,
+);
+assert.match(mobileGrid, /grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\)/);
+assert.match(mobileGrid, /min-height:\s*0\s*;/);
+assert.match(
+  mobileGrid,
+  /overflow-y:\s*auto\s*;/,
+  "Very short viewports must allow fields to scroll",
+);
+assert.doesNotMatch(
+  mobileComposerStyles,
+  /(?:min-height:\s*160px|minmax\(160px)/,
+);
+const mobileDescription = styleRule(
+  mobileComposerStyles,
+  /\.d-editor-textarea-wrapper\s*\{/,
+);
+assert.match(mobileDescription, /min-height:\s*0\s*;/);
+assert.match(mobileDescription, /align-self:\s*stretch\s*;/);
+const mobileInput = styleRule(mobileComposerStyles, /\.d-editor-input\s*\{/);
+assert.match(mobileInput, /min-height:\s*0\s*;/);
+assert.match(mobileInput, /height:\s*100%\s*;/);
+assert.match(
+  mobileInput,
+  /overflow-y:\s*auto\s*;/,
+  "Long descriptions must scroll internally",
+);
+const toolbarSpace = styleRule(mobileComposerStyles, /\.wmd-controls\s*\{/);
+assert.match(
+  toolbarSpace,
+  /padding-bottom:\s*calc\(56px\s*\+\s*env\(safe-area-inset-bottom\)\)\s*;/,
+);
+const keyboardComposerStyles = styleRule(
+  mobileStyles,
+  /html\.keyboard-visible\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):has\(\.isbf-marketplace-composer\)\s*\{/,
+);
+assert.match(
+  styleRule(keyboardComposerStyles, /\.wmd-controls\s*\{/),
+  /padding-bottom:\s*56px\s*;/,
 );
 const mobileFields = styleRule(
   mobileComposerStyles,
