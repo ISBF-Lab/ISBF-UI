@@ -17,6 +17,7 @@ import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import ISBFAlumni from "./isbf-alumni";
 import ISBFExplore from "./isbf-explore";
 import ISBFLearning from "./isbf-learning";
+import ISBFMarketplace from "./isbf-marketplace";
 import ISBFNotifications from "./isbf-notifications";
 import ISBFOfficialFeed from "./isbf-official-feed";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
@@ -70,6 +71,9 @@ export default class ISBFV2Shell extends Component {
     }
     if (path === "/isbf/alumni") {
       return "alumni";
+    }
+    if (path === "/isbf/marketplace") {
+      return "marketplace";
     }
     if (path === "/isbf/learning") {
       return "learning";
@@ -151,11 +155,17 @@ export default class ISBFV2Shell extends Component {
   }
 
   get isWorkbench() {
-    return ["workbench", "learning", "alumni"].includes(this.pageKind);
+    return ["workbench", "learning", "alumni", "marketplace"].includes(
+      this.pageKind,
+    );
   }
 
   get isAlumni() {
     return this.pageKind === "alumni";
+  }
+
+  get isMarketplace() {
+    return this.pageKind === "marketplace";
   }
 
   get isLearning() {
@@ -170,6 +180,7 @@ export default class ISBFV2Shell extends Component {
         "calendar",
         "explore",
         "learning",
+        "marketplace",
         "notifications",
         "workbench",
       ].includes(this.pageKind)
@@ -457,6 +468,7 @@ export default class ISBFV2Shell extends Component {
         {{#if this.isAnonymousPosts}}<ISBFV2AnonymousPosts />{{/if}}
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
         {{#if this.isAlumni}}<ISBFAlumni />
+        {{else if this.isMarketplace}}<ISBFMarketplace />
         {{else if this.isLearning}}<ISBFLearning />
         {{else if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
 

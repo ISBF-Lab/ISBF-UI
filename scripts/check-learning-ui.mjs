@@ -206,6 +206,23 @@ const upload = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-upload.js"),
   { context },
 );
+const marketplace = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/marketplace.js"),
+  { context },
+);
+await marketplace.link(() => {});
+await marketplace.evaluate();
+const endpoint = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/private-upload-endpoint.js"),
+  { context },
+);
+await endpoint.link((specifier) => {
+  if (specifier === "discourse/lib/get-url") return getUrl;
+  if (specifier === "./learning-composer") return composer;
+  if (specifier === "./marketplace") return marketplace;
+  throw new Error(`Unexpected endpoint dependency: ${specifier}`);
+});
+await endpoint.evaluate();
 await upload.link((specifier) => {
   if (specifier === "discourse/lib/get-url") {
     return getUrl;
@@ -215,6 +232,9 @@ await upload.link((specifier) => {
   }
   if (specifier === "./learning-composer") {
     return composer;
+  }
+  if (specifier === "./private-upload-endpoint") {
+    return endpoint;
   }
   throw new Error(`Unexpected upload dependency: ${specifier}`);
 });
@@ -266,14 +286,30 @@ uploadModel.isbf_learning_course_id = "";
 assert.throws(() => preprocessor.process(["no-course"]), /课程/);
 transport = null;
 uploadModel.isbf_learning_course_id = courseId;
-assert.throws(
-  () => preprocessor.process(["missing-transport"]),
-  /authenticated upload transport/,
-);
+assert.throws(() => preprocessor.process(["missing-transport"]), /私有上传/);
 uploadModel.categoryId = 11;
 assert.doesNotThrow(() => preprocessor.process(["native-without-xhr"]));
 preprocessor.uninstall();
 assert.equal(preprocessor.installed, null);
+
+uploadModel.site.isbf_marketplace = {
+  category_id: 29,
+  private_images: true,
+  version: 1,
+};
+transport = uploader;
+uploadModel.categoryId = 29;
+endpoint.namespace.configurePrivateUploadEndpoint(uppy, uploadModel);
+preprocessor.process(["market-image"]);
+assert.equal(uploader.opts.endpoint, "/forum/isbf/marketplace/uploads.json");
+uploadModel.categoryId = config.category_id;
+endpoint.namespace.configurePrivateUploadEndpoint(uppy, uploadModel);
+preprocessor.process(["learning-image"]);
+assert.equal(uploader.opts.endpoint, "/forum/isbf/learning/uploads.json");
+uploadModel.categoryId = 11;
+endpoint.namespace.configurePrivateUploadEndpoint(uppy, uploadModel);
+preprocessor.process(["ordinary-image"]);
+assert.equal(uploader.opts.endpoint, nativeEndpoint);
 
 const initializer = read(
   "javascripts/discourse/api-initializers/isbf-learning.gjs",
