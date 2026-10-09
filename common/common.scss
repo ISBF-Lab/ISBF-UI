@@ -2791,6 +2791,13 @@ body:has(.isbf-v2-shell--bookmarks) {
       font-weight: 700;
     }
 
+    .bio {
+      max-height: none;
+      overflow: visible;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
     .bio > :first-child {
       margin-top: 0;
     }
@@ -2800,15 +2807,47 @@ body:has(.isbf-v2-shell--bookmarks) {
     }
 
     .user-profile__location-and-website {
-      justify-content: flex-start;
-      white-space: normal;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+
+      > span:not(:has(> :not(:empty))) {
+        display: none;
+      }
     }
 
     .user-profile-location,
     .user-profile-website {
-      overflow: visible;
-      white-space: normal;
-      overflow-wrap: anywhere;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-profile-location {
+      display: block;
+    }
+
+    .user-profile-website {
+      display: flex;
+      align-items: center;
+
+      > .d-icon {
+        flex-shrink: 0;
+      }
+
+      > a,
+      > span {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
 
     .details > .primary > .controls {
@@ -2823,9 +2862,9 @@ body:has(.isbf-v2-shell--bookmarks) {
       }
 
       ul {
-        flex-direction: row;
+        flex-direction: column;
         flex-wrap: wrap;
-        justify-content: flex-end;
+        align-items: flex-end;
         gap: 8px;
         margin: 0;
       }
@@ -2865,15 +2904,26 @@ body:has(.isbf-v2-shell--bookmarks) {
     }
 
     .secondary {
+      display: block;
       box-sizing: border-box;
       min-width: 0;
       max-width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
       overflow-wrap: anywhere;
 
       dl {
         display: flex;
         flex-wrap: wrap;
         gap: 4px 12px;
+        margin: 0;
+        padding: 0;
+
+        > :empty,
+        > div:has(> .profile-view-count, > .email, > .groups) {
+          display: none;
+        }
 
         > div {
           min-width: 0;
