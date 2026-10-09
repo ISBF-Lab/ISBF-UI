@@ -60,7 +60,7 @@ assert.match(
 assert.match(profile, /\.controls\s*\{[^}]*grid-row:\s*2;/);
 assert.match(
   profile,
-  /ul\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap;[^}]*justify-content:\s*flex-end;/,
+  /ul\s*\{[^}]*flex-direction:\s*column;[^}]*flex-wrap:\s*wrap;[^}]*align-items:\s*flex-end;/,
 );
 assert.match(profile, /button\s*\{[^}]*width:\s*auto;[^}]*font-size:\s*14px;/);
 assert.match(profile, /\.d-icon\s*\{[^}]*font-size:\s*16px;/);
@@ -73,6 +73,41 @@ assert.doesNotMatch(
   /\.secondary[\s\S]*> div\s*\{[^}]*display:/,
   "Metadata row styles must preserve native hidden fields",
 );
+assert.match(
+  profile,
+  /\.user-profile__location-and-website\s*\{[^}]*flex-direction:\s*column;[^}]*gap:\s*8px;/,
+);
+assert.match(
+  profile,
+  /\.user-profile-location,\s*\.user-profile-website\s*\{[^}]*width:\s*100%;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/,
+);
+assert.match(
+  profile,
+  /\.user-profile-website\s*\{[^}]*display:\s*flex;[\s\S]*> a,\s*> span\s*\{[^}]*min-width:\s*0;[^}]*text-overflow:\s*ellipsis;/,
+  "Both clickable websites and native non-link websites must truncate",
+);
+assert.match(profile, /\.d-icon\s*\{[^}]*flex-shrink:\s*0;/);
+assert.match(
+  profile,
+  /\.bio\s*\{[^}]*max-height:\s*none;[^}]*overflow:\s*visible;[^}]*white-space:\s*normal;[^}]*overflow-wrap:\s*anywhere;/,
+  "Long biographies must wrap and grow with the page",
+);
+assert.match(
+  profile,
+  /> div:has\(> \.profile-view-count, > \.email, > \.groups\)\s*\{\s*display:\s*none;/,
+  "Hide only the requested native metadata rows, including their buttons",
+);
+assert.doesNotMatch(
+  profile,
+  /invited-by|trust-level|btn-delete-user|user-admin/,
+  "Native management actions and other metadata must remain available",
+);
+assert.match(profile, /\.secondary\s*\{\s*display:\s*block;/);
+assert.match(
+  profile,
+  /\.secondary\s*\{[^}]*margin:\s*0;[^}]*padding:\s*0;[^}]*border:\s*0;/,
+);
+assert.match(profile, /dl\s*\{[^}]*margin:\s*0;[^}]*padding:\s*0;/);
 assert.match(profile, /white-space:\s*normal;/);
 assert.match(profile, /overflow-wrap:\s*anywhere;/);
 assert.match(profile, /min-height:\s*44px;/);
@@ -97,5 +132,5 @@ for (const width of [390, 430]) {
 }
 assert.ok(1024 > 600, "Desktop must remain outside the profile breakpoint");
 process.stdout.write(
-  "Mobile profile full-width details, compact contacts, visibility, and responsive constraints passed.\n",
+  "Mobile profile vertical details, ellipsis, expanding biography, metadata visibility, compact contacts, and responsive constraints passed.\n",
 );
