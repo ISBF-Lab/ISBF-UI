@@ -4748,11 +4748,18 @@ body:has(.isbf-v2-shell):has(.isbf-v2-shell--feedback) {
     font: inherit;
   }
 
-  .leaflet-tooltip,
+  .leaflet-tooltip.isbf-alumni-map__china-label,
   .leaflet-bar a {
     color: var(--isbf-v2-text);
     background: var(--isbf-v2-surface);
     border-color: var(--isbf-v2-border);
+  }
+
+  .leaflet-tooltip.isbf-alumni-map__china-label {
+    padding: 2px 4px;
+    font-family: sans-serif;
+    font-size: var(--isbf-alumni-label-size, 12px);
+    line-height: 1.25;
   }
 
   .leaflet-bar a {
