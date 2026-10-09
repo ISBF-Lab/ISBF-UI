@@ -3,7 +3,9 @@ import { apiInitializer } from "discourse/lib/api";
 import Composer from "discourse/models/composer";
 import { i18n } from "discourse-i18n";
 import { ISBFMarketplacePrice } from "../components/isbf-marketplace-card";
-import ISBFMarketplaceComposer from "../components/isbf-marketplace-composer";
+import ISBFMarketplaceComposer, {
+  ISBFMarketplaceHome,
+} from "../components/isbf-marketplace-composer";
 import { extendComposerMethod } from "../lib/composer-model-extensions";
 import {
   isMarketplaceComposer,
@@ -58,7 +60,8 @@ export default apiInitializer((api) => {
     }
     return next(...args);
   });
-  api.renderInOutlet("after-composer-title-input", ISBFMarketplaceComposer);
+  api.renderInOutlet("after-title-and-category", ISBFMarketplaceComposer);
+  api.renderInOutlet("after-title-and-category", ISBFMarketplaceHome);
   api.customizeComposerText({
     titlePlaceholder: (model) =>
       isMarketplaceComposer(model)
