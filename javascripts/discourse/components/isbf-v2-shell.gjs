@@ -5,9 +5,9 @@ import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
+import ISBFV2Calendar from "./isbf-v2-calendar";
 import ISBFV2RightRail from "./isbf-v2-right-rail";
 import ISBFV2SideNav from "./isbf-v2-side-nav";
-import ISBFV2Calendar from "./isbf-v2-calendar";
 import ISBFV2Workbench from "./isbf-v2-workbench";
 
 export default class ISBFV2Shell extends Component {
@@ -154,29 +154,59 @@ export default class ISBFV2Shell extends Component {
           <header class="isbf-v2-feed-header">
             <div class="isbf-v2-feed-header__title">
               {{#if this.currentUser}}
-                <a aria-label={{i18n (themePrefix "isbf_v2.profile")}} class="isbf-v2-feed-header__avatar" href={{this.profileHref}}>{{dAvatar this.currentUser imageSize="small"}}</a>
+                <a
+                  aria-label={{i18n (themePrefix "isbf_v2.profile")}}
+                  class="isbf-v2-feed-header__avatar"
+                  href={{this.profileHref}}
+                >{{dAvatar this.currentUser imageSize="small"}}</a>
               {{/if}}
               <span>{{i18n (themePrefix "isbf_v2.home")}}</span>
-              <a aria-label={{i18n (themePrefix "isbf_v2.search")}} class="isbf-v2-feed-header__search" href="/search">{{dIcon "magnifying-glass"}}</a>
+              <a
+                aria-label={{i18n (themePrefix "isbf_v2.search")}}
+                class="isbf-v2-feed-header__search"
+                href="/search"
+              >{{dIcon "magnifying-glass"}}</a>
             </div>
             <nav aria-label={{i18n (themePrefix "isbf_v2.feed_label")}}>
-              <a aria-current={{if this.latestActive "page"}} class={{if this.latestActive "is-active"}} href="/latest">{{i18n (themePrefix "isbf_v2.latest")}}</a>
-              <a aria-current={{if this.officialActive "page"}} class={{if this.officialActive "is-active"}} href={{settings.official_path}}>{{i18n (themePrefix "isbf_v2.official")}}</a>
+              <a
+                aria-current={{if this.latestActive "page"}}
+                class={{if this.latestActive "is-active"}}
+                href="/latest"
+              >{{i18n (themePrefix "isbf_v2.latest")}}</a>
+              <a
+                aria-current={{if this.officialActive "page"}}
+                class={{if this.officialActive "is-active"}}
+                href={{settings.official_path}}
+              >{{i18n (themePrefix "isbf_v2.official")}}</a>
             </nav>
           </header>
 
           {{#if this.canCompose}}
             <div class="isbf-v2-compose">
               {{#if this.currentUser}}
-                <a aria-label={{this.currentUser.username}} class="isbf-v2-compose__avatar" href={{this.profileHref}}>{{dAvatar this.currentUser imageSize="large"}}</a>
+                <a
+                  aria-label={{this.currentUser.username}}
+                  class="isbf-v2-compose__avatar"
+                  href={{this.profileHref}}
+                >{{dAvatar this.currentUser imageSize="large"}}</a>
               {{/if}}
-              <a class="isbf-v2-compose__prompt" href={{this.composeHref}}>{{i18n (themePrefix "isbf_v2.compose_prompt")}}</a>
-              <a class="isbf-v2-compose__button" href={{this.composeHref}}>{{i18n (themePrefix "isbf_v2.compose")}}</a>
+              <a
+                class="isbf-v2-compose__prompt"
+                href={{this.composeHref}}
+              >{{i18n (themePrefix "isbf_v2.compose_prompt")}}</a>
+              <a
+                class="isbf-v2-compose__button"
+                href={{this.composeHref}}
+              >{{i18n (themePrefix "isbf_v2.compose")}}</a>
             </div>
           {{/if}}
         {{else}}
           <header class="isbf-v2-page-header">
-            <a aria-label={{i18n (themePrefix "isbf_v2.back_home")}} class="isbf-v2-page-header__back" href="/latest">{{dIcon "arrow-left"}}</a>
+            <a
+              aria-label={{i18n (themePrefix "isbf_v2.back_home")}}
+              class="isbf-v2-page-header__back"
+              href="/latest"
+            >{{dIcon "arrow-left"}}</a>
             <span>{{this.pageTitle}}</span>
             {{#if this.isOwnProfile}}<ISBFV2AccountMenu
                 @mobile={{true}}
@@ -188,14 +218,45 @@ export default class ISBFV2Shell extends Component {
         {{#if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
 
         {{#if this.canCompose}}
-          <a aria-label={{i18n (themePrefix "isbf_v2.compose")}} class="isbf-v2-mobile-compose" href={{this.composeHref}}>{{dIcon "plus"}}</a>
+          <a
+            aria-label={{i18n (themePrefix "isbf_v2.compose")}}
+            class="isbf-v2-mobile-compose"
+            href={{this.composeHref}}
+          >{{dIcon "plus"}}</a>
         {{/if}}
 
-        <nav class="isbf-v2-mobile-nav" aria-label={{i18n (themePrefix "isbf_v2.quick_label")}}>
-          <a aria-current={{if this.isFeed "page"}} class={{if this.isFeed "is-active"}} href="/latest">{{dIcon "house"}}<span>{{i18n (themePrefix "isbf_v2.home")}}</span></a>
-          <a aria-current={{if this.isNotifications "page"}} class={{if this.isNotifications "is-active"}} href={{this.notificationsHref}}>{{dIcon "bell"}}<span>{{i18n (themePrefix "isbf_v2.notifications")}}</span></a>
-          <a aria-current={{if this.isCalendar "page"}} class={{if this.isCalendar "is-active"}} href="/isbf/calendar">{{dIcon "calendar-days"}}<span>{{i18n (themePrefix "isbf_v2.calendar")}}</span></a>
-          <a aria-current={{if this.isWorkbench "page"}} class={{if this.isWorkbench "is-active"}} href="/isbf/workbench">{{dIcon "table-cells-large"}}<span>{{i18n (themePrefix "isbf_v2.workbench")}}</span></a>
+        <nav
+          aria-label={{i18n (themePrefix "isbf_v2.quick_label")}}
+          class="isbf-v2-mobile-nav"
+        >
+          <a
+            aria-current={{if this.isFeed "page"}}
+            class={{if this.isFeed "is-active"}}
+            href="/latest"
+          >{{dIcon "house"}}<span>{{i18n
+                (themePrefix "isbf_v2.home")
+              }}</span></a>
+          <a
+            aria-current={{if this.isNotifications "page"}}
+            class={{if this.isNotifications "is-active"}}
+            href={{this.notificationsHref}}
+          >{{dIcon "bell"}}<span>{{i18n
+                (themePrefix "isbf_v2.notifications")
+              }}</span></a>
+          <a
+            aria-current={{if this.isCalendar "page"}}
+            class={{if this.isCalendar "is-active"}}
+            href="/isbf/calendar"
+          >{{dIcon "calendar-days"}}<span>{{i18n
+                (themePrefix "isbf_v2.calendar")
+              }}</span></a>
+          <a
+            aria-current={{if this.isWorkbench "page"}}
+            class={{if this.isWorkbench "is-active"}}
+            href="/isbf/workbench"
+          >{{dIcon "table-cells-large"}}<span>{{i18n
+                (themePrefix "isbf_v2.workbench")
+              }}</span></a>
         </nav>
       </div>
     {{/if}}
