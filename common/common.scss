@@ -2575,6 +2575,18 @@ body:has(.isbf-v2-shell--profile) {
   }
 }
 
+body:has(.isbf-v2-shell--profile)
+  #main-outlet
+  .user-main
+  .about.no-background:not(.collapsed-info) {
+  --isbf-profile-cover-height: 120px;
+  padding-top: calc(var(--isbf-profile-cover-height) + 12px);
+
+  &::before {
+    height: var(--isbf-profile-cover-height);
+  }
+}
+
 body:has(.isbf-v2-shell--badges) {
   .container.badges,
   .container.show-badge {
@@ -2718,6 +2730,11 @@ body:has(.isbf-v2-shell--bookmarks) {
       padding-top: 0;
     }
 
+    &.no-background {
+      --isbf-profile-avatar-overlap: 36px;
+      padding-top: var(--isbf-profile-cover-height);
+    }
+
     .details .primary {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -2748,7 +2765,8 @@ body:has(.isbf-v2-shell--bookmarks) {
       }
     }
 
-    &.has-background .user-profile-avatar {
+    &.has-background .user-profile-avatar,
+    &.no-background .user-profile-avatar {
       margin-top: calc(-1 * var(--isbf-profile-avatar-overlap));
     }
 
