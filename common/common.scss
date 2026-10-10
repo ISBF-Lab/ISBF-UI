@@ -162,7 +162,8 @@ body:has(.isbf-v2-shell) {
 
 .isbf-v2-brand:hover,
 .isbf-v2-side__links a:hover,
-.isbf-v2-side__account:hover {
+.isbf-v2-account-menu--side:hover,
+.isbf-v2-account-menu--side:focus-within {
   background: var(--isbf-v2-hover);
 }
 
@@ -266,14 +267,32 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
     filter var(--isbf-v2-transition-fast);
 }
 
-.isbf-v2-side__account {
+.isbf-v2-account-menu {
+  position: relative;
+}
+
+.isbf-v2-account-menu--side {
   display: flex;
   align-items: center;
-  gap: 10px;
+  width: calc(100% - 20px);
   min-height: 60px;
   margin-top: auto;
+  border-radius: var(--isbf-v2-radius-pill);
+}
+
+.isbf-v2-account-menu--mobile {
+  display: none;
+}
+
+.isbf-v2-side__account {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 60px;
   padding: 8px;
-  border-radius: 999px;
+  border-radius: var(--isbf-v2-radius-pill);
 }
 
 .isbf-v2-side__account img {
@@ -295,6 +314,67 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
 
 .isbf-v2-side__account small {
   color: var(--isbf-v2-muted);
+}
+
+.isbf-v2-account-menu__trigger {
+  display: grid;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--isbf-v2-text);
+  cursor: pointer;
+}
+
+.isbf-v2-account-menu__trigger:hover,
+.isbf-v2-account-menu__panel > :hover {
+  background: var(--isbf-v2-hover);
+}
+
+.isbf-v2-account-menu__trigger .d-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.isbf-v2-account-menu__compact-avatar,
+.isbf-v2-account-menu__compact-profile {
+  display: none;
+}
+
+.isbf-v2-account-menu__panel {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 70;
+  box-sizing: border-box;
+  width: max(220px, 100%);
+  padding: 8px;
+  border: 1px solid var(--isbf-v2-border);
+  border-radius: var(--isbf-v2-radius-md);
+  background: var(--isbf-v2-surface);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 22%);
+}
+
+.isbf-v2-account-menu__panel > a,
+.isbf-v2-account-menu__panel > button {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--isbf-v2-radius-sm);
+  background: transparent;
+  color: var(--isbf-v2-text);
+  font-size: var(--isbf-v2-font-sm);
+  font-weight: var(--isbf-v2-weight-medium);
+  text-align: left;
+  cursor: pointer;
 }
 
 .isbf-v2-feed-header {
@@ -712,6 +792,33 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
     padding-inline: 0;
   }
 
+  .isbf-v2-account-menu--side,
+  .isbf-v2-account-menu--side .isbf-v2-account-menu__trigger {
+    width: 56px;
+  }
+
+  .isbf-v2-account-menu--side .isbf-v2-side__account,
+  .isbf-v2-account-menu--side .isbf-v2-account-menu__trigger .d-icon {
+    display: none;
+  }
+
+  .isbf-v2-account-menu--side .isbf-v2-account-menu__trigger {
+    height: 56px;
+  }
+
+  .isbf-v2-account-menu__compact-avatar {
+    display: block;
+    border-radius: 50%;
+  }
+
+  .isbf-v2-account-menu__panel {
+    width: min(240px, calc(100vw - 16px));
+  }
+
+  .isbf-v2-account-menu__compact-profile {
+    display: flex;
+  }
+
   .isbf-v2-side__compose {
     overflow: hidden;
     width: 52px;
@@ -746,6 +853,24 @@ body:has(.isbf-v2-shell) .topic-list-bottom {
   .isbf-v2-side,
   .isbf-v2-rail {
     display: none;
+  }
+
+  .isbf-v2-account-menu--mobile {
+    display: block;
+    margin-left: auto;
+  }
+
+  .isbf-v2-account-menu--mobile .isbf-v2-account-menu__trigger {
+    width: 44px;
+    height: 44px;
+  }
+
+  .isbf-v2-account-menu--mobile .isbf-v2-account-menu__panel {
+    top: 100%;
+    right: 0;
+    bottom: auto;
+    left: auto;
+    width: min(280px, calc(100vw - 32px));
   }
 
   .isbf-v2-feed-header {
@@ -1939,4 +2064,103 @@ body:has(.isbf-v2-shell--bookmarks) {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.isbf-v2-account-menu__panel {
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+}
+
+.isbf-v2-account-menu__linked-account {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-top: 1px solid var(--isbf-v2-border);
+}
+
+.isbf-v2-account-menu__linked-account > img {
+  border-radius: 50%;
+}
+
+.isbf-v2-account-menu__linked-account > span {
+  display: grid;
+  min-width: 0;
+}
+
+.isbf-v2-account-menu__linked-account > span > b,
+.isbf-v2-account-menu__linked-account > span > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.isbf-v2-account-menu__linked-account > button,
+.isbf-v2-account-menu__link-form button,
+.isbf-v2-account-menu__verify button {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--isbf-v2-radius-pill);
+  background: var(--isbf-v2-accent);
+  color: var(--isbf-v2-accent-contrast);
+  font-weight: var(--isbf-v2-weight-bold);
+  cursor: pointer;
+}
+
+.isbf-v2-account-menu__linked-account > button:disabled,
+.isbf-v2-account-menu__link-form button:disabled,
+.isbf-v2-account-menu__verify button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.isbf-v2-account-menu__status {
+  color: var(--isbf-v2-muted);
+  text-align: right;
+}
+
+.isbf-v2-account-menu__link-form,
+.isbf-v2-account-menu__verify {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 8px;
+  padding: 8px;
+}
+
+.isbf-v2-account-menu__link-form label,
+.isbf-v2-account-menu__verify label {
+  display: grid;
+  gap: 4px;
+  color: var(--isbf-v2-muted);
+  font-size: var(--isbf-v2-font-xs);
+}
+
+.isbf-v2-account-menu__link-form input,
+.isbf-v2-account-menu__verify input,
+.isbf-v2-account-menu__verify select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--isbf-v2-border);
+  border-radius: var(--isbf-v2-radius-sm);
+  outline: 0;
+  background: var(--isbf-v2-background);
+  color: var(--isbf-v2-text);
+}
+
+.isbf-v2-account-menu__link-form input:focus,
+.isbf-v2-account-menu__verify input:focus,
+.isbf-v2-account-menu__verify select:focus {
+  border-color: var(--isbf-v2-accent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--isbf-v2-accent) 32%, transparent);
+}
+
+.isbf-v2-account-menu__error {
+  margin: 4px 8px;
+  color: var(--danger);
+  font-size: var(--isbf-v2-font-sm);
 }

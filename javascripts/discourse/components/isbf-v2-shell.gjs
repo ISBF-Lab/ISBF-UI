@@ -4,6 +4,7 @@ import { settings, themePrefix } from "virtual:theme";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import ISBFV2AccountMenu from "./isbf-v2-account-menu";
 import ISBFV2Brand from "./isbf-v2-brand";
 import ISBFV2Calendar from "./isbf-v2-calendar";
 import ISBFV2RightRail from "./isbf-v2-right-rail";
@@ -69,6 +70,17 @@ export default class ISBFV2Shell extends Component {
 
   get isWorkbench() {
     return this.pageKind === "workbench";
+  }
+
+  get isOwnProfile() {
+    if (this.pageKind !== "profile" || !this.currentUser) {
+      return false;
+    }
+
+    const profilePath =
+      `/u/${encodeURIComponent(this.currentUser.username)}`.toLowerCase();
+    const path = this.path.toLowerCase();
+    return path === profilePath || path.startsWith(`${profilePath}/`);
   }
 
   get pageTitle() {
@@ -201,6 +213,9 @@ export default class ISBFV2Shell extends Component {
               href="/latest"
             >{{dIcon "arrow-left"}}</a>
             <span>{{this.pageTitle}}</span>
+            {{#if this.isOwnProfile}}<ISBFV2AccountMenu
+                @mobile={{true}}
+              />{{/if}}
           </header>
         {{/if}}
 
