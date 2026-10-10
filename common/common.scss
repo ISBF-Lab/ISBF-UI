@@ -277,9 +277,8 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic {
 
 .isbf-v2-side__account b,
 .isbf-v2-side__account small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .isbf-v2-side__account small {
@@ -1941,7 +1940,7 @@ body:has(.isbf-v2-shell--bookmarks) {
 
 .isbf-v2-account-menu__linked-account {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  grid-template-columns: 32px minmax(0, 1fr);
   gap: 8px;
   align-items: center;
   padding: 8px;
@@ -1952,16 +1951,20 @@ body:has(.isbf-v2-shell--bookmarks) {
   border-radius: 50%;
 }
 
-.isbf-v2-account-menu__linked-account > span {
+.isbf-v2-account-menu__account-info {
   display: grid;
   min-width: 0;
 }
 
-.isbf-v2-account-menu__linked-account > span > b,
-.isbf-v2-account-menu__linked-account > span > small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.isbf-v2-account-menu__account-name,
+.isbf-v2-account-menu__account-username {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.isbf-v2-account-menu__linked-account > button {
+  grid-column: 2;
+  justify-self: start;
 }
 
 .isbf-v2-account-menu__linked-account > button,
@@ -1985,8 +1988,9 @@ body:has(.isbf-v2-shell--bookmarks) {
 }
 
 .isbf-v2-account-menu__status {
+  grid-column: 2;
   color: var(--isbf-v2-muted);
-  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .isbf-v2-account-menu__link-form,
