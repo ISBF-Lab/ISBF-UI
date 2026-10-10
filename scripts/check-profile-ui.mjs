@@ -5,6 +5,25 @@ const source = readFileSync(
   new URL("../common/common.scss", import.meta.url),
   "utf8",
 );
+const emptyCover = source.match(
+  /body:has\(\.isbf-v2-shell--profile\)\s+#main-outlet\s+\.user-main\s+\.about\.no-background:not\(\.collapsed-info\)\s*\{([\s\S]*?)\n\}/,
+)?.[1];
+assert.ok(emptyCover, "The empty cover fix requires an expanded profile scope");
+const coverHeight = Number(
+  emptyCover.match(/--isbf-profile-cover-height:\s*(\d+)px;/)?.[1],
+);
+assert.equal(coverHeight, 120);
+assert.match(
+  emptyCover,
+  /padding-top:\s*calc\(var\(--isbf-profile-cover-height\) \+ 12px\);/,
+  "Desktop profile content must start below the fallback cover",
+);
+assert.match(
+  emptyCover,
+  /&::before\s*\{\s*height:\s*var\(--isbf-profile-cover-height\);/,
+  "The fallback cover and content offset must use the same height",
+);
+assert.doesNotMatch(emptyCover, /has-background|color:|background(?:-color)?:/);
 const selector =
   /body:has\(\.isbf-v2-shell--profile\)\s+#main-outlet\s+\.user-main\s+\.about:not\(\.collapsed-info\)\s*\{/g;
 const matches = [...source.matchAll(selector)];
@@ -136,6 +155,33 @@ assert.match(
   profile,
   /&\.has-background\s*\{[^}]*--isbf-profile-avatar-overlap:\s*36px;/,
 );
+assert.match(
+  profile,
+  /&\.no-background\s*\{[^}]*--isbf-profile-avatar-overlap:\s*36px;[^}]*padding-top:\s*var\(--isbf-profile-cover-height\);/,
+  "Mobile empty covers must share the cover height and reserve the avatar overlap",
+);
+assert.match(
+  profile,
+  /&\.has-background \.user-profile-avatar,\s*&\.no-background \.user-profile-avatar\s*\{\s*margin-top:\s*calc\(-1 \* var\(--isbf-profile-avatar-overlap\)\);/,
+);
+const primaryInset = Number(
+  profile.match(/padding-block:\s*(\d+)px 8px;/)?.[1],
+);
+assert.equal(primaryInset, 12);
+const mobileOverlap = Number(
+  profile.match(
+    /&\.no-background\s*\{[^}]*--isbf-profile-avatar-overlap:\s*(\d+)px;/,
+  )?.[1],
+);
+const contentTop = coverHeight + primaryInset;
+assert.ok(contentTop >= coverHeight + 12);
+assert.ok(contentTop - mobileOverlap < coverHeight);
+const avatarBottom = contentTop - mobileOverlap + avatar;
+assert.ok(avatarBottom > coverHeight);
+for (const nameHeight of [avatar - mobileOverlap, 96, 144]) {
+  const detailsTop = contentTop + nameHeight + 8;
+  assert.ok(detailsTop >= avatarBottom + 8);
+}
 for (const overlap of [0, 36]) {
   assert.ok(
     avatar - overlap > 0,
@@ -154,5 +200,5 @@ for (const width of [390, 430]) {
 }
 assert.ok(1024 > 600, "Desktop must remain outside the profile breakpoint");
 process.stdout.write(
-  "Mobile profile details adjacent to the avatar, independent actions, banner states, ellipsis, metadata visibility, and responsive constraints passed.\n",
+  "Mobile profile details adjacent to the avatar, independent actions, fallback cover boundaries, banner states, ellipsis, metadata visibility, and responsive constraints passed.\n",
 );
