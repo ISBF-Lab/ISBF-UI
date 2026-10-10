@@ -35,12 +35,16 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
   setupRenderingTest(hooks, { stubRouter: true });
 
   hooks.beforeEach(function () {
-    this.currentUser.set("admin", true);
+    this.currentUser.setProperties({
+      admin: true,
+      can_switch_linked_accounts: false,
+    });
     this.siteSettings.isbf_account_switch_enabled = true;
     this.links = [];
     this.requests = [];
     this.requestError = null;
     this.codeError = null;
+    this.listDenied = false;
     pretender.post("/isbf/account-switch/links/77/email-code", () => {
       this.requests.push({ method: "SEND_CODE" });
       return this.codeError
@@ -56,6 +60,9 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
     });
     pretender.get("/isbf/account-switch/accounts", () => {
       this.requests.push({ method: "GET" });
+      if (this.listDenied) {
+        return response(403, { errors: ["Access denied"] });
+      }
       return response({ links: this.links });
     });
     pretender.post("/isbf/account-switch/links", (request) => {
@@ -329,6 +336,54 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
     ["moderator", false, true],
   ]) {
     for (const mobile of [true, false]) {
+      test(`an approved ${role} can open linked accounts in ${mobile ? "mobile" : "desktop"} navigation without a creation form`, async function (assert) {
+        this.currentUser.setProperties({
+          admin,
+          moderator,
+          can_switch_linked_accounts: true,
+        });
+        this.links = [{ ...approvedAccount, device_authorized: true }];
+        this.set("mobile", mobile);
+        await render(
+          <template><ISBFV2AccountMenu @mobile={{this.mobile}} /></template>
+        );
+        await click(trigger);
+
+        assert.dom(linkButton).exists("the approved account has an entry");
+        assert
+          .dom(".isbf-v2-account-menu__linked-account")
+          .doesNotExist("the accounts wait for the entry to be opened");
+        await click(linkButton);
+
+        assert
+          .dom(linkButton)
+          .hasAttribute(
+            "aria-expanded",
+            "true",
+            "the expanded section is announced"
+          );
+        assert
+          .dom(".isbf-v2-account-menu__linked-account")
+          .includesText(
+            "@second_admin",
+            "the approved counterpart is displayed"
+          );
+        assert
+          .dom(".isbf-v2-account-menu__linked-account > button")
+          .hasText(
+            i18n(themePrefix("isbf_v2.switch_now")),
+            "the device can switch immediately"
+          );
+        assert
+          .dom(linkForm)
+          .doesNotExist("only administrators can create another link");
+        assert.deepEqual(
+          this.requests,
+          [{ method: "GET" }],
+          "opening linked accounts only reads the list"
+        );
+      });
+
       test(`${role} has no account-link entry in ${mobile ? "mobile" : "desktop"} navigation`, async function (assert) {
         this.currentUser.setProperties({ admin, moderator });
         this.set("mobile", mobile);
@@ -351,6 +406,56 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
       });
     }
   }
+
+  test("an approved member can verify an email code on a new device", async function (assert) {
+    this.currentUser.setProperties({
+      admin: false,
+      can_switch_linked_accounts: true,
+    });
+    this.links = [approvedAccount];
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+    await click(linkButton);
+    await click(".isbf-v2-account-menu__linked-account > button");
+    await formKit(verifyForm).field("verificationMethod").select("email_code");
+    await click(".isbf-v2-account-menu__send-code");
+
+    assert
+      .dom(".isbf-v2-account-menu__code-status")
+      .exists("delivery is confirmed for the approved participant");
+    assert
+      .dom(linkForm)
+      .doesNotExist("verification cannot open account creation");
+    await formKit(verifyForm).field("emailCode").fillIn(emailCode);
+    await formKit(verifyForm).submit();
+    assert.strictEqual(
+      this.requests.at(-1).method,
+      "VERIFY",
+      "the existing device verification endpoint is used"
+    );
+    assert.strictEqual(
+      this.requests.at(-1).data.email_code,
+      emailCode,
+      "the target code reaches verification"
+    );
+  });
+
+  test("a revoked member loses its entry when the server rejects the account list", async function (assert) {
+    this.currentUser.setProperties({
+      admin: false,
+      can_switch_linked_accounts: true,
+    });
+    this.listDenied = true;
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+
+    assert
+      .dom(linkButton)
+      .doesNotExist("the stale entry is removed after permission loss");
+    assert
+      .dom(".isbf-v2-account-menu__linked-account")
+      .doesNotExist("there are no stale switching controls");
+  });
 
   test("a disabled feature hides the entry for an administrator", async function (assert) {
     this.siteSettings.isbf_account_switch_enabled = false;
