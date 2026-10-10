@@ -7,17 +7,29 @@ import {
   triggerKeyEvent,
 } from "@ember/test-helpers";
 import { module, test } from "qunit";
+import { themePrefix } from "virtual:theme";
 import { setupRenderingTest } from "discourse/tests/helpers/component-test";
 import pretender, {
   parsePostData,
   response,
 } from "discourse/tests/helpers/create-pretender";
+import formKit from "discourse/tests/helpers/form-kit-helper";
+import { i18n } from "discourse-i18n";
 import ISBFV2AccountMenu from "../discourse/components/isbf-v2-account-menu";
 
 const trigger = ".isbf-v2-account-menu__trigger";
 const panel = ".isbf-v2-account-menu__panel";
 const linkButton = ".isbf-v2-account-menu__link";
 const linkForm = ".isbf-v2-account-menu__link-form";
+const verifyForm = ".isbf-v2-account-menu__verify";
+const emailCode = "123456";
+const authenticatorCode = "654321";
+const approvedAccount = {
+  id: 77,
+  status: "approved",
+  device_authorized: false,
+  account: { username: "second_admin", email_code_enabled: true },
+};
 
 module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
   setupRenderingTest(hooks, { stubRouter: true });
@@ -28,6 +40,20 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
     this.links = [];
     this.requests = [];
     this.requestError = null;
+    this.codeError = null;
+    pretender.post("/isbf/account-switch/links/77/email-code", () => {
+      this.requests.push({ method: "SEND_CODE" });
+      return this.codeError
+        ? response(429, { errors: [this.codeError] })
+        : response({ success: "OK", expires_in: 600 });
+    });
+    pretender.post("/isbf/account-switch/links/77/verify", (request) => {
+      this.requests.push({
+        method: "VERIFY",
+        data: parsePostData(request.requestBody),
+      });
+      return response(403, { errors: ["Invalid verification code"] });
+    });
     pretender.get("/isbf/account-switch/accounts", () => {
       this.requests.push({ method: "GET" });
       return response({ links: this.links });
@@ -168,6 +194,134 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
       [{ method: "GET" }],
       "selecting verification does not switch the session"
     );
+  });
+
+  test("email verification sends a code and keeps the menu open", async function (assert) {
+    this.links = [approvedAccount];
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+    await click(".isbf-v2-account-menu__linked-account > button");
+    await formKit(verifyForm).field("verificationMethod").select("email_code");
+    await click(".isbf-v2-account-menu__send-code");
+
+    assert.dom(panel).exists("sending a code retains the menu");
+    assert
+      .dom(`${verifyForm} button[type=submit]`)
+      .hasText(
+        i18n(themePrefix("isbf_v2.verify_and_switch")),
+        "the submit label describes verification and switching"
+      );
+    assert
+      .dom(`${verifyForm} input[type=password]`)
+      .doesNotExist("email verification needs no password");
+    assert
+      .dom(".isbf-v2-account-menu__code-status")
+      .includesText("10", "the actual validity period is shown");
+    assert.deepEqual(
+      this.requests,
+      [{ method: "GET" }, { method: "SEND_CODE" }],
+      "sending the code does not switch the session"
+    );
+  });
+
+  test("submitting an email code excludes the password and preserves the draft after an error", async function (assert) {
+    this.links = [approvedAccount];
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+    await click(".isbf-v2-account-menu__linked-account > button");
+    await fillIn(`${verifyForm} input[name=password]`, "unused-password");
+    await formKit(verifyForm).field("verificationMethod").select("email_code");
+    await formKit(verifyForm).field("emailCode").fillIn(emailCode);
+    await formKit(verifyForm).submit();
+
+    assert.deepEqual(
+      this.requests.at(-1),
+      {
+        method: "VERIFY",
+        data: {
+          verification_method: "email_code",
+          email_code: "123456",
+          second_factor_method: "1",
+        },
+      },
+      "only the selected primary credential is sent"
+    );
+    assert
+      .dom(".isbf-v2-account-menu__error")
+      .hasText("Invalid verification code", "the server's error is shown");
+    assert
+      .form(verifyForm)
+      .field("emailCode")
+      .hasValue("123456", "the draft remains available for correction");
+  });
+
+  test("a failed code request exposes the error without showing a delivery confirmation", async function (assert) {
+    this.links = [approvedAccount];
+    this.codeError = "Wait before requesting another code";
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+    await click(".isbf-v2-account-menu__linked-account > button");
+    await formKit(verifyForm).field("verificationMethod").select("email_code");
+    await click(".isbf-v2-account-menu__send-code");
+
+    assert
+      .dom(".isbf-v2-account-menu__error")
+      .hasText(this.codeError, "the send failure is visible");
+    assert
+      .dom(".isbf-v2-account-menu__code-status")
+      .doesNotExist("delivery is not claimed after a failure");
+    assert.dom(panel).exists("the user can retry from the same menu");
+  });
+
+  test("email verification retains the target's second factor", async function (assert) {
+    this.links = [
+      {
+        ...approvedAccount,
+        account: { ...approvedAccount.account, totp_enabled: true },
+      },
+    ];
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+    await click(".isbf-v2-account-menu__linked-account > button");
+    await formKit(verifyForm).field("verificationMethod").select("email_code");
+    await formKit(verifyForm).field("emailCode").fillIn(emailCode);
+    await formKit(verifyForm)
+      .field("secondFactorToken")
+      .fillIn(authenticatorCode);
+    await formKit(verifyForm).submit();
+
+    assert.deepEqual(
+      this.requests.at(-1).data,
+      {
+        verification_method: "email_code",
+        email_code: "123456",
+        second_factor_method: "1",
+        second_factor_token: "654321",
+      },
+      "both factors reach the server"
+    );
+  });
+
+  test("the password alternative keeps its existing second-factor payload", async function (assert) {
+    this.links = [approvedAccount];
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+    await click(".isbf-v2-account-menu__linked-account > button");
+    await fillIn(`${verifyForm} input[name=password]`, "target-password");
+    await formKit(verifyForm).submit();
+
+    assert.deepEqual(
+      this.requests.at(-1).data,
+      {
+        verification_method: "password",
+        password: "target-password",
+        second_factor_method: "1",
+      },
+      "password verification stays available"
+    );
+    assert
+      .dom(".isbf-v2-account-menu__send-code")
+      .doesNotExist("a code is only sent from the email alternative");
   });
 
   for (const [role, admin, moderator] of [

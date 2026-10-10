@@ -3,27 +3,30 @@ import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
+import Form from "discourse/components/form";
 import { ajax } from "discourse/lib/ajax";
 import logout from "discourse/lib/logout";
 import { getCurrentPushSubscription } from "discourse/lib/push-notifications";
+import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 
 export default class ISBFV2AccountMenu extends Component {
+  @service a11y;
   @service currentUser;
   @service dialog;
   @service site;
   @service siteSettings;
 
   @tracked errorMessage;
+  @tracked emailCodeSent = false;
+  @tracked emailCodeExpiresIn;
   @tracked isBusy = false;
   @tracked isLinkFormOpen = false;
   @tracked isOpen = false;
   @tracked linkedAccounts = [];
-  @tracked password = "";
   @tracked requestedUsername = "";
-  @tracked secondFactorMethod = "1";
-  @tracked secondFactorToken = "";
+  @tracked verificationData = {};
   @tracked verificationLinkId;
 
   #rootElement;
@@ -51,6 +54,12 @@ export default class ISBFV2AccountMenu extends Component {
 
   get displayName() {
     return this.currentUser?.name || this.currentUser?.username;
+  }
+
+  get emailCodeSentMessage() {
+    return i18n(themePrefix("isbf_v2.email_code_sent"), {
+      minutes: Math.ceil(this.emailCodeExpiresIn / 60),
+    });
   }
 
   get profileHref() {
@@ -148,9 +157,28 @@ export default class ISBFV2AccountMenu extends Component {
   @action
   selectVerification(link) {
     this.errorMessage = null;
-    this.password = "";
-    this.secondFactorToken = "";
+    this.emailCodeSent = false;
+    this.verificationData = {
+      verificationMethod: "password",
+      secondFactorMethod: "1",
+    };
     this.verificationLinkId = link.id;
+  }
+
+  @action
+  async sendEmailCode(link) {
+    if (this.isBusy) {
+      return;
+    }
+    await this.#runRequest(async () => {
+      const response = await ajax(
+        `/isbf/account-switch/links/${link.id}/email-code`,
+        { type: "POST" }
+      );
+      this.emailCodeExpiresIn = response.expires_in;
+      this.emailCodeSent = true;
+      this.a11y.announce(this.emailCodeSentMessage, "polite");
+    });
   }
 
   @action
@@ -190,33 +218,22 @@ export default class ISBFV2AccountMenu extends Component {
   }
 
   @action
-  updatePassword(event) {
-    this.password = event.target.value;
-  }
-
-  @action
   updateRequestedUsername(event) {
     this.requestedUsername = event.target.value;
   }
 
   @action
-  updateSecondFactorMethod(event) {
-    this.secondFactorMethod = event.target.value;
-  }
-
-  @action
-  updateSecondFactorToken(event) {
-    this.secondFactorToken = event.target.value;
-  }
-
-  @action
-  async verifyAndSwitch(link, event) {
-    event.preventDefault();
+  async verifyAndSwitch(link, formData) {
     const data = {
-      password: this.password,
-      second_factor_method: this.secondFactorMethod,
-      second_factor_token: this.secondFactorToken,
+      verification_method: formData.verificationMethod,
+      second_factor_method: formData.secondFactorMethod,
+      second_factor_token: formData.secondFactorToken,
     };
+    if (formData.verificationMethod === "email_code") {
+      data.email_code = formData.emailCode;
+    } else {
+      data.password = formData.password;
+    }
 
     await this.#runRequest(async () => {
       const response = await ajax(
@@ -258,9 +275,9 @@ export default class ISBFV2AccountMenu extends Component {
   #resetForms() {
     this.errorMessage = null;
     this.isLinkFormOpen = false;
-    this.password = "";
+    this.emailCodeSent = false;
+    this.verificationData = {};
     this.requestedUsername = "";
-    this.secondFactorToken = "";
     this.verificationLinkId = null;
   }
 
@@ -396,54 +413,133 @@ export default class ISBFV2AccountMenu extends Component {
                   {{/if}}
 
                   {{#if (eq this.verificationLinkId link.id)}}
-                    <form
+                    <Form
                       class="isbf-v2-account-menu__verify"
-                      {{on "submit" (fn this.verifyAndSwitch link)}}
+                      @data={{this.verificationData}}
+                      @onSubmit={{fn this.verifyAndSwitch link}}
+                      as |form draft|
                     >
-                      <label>
-                        {{i18n (themePrefix "isbf_v2.target_password")}}
-                        <input
-                          autocomplete="current-password"
-                          required
-                          type="password"
-                          value={{this.password}}
-                          {{on "input" this.updatePassword}}
+                      {{#if link.account.email_code_enabled}}
+                        <form.Field
+                          @disabled={{this.isBusy}}
+                          @name="verificationMethod"
+                          @title={{i18n
+                            (themePrefix "isbf_v2.device_verification_method")
+                          }}
+                          @type="select"
+                          @validation="required"
+                          as |field|
+                        >
+                          <field.Control @includeNone={{false}} as |select|>
+                            <select.Option @value="password">
+                              {{i18n
+                                (themePrefix "isbf_v2.password_verification")
+                              }}
+                            </select.Option>
+                            <select.Option @value="email_code">
+                              {{i18n
+                                (themePrefix "isbf_v2.email_code_verification")
+                              }}
+                            </select.Option>
+                          </field.Control>
+                        </form.Field>
+                      {{/if}}
+
+                      {{#if (eq draft.verificationMethod "email_code")}}
+                        <DButton
+                          class="isbf-v2-account-menu__send-code"
+                          @action={{fn this.sendEmailCode link}}
+                          @disabled={{this.isBusy}}
+                          @translatedLabel={{if
+                            this.emailCodeSent
+                            (i18n (themePrefix "isbf_v2.resend_email_code"))
+                            (i18n (themePrefix "isbf_v2.send_email_code"))
+                          }}
                         />
-                      </label>
-                      {{#if link.account.totp_enabled}}
-                        <label>
-                          {{i18n (themePrefix "isbf_v2.second_factor_code")}}
-                          <input
+                        {{#if this.emailCodeSent}}
+                          <p class="isbf-v2-account-menu__code-status">
+                            {{this.emailCodeSentMessage}}
+                          </p>
+                        {{/if}}
+                        <form.Field
+                          @disabled={{this.isBusy}}
+                          @name="emailCode"
+                          @title={{i18n
+                            (themePrefix "isbf_v2.target_email_code")
+                          }}
+                          @type="input"
+                          @validation="required|length:6,6"
+                          as |field|
+                        >
+                          <field.Control
                             autocomplete="one-time-code"
                             inputmode="numeric"
-                            type="text"
-                            value={{this.secondFactorToken}}
-                            {{on "input" this.updateSecondFactorToken}}
+                            maxlength="6"
+                            pattern="[0-9]{6}"
                           />
-                        </label>
+                        </form.Field>
+                      {{else}}
+                        <form.Field
+                          @disabled={{this.isBusy}}
+                          @name="password"
+                          @title={{i18n
+                            (themePrefix "isbf_v2.target_password")
+                          }}
+                          @type="input-password"
+                          @validation="required"
+                          as |field|
+                        >
+                          <field.Control autocomplete="current-password" />
+                        </form.Field>
+                      {{/if}}
+
+                      {{#if
+                        (or
+                          link.account.totp_enabled
+                          link.account.backup_codes_enabled
+                        )
+                      }}
+                        <form.Field
+                          @disabled={{this.isBusy}}
+                          @name="secondFactorToken"
+                          @title={{i18n
+                            (themePrefix "isbf_v2.second_factor_code")
+                          }}
+                          @type="input"
+                          @validation="required"
+                          as |field|
+                        >
+                          <field.Control autocomplete="one-time-code" />
+                        </form.Field>
                       {{/if}}
                       {{#if link.account.backup_codes_enabled}}
-                        <label>
-                          {{i18n (themePrefix "isbf_v2.second_factor_method")}}
-                          <select
-                            value={{this.secondFactorMethod}}
-                            {{on "change" this.updateSecondFactorMethod}}
-                          >
-                            <option value="1">
+                        <form.Field
+                          @disabled={{this.isBusy}}
+                          @name="secondFactorMethod"
+                          @title={{i18n
+                            (themePrefix "isbf_v2.second_factor_method")
+                          }}
+                          @type="select"
+                          @validation="required"
+                          as |field|
+                        >
+                          <field.Control @includeNone={{false}} as |select|>
+                            <select.Option @value="1">
                               {{i18n
                                 (themePrefix "isbf_v2.authenticator_code")
                               }}
-                            </option>
-                            <option value="2">
+                            </select.Option>
+                            <select.Option @value="2">
                               {{i18n (themePrefix "isbf_v2.backup_code")}}
-                            </option>
-                          </select>
-                        </label>
+                            </select.Option>
+                          </field.Control>
+                        </form.Field>
                       {{/if}}
-                      <button disabled={{this.isBusy}} type="submit">
-                        {{i18n (themePrefix "isbf_v2.verify_and_switch")}}
-                      </button>
-                    </form>
+                      <form.Submit
+                        @disabled={{this.isBusy}}
+                        @label={{themePrefix "isbf_v2.verify_and_switch"}}
+                      />
+                    </Form>
                   {{/if}}
                 </div>
               {{/each}}
