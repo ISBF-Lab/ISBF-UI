@@ -416,9 +416,13 @@ export default class ISBFV2AccountMenu extends Component {
                       src={{link.account.avatar_template}}
                       width="32"
                     />
-                    <span>
-                      <b>{{or link.account.name link.account.username}}</b>
-                      <small>@{{link.account.username}}</small>
+                    <span class="isbf-v2-account-menu__account-info">
+                      <b class="isbf-v2-account-menu__account-name">
+                        {{or link.account.name link.account.username}}
+                      </b>
+                      <small class="isbf-v2-account-menu__account-username">
+                        @{{link.account.username}}
+                      </small>
                     </span>
                     {{#if (eq link.status "approved")}}
                       <button
@@ -528,6 +532,15 @@ export default class ISBFV2AccountMenu extends Component {
                           )
                         }}
                           <form.Field
+                            @description={{i18n
+                              (themePrefix
+                                (if
+                                  (eq draft.secondFactorMethod "2")
+                                  "isbf_v2.backup_code_help"
+                                  "isbf_v2.authenticator_code_help"
+                                )
+                              )
+                            }}
                             @disabled={{this.isBusy}}
                             @name="secondFactorToken"
                             @title={{i18n

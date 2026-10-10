@@ -1,6 +1,7 @@
 import {
   click,
   fillIn,
+  find,
   focus,
   render,
   triggerEvent,
@@ -290,6 +291,12 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
     await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
     await click(trigger);
     await click(".isbf-v2-account-menu__linked-account > button");
+    const descriptionId = find(
+      `${verifyForm} [name=secondFactorToken]`
+    ).getAttribute("aria-describedby");
+    assert
+      .dom(`#${descriptionId}`)
+      .hasText(i18n(themePrefix("isbf_v2.authenticator_code_help")));
     await formKit(verifyForm).field("verificationMethod").select("email_code");
     await formKit(verifyForm).field("emailCode").fillIn(emailCode);
     await formKit(verifyForm)
@@ -309,11 +316,47 @@ module("Integration | Component | ISBFV2AccountMenu", function (hooks) {
     );
   });
 
+  test("the second-factor source follows the selected authenticator or backup code", async function (assert) {
+    this.links = [
+      {
+        ...approvedAccount,
+        account: {
+          ...approvedAccount.account,
+          totp_enabled: true,
+          backup_codes_enabled: true,
+        },
+      },
+    ];
+    await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
+    await click(trigger);
+    await click(".isbf-v2-account-menu__linked-account > button");
+    const descriptionId = find(
+      `${verifyForm} [name=secondFactorToken]`
+    ).getAttribute("aria-describedby");
+    assert
+      .dom(`#${descriptionId}`)
+      .hasText(i18n(themePrefix("isbf_v2.authenticator_code_help")));
+
+    await formKit(verifyForm).field("secondFactorMethod").select("2");
+    assert
+      .dom(`#${descriptionId}`)
+      .hasText(i18n(themePrefix("isbf_v2.backup_code_help")));
+    await formKit(verifyForm).field("secondFactorMethod").select("1");
+    assert
+      .dom(`#${descriptionId}`)
+      .hasText(i18n(themePrefix("isbf_v2.authenticator_code_help")));
+  });
+
   test("the password alternative keeps its existing second-factor payload", async function (assert) {
     this.links = [approvedAccount];
     await render(<template><ISBFV2AccountMenu @mobile={{true}} /></template>);
     await click(trigger);
     await click(".isbf-v2-account-menu__linked-account > button");
+    assert
+      .dom(`${verifyForm} [name=secondFactorToken]`)
+      .doesNotExist(
+        "accounts without two-factor authentication need no extra code"
+      );
     await fillIn(`${verifyForm} input[name=password]`, "target-password");
     await formKit(verifyForm).submit();
 
