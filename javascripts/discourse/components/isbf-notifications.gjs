@@ -1,10 +1,10 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { action } from "@ember/object";
-import { service } from "@ember/service";
-import { scheduleOnce } from "@ember/runloop";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
+import { action } from "@ember/object";
+import { scheduleOnce } from "@ember/runloop";
+import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import DismissNotificationConfirmationModal from "discourse/components/modal/dismiss-notification-confirmation";
 import { ajax } from "discourse/lib/ajax";
@@ -192,7 +192,7 @@ export default class ISBFNotifications extends Component {
     this.markReadError = false;
     try {
       await ajax("/notifications/mark-read", { type: "PUT" });
-      if (this.isDestroying || this.isDestroyed) {
+      if (this.isDestroying) {
         return;
       }
       this.#markedReadAt = Date.now();
@@ -202,11 +202,11 @@ export default class ISBFNotifications extends Component {
       this.currentUser.set("unread_notifications", 0);
       this.markReadError = false;
     } catch {
-      if (!this.isDestroying && !this.isDestroyed) {
+      if (!this.isDestroying) {
         this.markReadError = true;
       }
     } finally {
-      if (!this.isDestroying && !this.isDestroyed) {
+      if (!this.isDestroying) {
         this.markingRead = false;
       }
     }
@@ -241,9 +241,7 @@ export default class ISBFNotifications extends Component {
   }
 
   #stale(generation) {
-    return (
-      this.isDestroying || this.isDestroyed || generation !== this.#generation
-    );
+    return this.isDestroying || generation !== this.#generation;
   }
 
   <template>
@@ -296,11 +294,8 @@ export default class ISBFNotifications extends Component {
           /></div>{{/if}}
       {{#each this.groups key="key" as |group|}}
         {{#if group.topic}}
-          <details class="isbf-notifications__topic" open>
-            <summary>
-              <h2><a href={{group.topic.url}}>{{group.topic.title}}</a></h2>
-              {{dIcon "chevron-down"}}
-            </summary>
+          <article class="isbf-notifications__topic">
+            <h2><a href={{group.topic.url}}>{{group.topic.title}}</a></h2>
             {{#each group.actions key="key" as |item|}}
               <ISBFNotificationAction
                 @actionLabel={{this.actionLabel}}
@@ -308,7 +303,7 @@ export default class ISBFNotifications extends Component {
                 @prepareEntries={{this.prepareEntries}}
               />
             {{/each}}
-          </details>
+          </article>
         {{else}}
           <article class="isbf-notifications__standalone"><ISBFNotificationEntry
               @entry={{group.latest}}
