@@ -238,9 +238,13 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
   }
 }
 
+.isbf-learning-resource__edit.btn,
 .isbf-learning-resource__delete.btn {
   min-width: 44px;
   min-height: 44px;
+}
+
+.isbf-learning-resource__delete.btn {
   color: var(--danger);
 }
 

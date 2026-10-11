@@ -358,7 +358,7 @@ function componentClass(path, globals = {}) {
       source.indexOf("  <template>"),
     )
     .replace("export default class", "class")
-    .replace(/@service (\w+);/g, "$1;")
+    .replace(/@service (\w+);/g, "$1 = services.$1;")
     .replace(/@tracked /g, "")
     .replace(/  @action\r?\n/g, "");
   return vm.runInNewContext(`${body}}\n${className}`, {
@@ -371,6 +371,7 @@ function componentClass(path, globals = {}) {
     },
     URL,
     Intl,
+    services: {},
     themePrefix: (key) => key,
     i18n: (key) => key,
     ...globals,
@@ -381,6 +382,7 @@ let completeSubmission;
 let rejectSubmission;
 let submissions = [];
 const ShareDialog = componentClass("isbf-learning-share-dialog", {
+  ...resources.namespace,
   ajax: (url, options) => {
     submissions.push({ url, ...options });
     return new Promise((resolve, reject) => {
@@ -553,10 +555,380 @@ assert.equal(
 completeSubmission({ success: true, pending: false });
 await saving;
 
+const editableResource = {
+  id: 42,
+  link_only: true,
+  files: [],
+  course: { id: courseId, name: "Economics" },
+  description: "List excerpt must not overwrite the full description",
+  contributor: "List contributor must not overwrite the post",
+};
+const editTopic = {
+  id: 42,
+  title: "Original resource title",
+  post_stream: {
+    posts: [
+      { id: 91, post_number: 2 },
+      { id: 90, post_number: 1 },
+    ],
+  },
+};
+const editPost = {
+  id: 90,
+  topic_id: 42,
+  post_number: 1,
+  can_edit: true,
+  raw: "Existing raw body",
+  name: "Original author",
+  username: "original-author",
+  isbf_learning_course_id: courseId,
+  isbf_learning_files: [],
+  isbf_learning_link: "https://example.edu/original",
+  isbf_learning_description:
+    "Full description\nSecond line with original context",
+  isbf_learning_contributor: "Original contributor",
+};
+const { learningEditableResource, learningEditDetails, learningLinkBody } =
+  resources.namespace;
+assert.equal(learningEditableResource(editableResource), true);
+for (const change of [
+  { id: "42" },
+  { id: 0 },
+  { link_only: false },
+  { link_only: "true" },
+  { files: undefined },
+  { files: null },
+  { files: [fileId] },
+]) {
+  assert.equal(
+    learningEditableResource({ ...editableResource, ...change }),
+    false,
+  );
+}
+assert.equal(learningEditDetails(editTopic, editPost, courseId).postId, 90);
+for (const change of [
+  { can_edit: false },
+  { can_edit: "true" },
+  { can_edit: undefined },
+  { id: 91 },
+  { topic_id: 43 },
+  { post_number: 2 },
+  { isbf_learning_course_id: "another-course" },
+  { isbf_learning_files: undefined },
+  { isbf_learning_files: "[]" },
+  { isbf_learning_files: [fileId] },
+  { isbf_learning_link: "" },
+  { isbf_learning_description: {} },
+  { isbf_learning_contributor: [] },
+]) {
+  assert.equal(
+    learningEditDetails(editTopic, { ...editPost, ...change }, courseId),
+    null,
+  );
+}
+assert.equal(learningEditDetails(editTopic, editPost, "another-course"), null);
+assert.equal(
+  learningEditDetails(
+    { ...editTopic, post_stream: { posts: [] } },
+    editPost,
+    courseId,
+  ),
+  null,
+);
+assert.equal(
+  learningEditDetails(
+    editTopic,
+    { ...editPost, isbf_learning_contributor: null },
+    courseId,
+  ).contributor,
+  "Original author",
+);
+const escapedBody = learningLinkBody(
+  "[Title] <script>",
+  "https://example.edu/a",
+  "<img> **text**\r\nSecond line",
+);
+assert.ok(!escapedBody.includes("<script>") && !escapedBody.includes("<img>"));
+assert.ok(
+  escapedBody.includes("&lt;script&gt;") && escapedBody.includes("&lt;img&gt;"),
+);
+assert.ok(escapedBody.includes("\nSecond line"));
+
+const editRequests = [];
+const editResults = [];
+const editServices = {
+  currentUser: { admin: true, name: "Current administrator" },
+  site: {
+    isbf_learning: {
+      resource_admin_management: true,
+      resource_description: true,
+      resource_contributor: true,
+    },
+  },
+  siteSettings: { min_topic_title_length: 5, max_topic_title_length: 80 },
+};
+const EditDialog = componentClass("isbf-learning-share-dialog", {
+  ...resources.namespace,
+  services: editServices,
+  ajax: (url, options) =>
+    new Promise((resolve, reject) => {
+      editRequests.push({ url, ...options, resolve, reject });
+    }),
+});
+const makeEditDialog = () =>
+  new EditDialog({
+    course: editableResource.course,
+    resource: editableResource,
+    onClose() {},
+    onSubmitted: (result) => editResults.push(result),
+  });
+const flushEdit = () => new Promise(setImmediate);
+async function loadEdit(dialog, post = editPost) {
+  const topicRequest = editRequests.at(-1);
+  assert.equal(topicRequest.url, "/t/42.json");
+  assert.equal(topicRequest.type, undefined, "Fresh topic reads use GET");
+  assert.equal(
+    dialog.saveDisabled,
+    true,
+    "Loading cannot submit incomplete fields",
+  );
+  topicRequest.resolve(editTopic);
+  await flushEdit();
+  const postRequest = editRequests.at(-1);
+  assert.equal(postRequest.url, "/posts/90.json");
+  assert.equal(postRequest.type, undefined, "Fresh first post reads use GET");
+  postRequest.resolve(post);
+  await flushEdit();
+}
+const editForm = makeEditDialog();
+await loadEdit(editForm);
+assert.equal(editForm.description, editPost.isbf_learning_description);
+assert.equal(editForm.contributorValue, "Original contributor");
+assert.equal(editForm.title, editTopic.title);
+assert.equal(editForm.shareLabel, "isbf_v2.learning_edit");
+assert.equal(editForm.submitLabel, "isbf_v2.learning_save_changes");
+assert.equal(editForm.saveDisabled, false);
+editForm.title = "Updated resource title";
+editForm.link = "https://example.edu/updated";
+editForm.description = "Updated description\nFull second line";
+editForm.contributor = "Updated credit";
+saving = editForm.save(submitEvent);
+const firstEdit = editRequests.at(-1);
+const requestsBeforeDuplicate = editRequests.length;
+await editForm.save(submitEvent);
+assert.equal(
+  editRequests.length,
+  requestsBeforeDuplicate,
+  "Repeated edit submit sends one PUT",
+);
+assert.deepEqual(
+  plain({ url: firstEdit.url, type: firstEdit.type, data: firstEdit.data }),
+  {
+    url: "/posts/90.json",
+    type: "PUT",
+    data: {
+      title: "Updated resource title",
+      post: {
+        raw: learningLinkBody(
+          editForm.title,
+          editForm.link,
+          editForm.description,
+        ),
+        isbf_learning_link: editForm.link,
+        isbf_learning_description: editForm.description,
+        isbf_learning_contributor: editForm.contributor,
+      },
+    },
+  },
+);
+assert.deepEqual(Object.keys(firstEdit.data).sort(), ["post", "title"]);
+assert.deepEqual(
+  Object.keys(firstEdit.data.post).sort(),
+  [
+    "isbf_learning_contributor",
+    "isbf_learning_description",
+    "isbf_learning_link",
+    "raw",
+  ],
+  "Edit cannot mutate author, created time, course or files",
+);
+firstEdit.reject({ jqXHR: { responseJSON: { errors: ["Edit denied"] } } });
+await saving;
+assert.equal(editForm.error, "Edit denied");
+assert.equal(editForm.saving, false);
+assert.equal(editForm.description, "Updated description\nFull second line");
+assert.equal(editForm.contributor, "Updated credit");
+saving = editForm.save(submitEvent);
+editRequests.at(-1).resolve({ post: { id: 91, topic_id: 42 } });
+await saving;
+assert.equal(editResults.length, 0, "Wrong post response allows retry");
+saving = editForm.save(submitEvent);
+editRequests.at(-1).resolve({ post: { id: 90, topic_id: 42 } });
+await saving;
+assert.deepEqual(plain(editResults), [
+  { success: true, pending: false, edited: true },
+]);
+const requestsAfterSuccess = editRequests.length;
+await editForm.save(submitEvent);
+assert.equal(
+  editRequests.length,
+  requestsAfterSuccess,
+  "Completed edit cannot resubmit",
+);
+
+const unchangedEdit = makeEditDialog();
+await loadEdit(unchangedEdit);
+saving = unchangedEdit.save(submitEvent);
+assert.equal(
+  editRequests.at(-1).data.post.raw,
+  editPost.raw,
+  "Unchanged edit retains existing raw body",
+);
+unchangedEdit.close();
+editRequests.at(-1).resolve({ post: { id: 90, topic_id: 42 } });
+await saving;
+assert.equal(editResults.length, 1, "Cancelled edit ignores late save success");
+const destroyedEdit = makeEditDialog();
+await loadEdit(destroyedEdit);
+saving = destroyedEdit.save(submitEvent);
+destroyedEdit.willDestroy();
+editRequests.at(-1).reject(new Error("Late edit failure"));
+await saving;
+assert.equal(destroyedEdit.error, null);
+for (const abandon of ["close", "willDestroy"]) {
+  const abandoned = makeEditDialog();
+  const topicRead = editRequests.at(-1);
+  const beforeClose = editRequests.length;
+  abandoned[abandon]();
+  topicRead.resolve(editTopic);
+  await flushEdit();
+  assert.equal(
+    editRequests.length,
+    beforeClose,
+    "Abandoned topic load cannot fetch a post",
+  );
+  assert.equal(abandoned.editReady, false);
+  const abandonedPost = makeEditDialog();
+  editRequests.at(-1).resolve(editTopic);
+  await flushEdit();
+  const postRead = editRequests.at(-1);
+  abandonedPost[abandon]();
+  postRead.resolve(editPost);
+  await flushEdit();
+  assert.equal(
+    abandonedPost.title,
+    "",
+    "Abandoned post load cannot hydrate a form",
+  );
+  assert.equal(abandonedPost.editReady, false);
+}
+const retryEdit = makeEditDialog();
+editRequests.at(-1).reject(new Error("Temporary read failure"));
+await flushEdit();
+assert.equal(retryEdit.loading, false);
+assert.ok(retryEdit.loadError);
+retryEdit.retryLoad();
+const requestsDuringLoad = editRequests.length;
+await retryEdit.retryLoad();
+assert.equal(
+  editRequests.length,
+  requestsDuringLoad,
+  "Repeated retry sends one fresh GET",
+);
+await loadEdit(retryEdit);
+assert.equal(retryEdit.editReady, true);
+assert.equal(retryEdit.loadError, null);
+retryEdit.currentUser = { moderator: true };
+await retryEdit.save(submitEvent);
+assert.equal(
+  editRequests.length,
+  requestsDuringLoad + 1,
+  "Admin permission is rechecked at save",
+);
+for (const user of [{}, { moderator: true }]) {
+  editServices.currentUser = user;
+  const deniedBefore = editRequests.length;
+  const deniedEdit = makeEditDialog();
+  assert.equal(deniedEdit.editAllowed, false);
+  await deniedEdit.save(submitEvent);
+  assert.equal(
+    editRequests.length,
+    deniedBefore,
+    "Ordinary users and moderators cannot edit",
+  );
+}
+editServices.currentUser = { admin: true };
+for (const deniedPost of [
+  { ...editPost, can_edit: false },
+  { ...editPost, isbf_learning_files: [fileId] },
+  { ...editPost, isbf_learning_course_id: "different-course" },
+]) {
+  const deniedEdit = makeEditDialog();
+  await loadEdit(deniedEdit, deniedPost);
+  assert.equal(deniedEdit.editReady, false);
+  assert.equal(deniedEdit.saveDisabled, true);
+  assert.ok(deniedEdit.loadError);
+}
+const revokedLoad = makeEditDialog();
+editRequests.at(-1).resolve(editTopic);
+await flushEdit();
+revokedLoad.currentUser = { moderator: true };
+editRequests.at(-1).resolve(editPost);
+await flushEdit();
+assert.equal(
+  revokedLoad.editReady,
+  false,
+  "Load completion rechecks administrator permission",
+);
+const longCredit = makeEditDialog();
+await loadEdit(longCredit, {
+  ...editPost,
+  isbf_learning_contributor: "Original contributor beyond fifteen characters",
+});
+assert.equal(
+  longCredit.saveDisabled,
+  false,
+  "Original legacy contributor remains valid",
+);
+longCredit.changeContributor({
+  target: { value: "New contributor beyond fifteen characters" },
+});
+assert.equal(longCredit.saveDisabled, true);
+const hiddenEditFields = makeEditDialog();
+await loadEdit(hiddenEditFields);
+hiddenEditFields.site = {
+  isbf_learning: {
+    resource_admin_management: true,
+    resource_description: false,
+    resource_contributor: false,
+  },
+};
+hiddenEditFields.title = "Edited with hidden fields";
+saving = hiddenEditFields.save(submitEvent);
+const hiddenPut = editRequests.at(-1);
+assert.equal(
+  hiddenPut.data.post.raw,
+  learningLinkBody(
+    hiddenEditFields.title,
+    editPost.isbf_learning_link,
+    editPost.isbf_learning_description,
+  ),
+  "Hidden description survives the rebuilt raw body",
+);
+assert.deepEqual(
+  Object.keys(hiddenPut.data.post).sort(),
+  ["isbf_learning_link", "raw"],
+  "Unsupported custom fields remain untouched",
+);
+hiddenPut.reject(new Error("Retry edit"));
+await saving;
+assert.equal(hiddenEditFields.saving, false);
+
 const deletions = [];
 let completeDeletion;
 let rejectDeletion;
 const ResourceCard = componentClass("isbf-learning-resource", {
+  ...resources.namespace,
   isImageAttachment,
   learningSafeUrl,
   learningFileSize: resources.namespace.learningFileSize,
@@ -824,10 +1196,144 @@ await menuRevoked.deleteFromMenu({
     throw new Error("Unauthorized users cannot operate the menu");
   },
 });
-assert.deepEqual(plain(menuCard.menuTriggers), {
-  desktop: ["hover", "click"],
-  mobile: ["click"],
-});
+assert.deepEqual(plain(menuCard.menuTriggers), ["click"]);
+const makeEditCard = () => {
+  const candidate = makeDeleteCard();
+  candidate.args.resource = { ...editableResource, can_delete: true };
+  return candidate;
+};
+const editCard = makeEditCard();
+assert.equal(editCard.canEdit, true);
+for (const change of [
+  { link_only: false },
+  { link_only: "true" },
+  { files: [fileId] },
+  { files: undefined },
+]) {
+  editCard.args.resource = { ...editableResource, can_delete: true, ...change };
+  assert.equal(
+    editCard.canEdit,
+    false,
+    "Legacy attachments and unconfirmed link resources cannot edit",
+  );
+  assert.equal(
+    editCard.canDelete,
+    true,
+    "Legacy resource deletion is preserved",
+  );
+}
+editCard.args.resource = { ...editableResource, can_delete: true };
+for (const currentUser of [{}, { moderator: true }]) {
+  editCard.currentUser = currentUser;
+  assert.equal(editCard.canEdit, false);
+}
+editCard.currentUser = { admin: true };
+const editMenuEvents = [];
+let closeEditMenu;
+editCard.args.onEdit = (resource) => editMenuEvents.push(resource);
+const editMenu = {
+  close: () => {
+    editMenuEvents.push("closing");
+    return new Promise((resolve) => {
+      closeEditMenu = resolve;
+    });
+  },
+};
+const openingEdit = editCard.editFromMenu(editMenu);
+await editCard.editFromMenu(editMenu);
+await editCard.deleteFromMenu(editMenu);
+assert.deepEqual(
+  editMenuEvents,
+  ["closing"],
+  "Menu close locks repeated edit and delete actions",
+);
+closeEditMenu();
+await openingEdit;
+assert.equal(
+  editMenuEvents[1],
+  editCard.args.resource,
+  "Edit opens only after native menu closes",
+);
+assert.equal(editCard.menuPending, false);
+for (const abandon of [
+  (candidate) => {
+    candidate.currentUser = { moderator: true };
+  },
+  (candidate) => candidate.willDestroy(),
+]) {
+  const abandoned = makeEditCard();
+  let opened = false;
+  abandoned.args.onEdit = () => {
+    opened = true;
+  };
+  await abandoned.editFromMenu({ close: async () => abandon(abandoned) });
+  assert.equal(
+    opened,
+    false,
+    "Menu close rechecks edit permission and lifecycle",
+  );
+}
+
+const pointerCard = makeEditCard();
+let shows = 0;
+let finishShow;
+const nativeMenu = {
+  expanded: false,
+  show: () => {
+    shows++;
+    nativeMenu.expanded = true;
+    return new Promise((resolve) => {
+      finishShow = resolve;
+    });
+  },
+};
+pointerCard.registerMenu(nativeMenu);
+for (const pointerType of ["touch", "pen", undefined]) {
+  await pointerCard.showForMouse({ pointerType });
+  assert.equal(shows, 0, "Only a real mouse opens a menu on pointer entry");
+}
+const mouseOpening = pointerCard.showForMouse({ pointerType: "mouse" });
+await pointerCard.showForMouse({ pointerType: "mouse" });
+assert.equal(
+  shows,
+  1,
+  "Repeated pointer entries cannot duplicate a pending show",
+);
+finishShow();
+await mouseOpening;
+let suppressed = 0;
+const mouseClick = {
+  detail: 1,
+  stopImmediatePropagation: () => suppressed++,
+  stopPropagation() {},
+};
+pointerCard.rememberPointer({ pointerType: "mouse" });
+pointerCard.pinHoveredMenu(mouseClick);
+assert.equal(suppressed, 1, "First mouse click pins a hover opened menu");
+pointerCard.pinHoveredMenu(mouseClick);
+assert.equal(
+  suppressed,
+  1,
+  "Next mouse click passes through to the native close trigger",
+);
+nativeMenu.expanded = false;
+const nextHover = pointerCard.showForMouse({ pointerType: "mouse" });
+finishShow();
+await nextHover;
+pointerCard.rememberPointer({ pointerType: "touch" });
+pointerCard.pinHoveredMenu(mouseClick);
+assert.equal(suppressed, 1, "Touch always reaches the native toggle");
+pointerCard.rememberPointer({ pointerType: "mouse" });
+pointerCard.pinHoveredMenu({ ...mouseClick, detail: 0 });
+assert.equal(suppressed, 1, "Keyboard click always reaches the native toggle");
+nativeMenu.expanded = false;
+pointerCard.currentUser = { moderator: true };
+await pointerCard.showForMouse({ pointerType: "mouse" });
+assert.equal(shows, 2, "Permission revocation prevents hover opening");
+pointerCard.currentUser = { admin: true };
+pointerCard.willDestroy();
+await pointerCard.showForMouse({ pointerType: "mouse" });
+assert.equal(shows, 2, "Destroyed cards cannot reopen a menu");
 assert.notEqual(
   menuCard.menuIdentifier,
   new ResourceCard({ resource: { id: "another-resource" } }).menuIdentifier,
@@ -874,9 +1380,30 @@ assert.ok(cardTemplate.includes("{{#if this.canDelete}}"));
 assert.ok(cardTemplate.includes("<DMenu"));
 assert.ok(cardTemplate.includes('@icon="ellipsis"'));
 assert.ok(cardTemplate.includes("@autofocus={{false}}"));
-assert.ok(cardTemplate.includes("@hoverGracePeriod={{300}}"));
+assert.ok(!cardTemplate.includes("@hoverGracePeriod"));
 assert.ok(cardTemplate.includes("@triggers={{this.menuTriggers}}"));
 assert.ok(cardTemplate.includes("@untriggers={{this.menuTriggers}}"));
+assert.ok(cardTemplate.includes("@onRegisterApi={{this.registerMenu}}"));
+assert.match(cardTemplate, /\{\{on "pointerenter" this.showForMouse\}\}/);
+assert.match(cardTemplate, /\{\{on "pointerup" this.rememberPointer\}\}/);
+assert.match(
+  cardTemplate,
+  /\{\{on "click" this.pinHoveredMenu capture=true\}\}/,
+);
+assert.doesNotMatch(
+  cardTemplate,
+  /pointerleave|mouseleave|mouseenter|@triggers=.*hover/,
+);
+assert.ok(cardTemplate.includes("{{#if this.canEdit}}"));
+assert.ok(
+  cardTemplate.indexOf("isbf-learning-resource__edit") <
+    cardTemplate.indexOf("isbf-learning-resource__delete"),
+  "Edit precedes delete",
+);
+assert.ok(
+  cardTemplate.includes("@modalForMobile={{false}}"),
+  "Tablet and mobile retain the same anchored native menu",
+);
 assert.ok(cardTemplate.indexOf("<h3>") < cardTemplate.indexOf("<time"));
 assert.ok(
   cardTemplate.indexOf("@resource.description") <
@@ -1033,6 +1560,7 @@ assert.ok(
 
 const listRequests = [];
 const LearningPage = componentClass("isbf-learning", {
+  ...resources.namespace,
   learningConfig,
   learningResourceQuery,
   clearTimeout,
@@ -1164,9 +1692,70 @@ assert.equal(
   "Deletion reloads current course",
 );
 const requestsBeforeDestroy = listRequests.length;
+page.site.isbf_learning.resource_admin_management = true;
+page.currentUser = { admin: true };
+page.query = "cross course search";
+const searchResource = {
+  ...editableResource,
+  can_delete: true,
+  course: { id: "other-course", name: "Other course" },
+};
+page.editResource(searchResource);
+assert.equal(
+  page.shareContext.course,
+  searchResource.course,
+  "Search edits use the resource's real course",
+);
+assert.equal(page.shareContext.resource, searchResource);
+assert.equal(
+  page.selectedCourseId,
+  courseId,
+  "Editing does not change the current directory filter",
+);
+page.resourceSubmitted({ success: true, pending: false, edited: true });
+assert.equal(
+  listRequests.at(-1).options.data.q,
+  "cross course search",
+  "Edit refreshes the current search across courses",
+);
+assert.equal(listRequests.at(-1).options.data.page, 0);
+await Promise.resolve();
+page.query = "";
+page.editResource(searchResource);
+page.resourceSubmitted({ success: true, pending: false, edited: true });
+assert.equal(
+  listRequests.at(-1).options.data.course_id,
+  courseId,
+  "Edit refreshes the current course filter",
+);
+await Promise.resolve();
+page.editResource(searchResource);
+page.query = "changed while editing";
+const beforeChangedEdit = listRequests.length;
+page.resourceSubmitted({ success: true, pending: false, edited: true });
+assert.equal(
+  listRequests.length,
+  beforeChangedEdit,
+  "Late edit cannot overwrite a changed search",
+);
+page.editResource(searchResource);
+page.closeShareDialog();
+page.resourceSubmitted({ success: true, pending: false, edited: true });
+assert.equal(
+  listRequests.length,
+  beforeChangedEdit,
+  "Cancelled edit ignores a late parent callback",
+);
+page.currentUser = { moderator: true };
+page.editResource(searchResource);
+assert.equal(page.shareContext, null);
+assert.ok(learningPage.includes("@resource={{this.shareContext.resource}}"));
+assert.ok(learningPage.includes("@onEdit={{this.editResource}}"));
+const requestsBeforeEditDestroy = listRequests.length;
 page.isDestroying = true;
 page.resourceDeleted();
-assert.equal(listRequests.length, requestsBeforeDestroy);
+assert.equal(listRequests.length, requestsBeforeEditDestroy);
+assert.ok(requestsBeforeEditDestroy > requestsBeforeDestroy);
 const gradePicker = read(
   "javascripts/discourse/components/isbf-learning-grade-picker.gjs",
 );
@@ -1174,6 +1763,64 @@ assert.ok(gradePicker.includes('@placement="bottom-start"'));
 assert.ok(gradePicker.includes('@visibilityOptimizer="none"'));
 assert.ok(gradePicker.includes('strategy: "fixed"'));
 const learningStyles = read("stylesheets/learning-resources.scss");
+// Inspect active source rules at the supported widths; this is not browser QA.
+function widthStyles(source, width) {
+  const media = /@media\s*\(width\s*(<=|>=|<|>)\s*(\d+)px\)\s*\{/g;
+  let result = "";
+  let position = 0;
+  for (const match of source.matchAll(media)) {
+    const [header, operator, boundary] = match;
+    const offset = match.index;
+    result += source.slice(position, offset);
+    let depth = 1;
+    let end = offset + header.length;
+    for (; end < source.length && depth; end++) {
+      if (source[end] === "{") {
+        depth++;
+      }
+      if (source[end] === "}") {
+        depth--;
+      }
+    }
+    const limit = Number(boundary);
+    const active =
+      operator === "<="
+        ? width <= limit
+        : operator === ">="
+          ? width >= limit
+          : operator === "<"
+            ? width < limit
+            : width > limit;
+    if (active) {
+      result += source.slice(offset + header.length, end - 1);
+    }
+    position = end;
+  }
+  return result + source.slice(position);
+}
+for (const width of [390, 430, 768, 820, 1024, 1440]) {
+  const styles = widthStyles(learningStyles, width);
+  assert.match(
+    styles,
+    /\.isbf-learning-resource__header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/,
+    `${width}px title column can shrink`,
+  );
+  assert.match(
+    styles,
+    /\.isbf-learning-resource__more\.btn\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/,
+    `${width}px native trigger remains a touch target`,
+  );
+  assert.match(
+    styles,
+    /\.isbf-learning-resource__edit\.btn,\s*\.isbf-learning-resource__delete\.btn\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/,
+    `${width}px menu actions remain touch targets`,
+  );
+  assert.match(
+    styles,
+    /\.isbf-learning-resource-menu \.btn:focus-visible\s*\{[^}]*outline:/,
+    `${width}px menu has keyboard focus`,
+  );
+}
 assert.match(
   learningStyles,
   /\.isbf-learning__grade\s*\{[\s\S]*?justify-content: flex-start;[\s\S]*?order: -1;/,
@@ -1217,5 +1864,5 @@ assert.equal(
   "",
 );
 console.log(
-  "Course requests, contributor limits, admin deletion lifecycle, review details, Unicode descriptions, safe links and learning helpers OK",
+  "Learning sharing/editing, admin lifecycle, native pointer menus, responsive source constraints, course reviews, Unicode limits and safe links OK",
 );
