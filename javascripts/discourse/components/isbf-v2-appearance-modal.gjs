@@ -12,6 +12,10 @@ export default class ISBFV2AppearanceModal extends Component {
   @service dialog;
   @service interfaceColor;
 
+  get title() {
+    return i18n(themePrefix("isbf_v2.appearance"));
+  }
+
   get options() {
     const currentMode = this.interfaceColor.colorMode || "auto";
     return [
@@ -50,7 +54,7 @@ export default class ISBFV2AppearanceModal extends Component {
     <DModal
       class="isbf-v2-appearance-modal"
       @closeModal={{@closeModal}}
-      @title={{themePrefix "isbf_v2.appearance"}}
+      @title={{this.title}}
     >
       <:body>
         <div class="isbf-v2-appearance-modal__options">
@@ -62,9 +66,12 @@ export default class ISBFV2AppearanceModal extends Component {
             >
               {{dIcon option.icon}}
               <span>{{option.label}}</span>
-              {{#if option.selected}}
-                {{dIcon "check" class="isbf-v2-appearance-modal__selected"}}
-              {{/if}}
+              <span
+                aria-hidden="true"
+                class="isbf-v2-appearance-modal__selected"
+              >
+                {{#if option.selected}}{{dIcon "check"}}{{/if}}
+              </span>
             </DButton>
           {{/each}}
         </div>
