@@ -326,3 +326,7 @@ zh_CN:
     marketplace_description: "商品描述"
     preview_image: "查看图片"
     image_retry: "重试"
+    untitled_topic: "校园动态"
+    preview_picture: "图片"
+    preview_post: "查看帖子"
+    preview_open: "查看动态"

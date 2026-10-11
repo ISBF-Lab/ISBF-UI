@@ -5,7 +5,7 @@ export function isActivityPreview(item, path) {
   return (
     /^\/u\/[^/]+\/activity(?:\/|$)/.test(pathname) &&
     !/\/(?:drafts|bookmarks|pending|messages|notifications)(?:\/|$)/.test(
-      pathname
+      pathname,
     ) &&
     Number(item?.post_id) > 0 &&
     PUBLIC_ACTION_TYPES.has(Number(item?.action_type)) &&
@@ -19,7 +19,7 @@ export function postPreview(html) {
   const body = document.body;
   body
     .querySelectorAll(
-      "script, style, iframe, aside.quote, aside.onebox, .lightbox-wrapper .meta"
+      "script, style, iframe, aside.quote, aside.onebox, .lightbox-wrapper .meta",
     )
     .forEach((element) => element.remove());
 

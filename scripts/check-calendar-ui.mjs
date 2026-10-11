@@ -1,4 +1,5 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import assert from "node:assert/strict";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -61,7 +62,7 @@ function checkDirectory(dir) {
     const source = readFileSync(path, "utf8");
     const stack = [];
     for (const match of source.matchAll(
-      /\{\{([#/])(if|unless|each|let|component)(?:\s[^}]*)?\}\}/g
+      /\{\{([#/])(if|unless|each|let|component)(?:\s[^}]*)?\}\}/g,
     )) {
       if (match[1] === "#") {
         stack.push(match[2]);
@@ -75,13 +76,14 @@ function checkDirectory(dir) {
 
     const js = source
       .replace(/<template>[\s\S]*?<\/template>/g, "")
-      .replace(/@(service|tracked|action)\s+/g, "")
+      .replace(/@(service|tracked|cached|action)\s+/g, "")
       .replace(/@(computed|alias)\([^)]*\)\s*/g, "");
-    new vm.SourceTextModule(js, { identifier: path });
+    const module = new vm.SourceTextModule(js, { identifier: path });
+    assert.equal(module.status, "unlinked");
   }
 }
 
 checkDirectory(fileURLToPath(new URL("javascripts/discourse", root)));
 console.log(
-  "Theme metadata, localization, template blocks and JavaScript syntax OK"
+  "Theme metadata, localization, template blocks and JavaScript syntax OK",
 );

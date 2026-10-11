@@ -14,6 +14,7 @@ import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { consumeInitialNotificationTab } from "../lib/notification-groups";
+import { isUntitledTopicTitle } from "../lib/optional-topic-title";
 import ISBFNotificationAction from "./isbf-notification-action";
 import ISBFNotificationEntry from "./isbf-notification-entry";
 
@@ -72,8 +73,8 @@ export default class ISBFNotifications extends Component {
     ];
     return i18n(
       themePrefix(
-        `isbf_v2.notification_${known.includes(actionName) ? actionName : "activity"}`
-      )
+        `isbf_v2.notification_${known.includes(actionName) ? actionName : "activity"}`,
+      ),
     );
   }
 
@@ -92,7 +93,7 @@ export default class ISBFNotifications extends Component {
       const raw = response.groups.flatMap((group) =>
         group.kind === "topic"
           ? group.actions.map((item) => item.latest.notification)
-          : [group.latest.notification]
+          : [group.latest.notification],
       );
       await this.#initializeModels(raw);
       if (this.#stale(generation)) {
@@ -173,7 +174,7 @@ export default class ISBFNotifications extends Component {
         model: {
           confirmationMessage: i18n(
             "notifications.dismiss_confirmation.body.default",
-            { count }
+            { count },
           ),
           dismissNotifications: this.markRead,
         },
@@ -221,12 +222,19 @@ export default class ISBFNotifications extends Component {
     }
   }
 
+  @action
+  topicTitle(title) {
+    return isUntitledTopicTitle(title)
+      ? i18n(themePrefix("isbf_v2.untitled_topic"))
+      : title;
+  }
+
   async #initializeModels(raw) {
     const missing = [
       ...new Map(
         raw
           .filter((notification) => !this.#models.has(notification.id))
-          .map((notification) => [notification.id, notification])
+          .map((notification) => [notification.id, notification]),
       ).values(),
     ];
     const models = await Notification.initializeNotifications(missing);
@@ -295,7 +303,9 @@ export default class ISBFNotifications extends Component {
       {{#each this.groups key="key" as |group|}}
         {{#if group.topic}}
           <article class="isbf-notifications__topic">
-            <h2><a href={{group.topic.url}}>{{group.topic.title}}</a></h2>
+            <h2><a href={{group.topic.url}}>{{this.topicTitle
+                  group.topic.title
+                }}</a></h2>
             {{#each group.actions key="key" as |item|}}
               <ISBFNotificationAction
                 @actionLabel={{this.actionLabel}}

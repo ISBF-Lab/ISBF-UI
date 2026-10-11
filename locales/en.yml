@@ -326,3 +326,7 @@ en:
     marketplace_description: "Product description"
     preview_image: "View image"
     image_retry: "Retry"
+    untitled_topic: "Campus update"
+    preview_picture: "Picture"
+    preview_post: "View post"
+    preview_open: "View update"

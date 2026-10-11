@@ -35,19 +35,27 @@ export default class ISBFPostPreview extends Component {
   }
 
   get images() {
-    if (this.args.disabled || (this.isRail && this.title)) {
+    if (this.args.disabled || this.isRail) {
       return [];
     }
     return (this._preview?.images ?? [])
       .filter((image) => !this._failedImages.includes(image.src))
-      .slice(0, this.isRail ? 1 : 3);
+      .slice(0, 3);
   }
 
   get text() {
     return (
       (this.isRail && this.title) ||
       this.preview.text ||
-      i18n(themePrefix("isbf_v2.preview_open"))
+      i18n(
+        themePrefix(
+          this.isRail
+            ? this.preview.images.length
+              ? "isbf_v2.preview_picture"
+              : "isbf_v2.preview_post"
+            : "isbf_v2.preview_open",
+        ),
+      )
     );
   }
 
@@ -78,7 +86,7 @@ export default class ISBFPostPreview extends Component {
           this.#loadBody();
         }
       },
-      { rootMargin: "200px", threshold: 0 }
+      { rootMargin: "200px", threshold: 0 },
     );
     this.#observer.observe(element);
   }
@@ -119,7 +127,7 @@ export default class ISBFPostPreview extends Component {
       href={{@href}}
       ...attributes
       {{didInsert this.observe}}
-      {{didUpdate this.observe @postId @disabled @title}}
+      {{didUpdate this.observe @postId @disabled @title @excerpt @variant}}
       {{willDestroy this.destroyObserver}}
     >
       <span class="isbf-post-preview__text">{{dReplaceEmoji this.text}}</span>
