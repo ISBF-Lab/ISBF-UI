@@ -10,6 +10,7 @@ import { ajax } from "discourse/lib/ajax";
 import Composer from "discourse/models/composer";
 import Draft from "discourse/models/draft";
 import { loadTopicView } from "discourse/models/topic";
+import DDecoratedHtml from "discourse/ui-kit/d-decorated-html";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
@@ -602,7 +603,11 @@ export default class ISBFV2FeedCard extends Component {
           }}
         >{{#if this.hidden}}{{i18n
               (themePrefix "isbf_v2.report_hidden")
-            }}{{else}}{{this.bodyHtml}}{{/if}}</div>
+            }}{{else}}<DDecoratedHtml
+              @className="isbf-content-images"
+              @html={{this.bodyHtml}}
+              @preservePointerTarget={{true}}
+            />{{/if}}</div>
         {{#if this.bodyFailed}}<a
             class="isbf-feed-card__fallback"
             href={{this.topicUrl}}

@@ -5257,4 +5257,49 @@ body:has(.isbf-v2-shell):has(.isbf-v2-shell--feedback) {
   color: var(--danger);
 }
 
+.isbf-content-image-attachment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-inline-start: 8px;
+  color: var(--isbf-v2-accent);
+  font-size: 14px;
+
+  &:focus-visible {
+    outline: 2px solid var(--isbf-v2-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+body:has(.isbf-v2-shell) .pswp {
+  .pswp__top-bar {
+    box-sizing: border-box;
+    height: calc(60px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+    opacity: 1;
+  }
+
+  .pswp__top-bar .pswp__hide-on-close {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .pswp__button--close {
+    min-width: 44px;
+    min-height: 44px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .isbf-content-image-retry {
+    display: block;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 12px auto 0;
+  }
+}
+
 @import "marketplace";

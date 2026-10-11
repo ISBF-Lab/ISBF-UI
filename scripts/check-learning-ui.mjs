@@ -18,6 +18,24 @@ await composer.link(() => {});
 await resources.link(() => {});
 await composer.evaluate();
 await resources.evaluate();
+const contentImages = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/content-images.js"),
+  { context },
+);
+await contentImages.link((specifier) => {
+  assert.equal(specifier, "discourse/lib/lightbox");
+  return new vm.SyntheticModule(
+    ["default", "sortLightboxItems"],
+    function () {
+      this.setExport("default", async () => {});
+      this.setExport("sortLightboxItems", (items) => items);
+    },
+    { context },
+  );
+});
+await contentImages.evaluate();
+const { isImageAttachment } = contentImages.namespace;
+
 const {
   isLearningComposer,
   learningFileIds,
@@ -217,9 +235,15 @@ const endpoint = new vm.SourceTextModule(
   { context },
 );
 await endpoint.link((specifier) => {
-  if (specifier === "discourse/lib/get-url") return getUrl;
-  if (specifier === "./learning-composer") return composer;
-  if (specifier === "./marketplace") return marketplace;
+  if (specifier === "discourse/lib/get-url") {
+    return getUrl;
+  }
+  if (specifier === "./learning-composer") {
+    return composer;
+  }
+  if (specifier === "./marketplace") {
+    return marketplace;
+  }
   throw new Error(`Unexpected endpoint dependency: ${specifier}`);
 });
 await endpoint.evaluate();
@@ -533,6 +557,7 @@ const deletions = [];
 let completeDeletion;
 let rejectDeletion;
 const ResourceCard = componentClass("isbf-learning-resource", {
+  isImageAttachment,
   learningSafeUrl,
   learningFileSize: resources.namespace.learningFileSize,
   ajax: (url, options) => {
@@ -565,6 +590,68 @@ assert.equal(
   "New cards must not repeat their title link",
 );
 assert.equal(card.files.length, 1, "Legacy attachments must remain accessible");
+assert.equal(
+  card.files[0].isImage,
+  false,
+  "non-image downloads retain their existing entry",
+);
+const attachmentCard = new ResourceCard({
+  resource: {
+    files: [
+      { url: "/isbf/learning/files/photo", name: "课表.PNG", size: 2048 },
+      {
+        url: "/isbf/learning/files/animation",
+        name: "diagram.gif",
+        size: 4096,
+      },
+      { url: "/isbf/learning/files/document", name: "notes.pdf", size: 1024 },
+      {
+        url: "/isbf/learning/files/archive",
+        name: "picture.png.zip",
+        size: 1024,
+      },
+      { url: "javascript:alert(1)", name: "unsafe.jpg", size: 1024 },
+    ],
+  },
+});
+assert.deepEqual(
+  plain(
+    attachmentCard.files.map(({ name, url, isImage, sizeLabel }) => ({
+      name,
+      url,
+      isImage,
+      sizeLabel,
+    })),
+  ),
+  [
+    {
+      name: "课表.PNG",
+      url: "/isbf/learning/files/photo",
+      isImage: true,
+      sizeLabel: resources.namespace.learningFileSize(2048),
+    },
+    {
+      name: "diagram.gif",
+      url: "/isbf/learning/files/animation",
+      isImage: true,
+      sizeLabel: resources.namespace.learningFileSize(4096),
+    },
+    {
+      name: "notes.pdf",
+      url: "/isbf/learning/files/document",
+      isImage: false,
+      sizeLabel: resources.namespace.learningFileSize(1024),
+    },
+    {
+      name: "picture.png.zip",
+      url: "/isbf/learning/files/archive",
+      isImage: false,
+      sizeLabel: resources.namespace.learningFileSize(1024),
+    },
+  ],
+  "image previews preserve safe download URLs and file sizes; unsafe URLs never render",
+);
+
 card.args.resource.links = [];
 assert.equal(
   card.titleUrl,
@@ -750,6 +837,38 @@ const cardTemplate = read(
   "javascripts/discourse/components/isbf-learning-resource.gjs",
 ).split("  <template>")[1];
 assert.ok(cardTemplate.includes("{{this.contributor}}"));
+const fileTemplate = cardTemplate.match(
+  /\{\{#each this.files as \|file\|\}\}([\s\S]*?)\{\{\/each\}\}/,
+)?.[1];
+assert.ok(fileTemplate, "files keep their own attachment list");
+assert.match(
+  cardTemplate,
+  /class="isbf-learning-resource__attachments"\s+\{\{contentImages\}\}/,
+);
+assert.match(fileTemplate, /<a href=\{\{file.url\}\}>\{\{file.name\}\}<\/a>/);
+assert.match(
+  fileTemplate,
+  /\{\{#if file.isImage\}\}\s*<a[\s\S]*?class="lightbox isbf-content-image-attachment"\s+href=\{\{file.url\}\}/,
+);
+assert.match(
+  fileTemplate,
+  /aria-label=\{\{i18n \(themePrefix "isbf_v2.preview_image"\)\}\}/,
+);
+assert.doesNotMatch(
+  fileTemplate,
+  /<img/,
+  "attachment previews do not preload images",
+);
+let fileAnchorDepth = 0;
+for (const tag of fileTemplate.matchAll(/<a\b|<\/a>/g)) {
+  fileAnchorDepth += tag[0] === "</a>" ? -1 : 1;
+  assert.ok(
+    fileAnchorDepth >= 0 && fileAnchorDepth <= 1,
+    "download and preview links stay independent",
+  );
+}
+assert.equal(fileAnchorDepth, 0);
+
 assert.ok(!/dAvatar|htmlSafe|\{\{\{/.test(cardTemplate));
 assert.ok(cardTemplate.includes("{{#if this.canDelete}}"));
 assert.ok(cardTemplate.includes("<DMenu"));

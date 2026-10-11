@@ -317,3 +317,5 @@ en:
     marketplace_validation: "Enter a product name, description and a nonnegative price with at most two decimal places."
     marketplace_name: "Product name"
     marketplace_description: "Product description"
+    preview_image: "View image"
+    image_retry: "Retry"

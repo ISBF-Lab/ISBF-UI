@@ -9,7 +9,9 @@ import { ajax } from "discourse/lib/ajax";
 import DButton from "discourse/ui-kit/d-button";
 import DDropdownMenu from "discourse/ui-kit/d-dropdown-menu";
 import { i18n } from "discourse-i18n";
+import { isImageAttachment } from "../lib/content-images";
 import { learningFileSize, learningSafeUrl } from "../lib/learning-resources";
+import contentImages from "../modifiers/content-images";
 
 export default class ISBFLearningResource extends Component {
   @service currentUser;
@@ -62,7 +64,14 @@ export default class ISBFLearningResource extends Component {
     return (this.args.resource.files || []).flatMap((file) => {
       const url = learningSafeUrl(file.url);
       return url
-        ? [{ ...file, url, sizeLabel: learningFileSize(file.size) }]
+        ? [
+            {
+              ...file,
+              url,
+              sizeLabel: learningFileSize(file.size),
+              isImage: isImageAttachment(file),
+            },
+          ]
         : [];
     });
   }
@@ -203,10 +212,21 @@ export default class ISBFLearningResource extends Component {
         <ul
           aria-label={{i18n (themePrefix "isbf_v2.learning_files")}}
           class="isbf-learning-resource__attachments"
+          {{contentImages}}
         >
-          {{#each this.files as |file|}}<li><a
-                href={{file.url}}
-              >{{file.name}}</a><span>{{file.sizeLabel}}</span></li>{{/each}}
+          {{#each this.files as |file|}}
+            <li>
+              <a href={{file.url}}>{{file.name}}</a>
+              <span>{{file.sizeLabel}}</span>
+              {{#if file.isImage}}
+                <a
+                  aria-label={{i18n (themePrefix "isbf_v2.preview_image")}}
+                  class="lightbox isbf-content-image-attachment"
+                  href={{file.url}}
+                >{{i18n (themePrefix "isbf_v2.preview_image")}}</a>
+              {{/if}}
+            </li>
+          {{/each}}
         </ul>
       {{/if}}
       {{#if this.additionalLinks.length}}

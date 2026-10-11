@@ -44,6 +44,7 @@
 }
 
 .isbf-marketplace-card {
+  position: relative;
   display: flex;
   gap: var(--isbf-v2-space-4);
   padding: var(--isbf-v2-space-4);
@@ -60,6 +61,9 @@
   }
 
   &__image {
+    position: relative;
+    z-index: 1;
+    display: block;
     width: 112px;
     height: 112px;
     flex-shrink: 0;
@@ -76,9 +80,23 @@
 
   &__content {
     display: flex;
+    flex: 1;
+    color: inherit;
     flex-direction: column;
     gap: var(--isbf-v2-space-2);
     min-width: 0;
+  }
+
+  &__content::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  &__image:focus-visible,
+  &__content:focus-visible {
+    outline: 2px solid var(--isbf-v2-focus-ring);
+    outline-offset: 2px;
   }
 
   &__title {

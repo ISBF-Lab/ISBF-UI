@@ -317,3 +317,5 @@ zh_CN:
     marketplace_validation: "请填写商品名称、详细描述及有效价格（非负数，最多两位小数）。"
     marketplace_name: "商品名称"
     marketplace_description: "商品描述"
+    preview_image: "查看图片"
+    image_retry: "重试"
