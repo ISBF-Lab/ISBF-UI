@@ -5303,3 +5303,21 @@ body:has(.isbf-v2-shell) .pswp {
 }
 
 @import "marketplace";
+
+.isbf-v2-rail__panel .isbf-post-preview.--rail {
+  display: flex;
+  align-items: center;
+
+  .isbf-post-preview__text {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  > .d-icon {
+    flex: none;
+  }
+}

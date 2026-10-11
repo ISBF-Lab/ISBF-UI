@@ -1,10 +1,10 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { action } from "@ember/object";
-import { service } from "@ember/service";
-import { scheduleOnce } from "@ember/runloop";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
+import { action } from "@ember/object";
+import { scheduleOnce } from "@ember/runloop";
+import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import DismissNotificationConfirmationModal from "discourse/components/modal/dismiss-notification-confirmation";
 import { ajax } from "discourse/lib/ajax";
@@ -14,6 +14,7 @@ import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { consumeInitialNotificationTab } from "../lib/notification-groups";
+import { isUntitledTopicTitle } from "../lib/optional-topic-title";
 import ISBFNotificationAction from "./isbf-notification-action";
 import ISBFNotificationEntry from "./isbf-notification-entry";
 
@@ -72,8 +73,8 @@ export default class ISBFNotifications extends Component {
     ];
     return i18n(
       themePrefix(
-        `isbf_v2.notification_${known.includes(actionName) ? actionName : "activity"}`
-      )
+        `isbf_v2.notification_${known.includes(actionName) ? actionName : "activity"}`,
+      ),
     );
   }
 
@@ -92,7 +93,7 @@ export default class ISBFNotifications extends Component {
       const raw = response.groups.flatMap((group) =>
         group.kind === "topic"
           ? group.actions.map((item) => item.latest.notification)
-          : [group.latest.notification]
+          : [group.latest.notification],
       );
       await this.#initializeModels(raw);
       if (this.#stale(generation)) {
@@ -173,7 +174,7 @@ export default class ISBFNotifications extends Component {
         model: {
           confirmationMessage: i18n(
             "notifications.dismiss_confirmation.body.default",
-            { count }
+            { count },
           ),
           dismissNotifications: this.markRead,
         },
@@ -192,7 +193,7 @@ export default class ISBFNotifications extends Component {
     this.markReadError = false;
     try {
       await ajax("/notifications/mark-read", { type: "PUT" });
-      if (this.isDestroying || this.isDestroyed) {
+      if (this.isDestroying) {
         return;
       }
       this.#markedReadAt = Date.now();
@@ -202,11 +203,11 @@ export default class ISBFNotifications extends Component {
       this.currentUser.set("unread_notifications", 0);
       this.markReadError = false;
     } catch {
-      if (!this.isDestroying && !this.isDestroyed) {
+      if (!this.isDestroying) {
         this.markReadError = true;
       }
     } finally {
-      if (!this.isDestroying && !this.isDestroyed) {
+      if (!this.isDestroying) {
         this.markingRead = false;
       }
     }
@@ -221,12 +222,19 @@ export default class ISBFNotifications extends Component {
     }
   }
 
+  @action
+  topicTitle(title) {
+    return isUntitledTopicTitle(title)
+      ? i18n(themePrefix("isbf_v2.untitled_topic"))
+      : title;
+  }
+
   async #initializeModels(raw) {
     const missing = [
       ...new Map(
         raw
           .filter((notification) => !this.#models.has(notification.id))
-          .map((notification) => [notification.id, notification])
+          .map((notification) => [notification.id, notification]),
       ).values(),
     ];
     const models = await Notification.initializeNotifications(missing);
@@ -241,9 +249,7 @@ export default class ISBFNotifications extends Component {
   }
 
   #stale(generation) {
-    return (
-      this.isDestroying || this.isDestroyed || generation !== this.#generation
-    );
+    return this.isDestroying || generation !== this.#generation;
   }
 
   <template>
@@ -296,11 +302,10 @@ export default class ISBFNotifications extends Component {
           /></div>{{/if}}
       {{#each this.groups key="key" as |group|}}
         {{#if group.topic}}
-          <details class="isbf-notifications__topic" open>
-            <summary>
-              <h2><a href={{group.topic.url}}>{{group.topic.title}}</a></h2>
-              {{dIcon "chevron-down"}}
-            </summary>
+          <article class="isbf-notifications__topic">
+            <h2><a href={{group.topic.url}}>{{this.topicTitle
+                  group.topic.title
+                }}</a></h2>
             {{#each group.actions key="key" as |item|}}
               <ISBFNotificationAction
                 @actionLabel={{this.actionLabel}}
@@ -308,7 +313,7 @@ export default class ISBFNotifications extends Component {
                 @prepareEntries={{this.prepareEntries}}
               />
             {{/each}}
-          </details>
+          </article>
         {{else}}
           <article class="isbf-notifications__standalone"><ISBFNotificationEntry
               @entry={{group.latest}}
