@@ -1227,6 +1227,21 @@ for (const currentUser of [{}, { moderator: true }]) {
   editCard.currentUser = currentUser;
   assert.equal(editCard.canEdit, false);
 }
+const delegatedDeleteCard = makeEditCard();
+delegatedDeleteCard.currentUser = {
+  academy_moderator_permissions: { manage_resources: true },
+};
+Object.defineProperty(delegatedDeleteCard, "canDelete", { value: true });
+assert.equal(
+  delegatedDeleteCard.canEdit,
+  false,
+  "Delegated resource deletion does not grant administrator editing",
+);
+await delegatedDeleteCard.editFromMenu({
+  close: async () => {
+    throw new Error("Delegated deletion cannot open the edit dialog");
+  },
+});
 editCard.currentUser = { admin: true };
 const editMenuEvents = [];
 let closeEditMenu;

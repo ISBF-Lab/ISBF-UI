@@ -50,7 +50,11 @@ export default class ISBFLearningResource extends Component {
   }
 
   get canEdit() {
-    return this.canDelete && learningEditableResource(this.args.resource);
+    return (
+      this.currentUser?.admin === true &&
+      this.canDelete &&
+      learningEditableResource(this.args.resource)
+    );
   }
 
   get contributor() {
