@@ -1,10 +1,13 @@
 import Component from "@glimmer/component";
+import { themePrefix } from "virtual:theme";
+import { i18n } from "discourse-i18n";
 import {
   marketplaceDetailImages,
   marketplaceImageUrl,
   marketplacePrice,
 } from "../lib/marketplace";
 import { plainText } from "../lib/post-card-helpers";
+import contentImages from "../modifiers/content-images";
 
 export class ISBFMarketplacePrice extends Component {
   get post() {
@@ -40,9 +43,13 @@ export class ISBFMarketplacePrice extends Component {
 
   <template>
     {{#if this.images.length}}
-      <div class="isbf-marketplace-detail-images">
+      <div class="isbf-marketplace-detail-images" {{contentImages}}>
         {{#each this.images key="id" as |image|}}
-          <a href={{image.url}}><img
+          <a
+            aria-label={{i18n (themePrefix "isbf_v2.preview_image")}}
+            class="lightbox"
+            href={{image.url}}
+          ><img
               alt={{this.post.topic.title}}
               loading="lazy"
               src={{image.thumbnail}}
@@ -59,8 +66,13 @@ export class ISBFMarketplacePrice extends Component {
 export default class ISBFMarketplaceCard extends Component {
   get image() {
     const image = this.args.topic.isbf_marketplace?.images?.[0];
-    const url = image?.thumbnail_url || image?.url;
-    return marketplaceImageUrl(url);
+    return marketplaceImageUrl(image?.thumbnail_url) || this.imageUrl;
+  }
+
+  get imageUrl() {
+    return marketplaceImageUrl(
+      this.args.topic.isbf_marketplace?.images?.[0]?.url,
+    );
   }
 
   get description() {
@@ -70,21 +82,29 @@ export default class ISBFMarketplaceCard extends Component {
   }
 
   <template>
-    <a class="isbf-marketplace-card" href={{@topic.url}}>
-      <span aria-hidden="true" class="isbf-marketplace-card__image">
-        {{#if this.image}}<img
-            alt=""
-            loading="lazy"
-            src={{this.image}}
-          />{{/if}}
-      </span>
-      <span class="isbf-marketplace-card__content">
+    <article class="isbf-marketplace-card" {{contentImages}}>
+      {{#if this.imageUrl}}
+        <a
+          aria-label={{i18n (themePrefix "isbf_v2.preview_image")}}
+          class="lightbox isbf-marketplace-card__image"
+          href={{this.imageUrl}}
+        ><img alt={{@topic.title}} loading="lazy" src={{this.image}} /></a>
+      {{else}}
+        <span aria-hidden="true" class="isbf-marketplace-card__image">
+          {{#if this.image}}<img
+              alt=""
+              loading="lazy"
+              src={{this.image}}
+            />{{/if}}
+        </span>
+      {{/if}}
+      <a class="isbf-marketplace-card__content" href={{@topic.url}}>
         <strong class="isbf-marketplace-card__title">{{@topic.title}}</strong>
         <span
           class="isbf-marketplace-card__description"
         >{{this.description}}</span>
         <ISBFMarketplacePrice @metadata={{@topic.isbf_marketplace}} />
-      </span>
-    </a>
+      </a>
+    </article>
   </template>
 }

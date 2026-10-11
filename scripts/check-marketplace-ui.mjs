@@ -358,6 +358,112 @@ const card = read("javascripts/discourse/components/isbf-marketplace-card.gjs");
 assert.ok(card.includes("plainText("));
 assert.ok(card.includes("post.post_number !== 1"));
 assert.ok(card.includes("href={{@topic.url}}"));
+assert.match(
+  card,
+  /import contentImages from "\.\.\/modifiers\/content-images";/,
+);
+assert.match(
+  card,
+  /<article class="isbf-marketplace-card" \{\{contentImages\}\}>/,
+);
+assert.match(
+  card,
+  /class="lightbox isbf-marketplace-card__image"\s+href=\{\{this.imageUrl\}\}/,
+);
+assert.match(
+  card,
+  /<a class="isbf-marketplace-card__content" href=\{\{@topic.url\}\}>/,
+);
+assert.match(
+  card,
+  /class="isbf-marketplace-detail-images" \{\{contentImages\}\}/,
+);
+assert.match(card, /class="lightbox"\s+href=\{\{image.url\}\}/);
+assert.match(card, /src=\{\{image.thumbnail\}\}/);
+assert.match(
+  card,
+  /aria-label=\{\{i18n \(themePrefix "isbf_v2.preview_image"\)\}\}/,
+);
+assert.doesNotMatch(
+  card,
+  /href=\{\{(?:this.image|image.thumbnail)\}\}|onclick=|stopPropagation|preventDefault/,
+);
+let anchorDepth = 0;
+for (const anchorTag of card.matchAll(/<a\b|<\/a>/g)) {
+  anchorDepth += anchorTag[0] === "</a>" ? -1 : 1;
+  assert.ok(
+    anchorDepth >= 0 && anchorDepth <= 1,
+    "preview and topic links must not nest",
+  );
+}
+assert.equal(anchorDepth, 0);
+const cardComponentModule = new vm.SourceTextModule(
+  card.replace(/<template>[\s\S]*?<\/template>/g, ""),
+  { context },
+);
+await cardComponentModule.link((specifier) => {
+  if (specifier === "../lib/marketplace") {
+    return module;
+  }
+  return synthetic({
+    default: class {
+      constructor(args = {}) {
+        this.args = args;
+      }
+    },
+    themePrefix: (key) => key,
+    i18n: (key) => key,
+    plainText: (value) => value,
+  });
+});
+await cardComponentModule.evaluate();
+const MarketplaceCard = cardComponentModule.namespace.default;
+const coverUrl = `/isbf/marketplace/images/${id}`;
+const coverCard = new MarketplaceCard({
+  topic: {
+    url: "/t/used-book/123",
+    excerpt: "Book description",
+    isbf_marketplace: {
+      price_cents: 1234,
+      images: [{ url: coverUrl, thumbnail_url: `${coverUrl}/thumbnail` }],
+    },
+  },
+});
+assert.equal(
+  coverCard.imageUrl,
+  coverUrl,
+  "preview targets the original image",
+);
+assert.equal(
+  coverCard.image,
+  `${coverUrl}/thumbnail`,
+  "cover displays the thumbnail",
+);
+assert.equal(coverCard.args.topic.url, "/t/used-book/123");
+assert.equal(coverCard.description, "Book description");
+coverCard.args.topic.isbf_marketplace.images[0].thumbnail_url =
+  "https://evil.example/image";
+assert.equal(
+  coverCard.image,
+  coverUrl,
+  "unsafe thumbnails fall back to the safe original",
+);
+coverCard.args.topic.isbf_marketplace.images[0].url = "javascript:alert(1)";
+assert.equal(coverCard.imageUrl, null);
+assert.equal(coverCard.image, null);
+coverCard.args.topic.isbf_marketplace.images = [];
+assert.equal(coverCard.imageUrl, null);
+assert.equal(coverCard.image, null);
+const detailPrice = new cardComponentModule.namespace.ISBFMarketplacePrice({
+  outletArgs: {
+    post: { post_number: 1, isbf_marketplace: { price_cents: 1234 } },
+  },
+});
+assert.equal(detailPrice.price, "¥12.34");
+detailPrice.args.outletArgs.post.post_number = 2;
+assert.equal(detailPrice.price, null);
+assert.equal(detailPrice.images.length, 0);
+
 const styles = read("stylesheets/marketplace.scss");
 assert.ok(styles.includes("112px"));
 assert.ok(styles.includes("88px"));
