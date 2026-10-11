@@ -5,6 +5,12 @@ import vm from "node:vm";
 const root = new URL("../javascripts/discourse/", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
 const context = vm.createContext({});
+const chineseLocale = readFileSync(
+  new URL("../locales/zh_CN.yml", import.meta.url),
+  "utf8",
+);
+const appearanceTitle = chineseLocale.match(/^\s+appearance: "([^"]+)"/m)?.[1];
+assert.equal(appearanceTitle, "外观");
 const settings = {
   feedback_category_id: 2,
   official_path: "/c/official/6/l/latest",
@@ -24,7 +30,7 @@ const common = {
     (...rest) =>
       fn(...args, ...rest),
   getOwner: () => ({ lookup: () => ({ get: () => null }) }),
-  i18n: (value) => value,
+  i18n: (value) => (value === "isbf_v2.appearance" ? appearanceTitle : value),
   settings,
   themePrefix: (value) => value,
   notificationsEnabled: () => false,
@@ -115,6 +121,9 @@ async function loadComponent(path) {
 const AppearanceModal = await loadComponent(
   "components/isbf-v2-appearance-modal.gjs",
 );
+const appearanceTitleModal = new AppearanceModal();
+assert.equal(appearanceTitleModal.title, appearanceTitle);
+assert.doesNotMatch(appearanceTitleModal.title, /theme_translations|isbf_v2\./);
 const UtilityActions = await loadComponent(
   "components/isbf-v2-utility-actions.gjs",
 );
@@ -284,6 +293,12 @@ const utilitySource = read("components/isbf-v2-utility-actions.gjs");
 assert.match(appearanceSource, /@service interfaceColor;/);
 assert.match(utilitySource, /@service interfaceColor;/);
 assert.match(appearanceSource, /<DModal\s/);
+assert.match(
+  appearanceSource,
+  /get title\(\)\s*\{\s*return i18n\(themePrefix\("isbf_v2.appearance"\)\);\s*\}/,
+);
+assert.match(appearanceSource, /@title=\{\{this.title\}\}/);
+assert.doesNotMatch(appearanceSource, /@title=\{\{themePrefix/);
 assert.match(appearanceSource, /@closeModal=\{\{@closeModal\}\}/);
 assert.match(appearanceSource, /<DButton\s/);
 assert.match(appearanceSource, /aria-pressed=\{\{option.selected\}\}/);
@@ -295,6 +310,15 @@ assert.match(appearanceSource, /\{\{dIcon option.icon\}\}/);
 assert.match(
   appearanceSource,
   /\{\{#if option.selected\}\}[\s\S]*?dIcon "check"/,
+);
+const appearanceButtonBody = appearanceSource.match(
+  /<DButton\b[^>]*>([\s\S]*?)<\/DButton>/,
+)?.[1];
+assert.ok(appearanceButtonBody, "appearance options use native buttons");
+assert.match(
+  appearanceButtonBody,
+  /^\s*\{\{dIcon option.icon\}\}\s*<span>\{\{option.label\}\}<\/span>\s*<span\s+aria-hidden="true"\s+class="isbf-v2-appearance-modal__selected"\s*>\s*\{\{#if option.selected\}\}\s*\{\{dIcon "check"\}\}\s*\{\{\/if\}\}\s*<\/span>\s*$/,
+  "the icon, label and reserved check slot are always three direct children",
 );
 assert.doesNotMatch(
   appearanceSource,
@@ -361,13 +385,136 @@ const appearanceStyles = styleBlock(
   styles,
   ".isbf-v2-appearance-modal__option {",
 );
-assert.match(appearanceStyles, /min-height: 44px;/);
+assert.match(appearanceStyles, /display: grid;/);
+assert.match(
+  appearanceStyles,
+  /grid-template-columns: 16px minmax\(0, 1fr\) 16px;/,
+);
+assert.match(appearanceStyles, /gap: var\(--isbf-v2-space-3\);/);
+assert.match(appearanceStyles, /(?:^|\n)\s*height: 48px;/);
+assert.match(appearanceStyles, /min-height: 48px;/);
+assert.match(appearanceStyles, /justify-content: stretch;/);
+assert.match(appearanceStyles, /box-sizing: border-box;/);
+const appearanceIconStyles = styleBlock(appearanceStyles, ".d-icon {");
+assert.match(appearanceIconStyles, /(?:^|\n)\s*width: 16px;/);
+assert.match(appearanceIconStyles, /(?:^|\n)\s*height: 16px;/);
+assert.match(appearanceIconStyles, /margin: 0;/);
+const appearanceCheckStyles = styleBlock(
+  appearanceStyles,
+  ".isbf-v2-appearance-modal__selected {",
+);
+assert.match(appearanceCheckStyles, /width: 16px;/);
+assert.match(appearanceCheckStyles, /height: 16px;/);
+assert.match(appearanceCheckStyles, /display: grid;/);
+assert.match(appearanceCheckStyles, /place-items: center;/);
+assert.doesNotMatch(appearanceCheckStyles, /margin[^:]*:.*auto/);
+const selectedAppearanceStyles = styleBlock(
+  appearanceStyles,
+  '&[aria-pressed="true"]',
+);
+assert.deepEqual(
+  Array.from(
+    selectedAppearanceStyles.matchAll(/([\w-]+)\s*:/g),
+    (match) => match[1],
+  ).sort(),
+  ["background", "color"],
+  "selection changes colors while preserving option geometry",
+);
 assert.match(appearanceStyles, /width: 100%;/);
 assert.match(appearanceStyles, /&\[aria-pressed="true"\]/);
 assert.match(
   appearanceStyles,
   /&:focus-visible\s*\{[^}]*outline: 3px solid var\(--isbf-v2-focus-ring\);/,
 );
+const modalPlacementStyles = styleBlock(styles, ".isbf-v2-appearance-modal {");
+const desktopPlacementStyles = styleBlock(
+  modalPlacementStyles,
+  "@media (width >= 601px)",
+);
+assert.match(
+  desktopPlacementStyles,
+  /(?:^|\n)\s*left: var\(--isbf-v2-feed-left\);/,
+);
+assert.match(
+  desktopPlacementStyles,
+  /(?:^|\n)\s*width: var\(--isbf-v2-feed-width\);/,
+);
+assert.match(desktopPlacementStyles, /align-items: center;/);
+assert.equal(
+  modalPlacementStyles
+    .replace(`@media (width >= 601px) {${desktopPlacementStyles}}`, "")
+    .trim(),
+  "",
+  "mobile retains native modal placement and safe area behavior",
+);
+const modalContainerStyles = styleBlock(
+  desktopPlacementStyles,
+  ".d-modal__container {",
+);
+for (const declaration of [
+  "position: relative;",
+  "min-width: 0;",
+  "width: 100%;",
+  "max-width: 100%;",
+  "margin: 0;",
+]) {
+  assert.ok(modalContainerStyles.includes(declaration), declaration);
+}
+const feedStyles = styleBlock(
+  styleBlock(styles, "body:has(.isbf-v2-shell) {"),
+  "#main-outlet {",
+);
+assert.match(feedStyles, /width: var\(--isbf-v2-feed-width\);/);
+assert.match(feedStyles, /margin: 0 0 0 var\(--isbf-v2-feed-left\);/);
+const defaultFeedTokens = styleBlock(styles, ":root {");
+const compactFeedTokens = styleBlock(
+  styleBlock(styles, "@media (width <= 1279px)"),
+  ":root {",
+);
+const mobileFeedTokens = styleBlock(
+  styleBlock(
+    styles.slice(styles.search(/@media \(width <= 600px\) \{\s*:root \{/)),
+    "@media (width <= 600px)",
+  ),
+  ":root {",
+);
+assert.match(mobileFeedTokens, /--isbf-v2-feed-width: 100vw;/);
+assert.match(mobileFeedTokens, /--isbf-v2-feed-left: 0px;/);
+for (const tokens of [defaultFeedTokens, compactFeedTokens]) {
+  assert.match(
+    tokens,
+    /--isbf-v2-feed-left: calc\(\s*var\(--isbf-v2-page-left\) \+ var\(--isbf-v2-left-width\) \+ var\(--isbf-v2-gap\)\s*\);/,
+  );
+}
+const desktopMinWidth = Number(
+  modalPlacementStyles.match(/@media \(width >= (\d+)px\)/)[1],
+);
+const compactMaxWidth = Number(
+  styles.match(
+    /@media \(width <= (\d+)px\) \{\s*:root \{\s*--isbf-v2-left-width: 220px;/,
+  )[1],
+);
+for (const [width, desktop] of [
+  [390, false],
+  [430, false],
+  [1024, true],
+  [1440, true],
+]) {
+  assert.equal(
+    width >= desktopMinWidth,
+    desktop,
+    `${width}px native mobile/desktop placement boundary`,
+  );
+  if (desktop) {
+    const tokens =
+      width <= compactMaxWidth ? compactFeedTokens : defaultFeedTokens;
+    assert.match(
+      tokens,
+      /--isbf-v2-feed-width: 600px;/,
+      `${width}px modal and feed resolve the same shared width token`,
+    );
+  }
+}
 assert.match(styles, /\.isbf-v2-workbench__more\s*\{\s*display: none;/);
 assert.doesNotMatch(styles, /\.isbf-v2-workbench__actions\s*\{/);
 const mobileStyles = styles.slice(
