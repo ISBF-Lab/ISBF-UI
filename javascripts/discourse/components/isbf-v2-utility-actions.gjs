@@ -6,11 +6,13 @@ import DButton from "discourse/ui-kit/d-button";
 import DDropdownMenu from "discourse/ui-kit/d-dropdown-menu";
 import { i18n } from "discourse-i18n";
 import { feedbackCategory, feedbackHref } from "../lib/feedback-category";
+import ISBFV2AppearanceModal from "./isbf-v2-appearance-modal";
 import ISBFV2JoinModal from "./isbf-v2-join-modal";
 
 export default class ISBFV2UtilityActions extends Component {
   @service currentUser;
   @service dialog;
+  @service interfaceColor;
   @service modal;
   @service router;
   @service site;
@@ -22,6 +24,12 @@ export default class ISBFV2UtilityActions extends Component {
         icon: "gear",
         label: i18n(themePrefix("isbf_v2.sidebar_settings")),
         action: this.openSettings,
+      },
+      {
+        key: "appearance",
+        icon: "circle-half-stroke",
+        label: i18n(themePrefix("isbf_v2.appearance")),
+        action: this.openAppearance,
       },
       {
         key: "feedback",
@@ -46,6 +54,18 @@ export default class ISBFV2UtilityActions extends Component {
         ? `/u/${encodeURIComponent(this.currentUser.username)}/preferences`
         : "/login",
     );
+  }
+
+  @action
+  async openAppearance() {
+    await this.args.menu?.close();
+    if (!this.interfaceColor.selectorAvailable) {
+      await this.dialog.alert(
+        i18n(themePrefix("isbf_v2.appearance_unavailable")),
+      );
+      return;
+    }
+    this.modal.show(ISBFV2AppearanceModal);
   }
 
   @action
