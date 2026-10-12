@@ -3,6 +3,8 @@ import { action } from "@ember/object";
 import { getOwner } from "@ember/owner";
 import { service } from "@ember/service";
 import { settings, themePrefix } from "virtual:theme";
+import PluginOutlet from "discourse/components/plugin-outlet";
+import lazyHash from "discourse/helpers/lazy-hash";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
@@ -22,6 +24,7 @@ import ISBFNotifications from "./isbf-notifications";
 import ISBFOfficialFeed from "./isbf-official-feed";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
 import ISBFV2AnonymousPosts from "./isbf-v2-anonymous-posts";
+import ISBFV2Brand from "./isbf-v2-brand";
 import ISBFV2Calendar from "./isbf-v2-calendar";
 import ISBFV2RightRail from "./isbf-v2-right-rail";
 import ISBFV2SideNav from "./isbf-v2-side-nav";
@@ -43,7 +46,7 @@ export default class ISBFV2Shell extends Component {
       this.path
         .split("#")[0]
         .match(
-          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/,
+          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/
         )?.[1] ?? null
     );
   }
@@ -118,8 +121,8 @@ export default class ISBFV2Shell extends Component {
   get composePrompt() {
     return i18n(
       themePrefix(
-        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt",
-      ),
+        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt"
+      )
     );
   }
 
@@ -127,7 +130,7 @@ export default class ISBFV2Shell extends Component {
     return Boolean(
       this.currentUser?.admin ||
       (this.currentUser?.moderator &&
-        this.siteSettings.moderators_manage_categories),
+        this.siteSettings.moderators_manage_categories)
     );
   }
 
@@ -156,7 +159,7 @@ export default class ISBFV2Shell extends Component {
 
   get isWorkbench() {
     return ["workbench", "learning", "alumni", "marketplace"].includes(
-      this.pageKind,
+      this.pageKind
     );
   }
 
@@ -219,7 +222,7 @@ export default class ISBFV2Shell extends Component {
       return i18n(
         this.informationPage === "about"
           ? "about.simple_title"
-          : this.informationPage,
+          : this.informationPage
       );
     }
 
@@ -268,10 +271,10 @@ export default class ISBFV2Shell extends Component {
       this.officialConfig?.category_id ??
       Number(settings.official_path.split("/")[3]);
     const category = this.site.categories?.find(
-      (item) => item.id === categoryId,
+      (item) => item.id === categoryId
     );
     return Boolean(
-      this.currentUser?.academy_official_member && category?.canCreateTopic,
+      this.currentUser?.academy_official_member && category?.canCreateTopic
     );
   }
 
@@ -283,7 +286,7 @@ export default class ISBFV2Shell extends Component {
     return (
       this.isFeed &&
       (this.latestActive || this.officialActive) &&
-      Boolean(this.currentUser?.staff)
+      Boolean(this.currentUser?.can_review)
     );
   }
 
@@ -389,11 +392,21 @@ export default class ISBFV2Shell extends Component {
                 {{#if this.currentUser}}
                   <a
                     aria-label={{i18n (themePrefix "isbf_v2.profile")}}
-                    class="isbf-v2-feed-header__avatar"
+                    class="isbf-v2-feed-header__avatar isbf-avatar"
                     href={{this.profileHref}}
-                  >{{dAvatar this.currentUser imageSize="small"}}</a>
+                  >{{dAvatar this.currentUser imageSize="small"}}<PluginOutlet
+                      @name="user-avatar-frame"
+                      @outletArgs={{lazyHash
+                        user=this.currentUser
+                        motion="static"
+                      }}
+                    /></a>
                 {{/if}}
                 <span>{{i18n (themePrefix "isbf_v2.home")}}</span>
+                <ISBFV2Brand
+                  class="isbf-v2-feed-header__brand"
+                  @mobile={{true}}
+                />
                 <a
                   aria-label={{i18n (themePrefix "isbf_v2.search")}}
                   class="isbf-v2-feed-header__search"
@@ -420,9 +433,15 @@ export default class ISBFV2Shell extends Component {
               {{#if this.currentUser}}
                 <a
                   aria-label={{this.currentUser.username}}
-                  class="isbf-v2-compose__avatar"
+                  class="isbf-v2-compose__avatar isbf-avatar"
                   href={{this.profileHref}}
-                >{{dAvatar this.currentUser imageSize="large"}}</a>
+                >{{dAvatar this.currentUser imageSize="large"}}<PluginOutlet
+                    @name="user-avatar-frame"
+                    @outletArgs={{lazyHash
+                      user=this.currentUser
+                      motion="static"
+                    }}
+                  /></a>
               {{/if}}
               <a
                 class="isbf-v2-compose__prompt"
