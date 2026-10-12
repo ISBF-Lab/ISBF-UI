@@ -1472,6 +1472,15 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
     --isbf-v2-feed-left: 0px;
   }
 
+  // Core also reserves footer space for Composer and reading controls in PWAs.
+  html:has(.isbf-v2-shell) {
+    --footer-nav-height: 0px;
+  }
+
+  body:has(.isbf-v2-shell) .footer-nav {
+    display: none;
+  }
+
   body:has(.isbf-v2-shell) #main-outlet {
     width: 100%;
     max-width: none;
@@ -1574,6 +1583,7 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
   .isbf-v2-mobile-nav {
     display: grid;
     position: fixed;
+    box-sizing: border-box;
     right: 0;
     bottom: 0;
     left: 0;
