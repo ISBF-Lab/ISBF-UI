@@ -3,7 +3,20 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
-const read = (path) => readFileSync(new URL(path, root), "utf8");
+const shared = {
+  "isbf-learning": "isbf-resource-page",
+  "isbf-learning-resource": "isbf-resource-item",
+  "isbf-learning-share-dialog": "isbf-resource-share-dialog",
+  "isbf-learning-grade-picker": "isbf-resource-parent-picker",
+  "isbf-learning-course-dialog": "isbf-resource-directory-dialog",
+};
+const read = (path) => {
+  const match = path.match(/components\/(.+)\.gjs$/);
+  if (match && shared[match[1]]) {
+    path = path.replace(match[1], shared[match[1]]);
+  }
+  return readFileSync(new URL(path, root), "utf8");
+};
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const context = vm.createContext({});
 const composer = new vm.SourceTextModule(
@@ -1659,7 +1672,9 @@ assert.equal(
   0,
   "Pending requests do not reload the directory",
 );
-page.currentUser = { moderator: true };
+page.currentUser = {
+  academy_moderator_permissions: { manage_resources: true },
+};
 page.site.isbf_learning.course_requests = false;
 assert.equal(page.canSubmitCourses, true);
 assert.equal(page.courseActionLabel, "isbf_v2.learning_add_course");
@@ -1811,7 +1826,11 @@ page.currentUser = { moderator: true };
 page.editResource(searchResource);
 assert.equal(page.shareContext, null);
 assert.ok(learningPage.includes("@resource={{this.shareContext.resource}}"));
-assert.ok(learningPage.includes("@onEdit={{this.editResource}}"));
+assert.ok(
+  read("javascripts/discourse/components/isbf-resource-list.gjs").includes(
+    "@onEdit={{@page.editResource}}",
+  ),
+);
 const requestsBeforeEditDestroy = listRequests.length;
 page.isDestroying = true;
 page.resourceDeleted();

@@ -19,6 +19,7 @@ import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import ISBFAlumni from "./isbf-alumni";
 import ISBFExplore from "./isbf-explore";
 import ISBFLearning from "./isbf-learning";
+import ISBFLibrary from "./isbf-library";
 import ISBFMarketplace from "./isbf-marketplace";
 import ISBFNotifications from "./isbf-notifications";
 import ISBFOfficialFeed from "./isbf-official-feed";
@@ -81,6 +82,9 @@ export default class ISBFV2Shell extends Component {
     }
     if (path === "/isbf/teamup") {
       return "teamup";
+    }
+    if (path === "/isbf/library") {
+      return "library";
     }
     if (path === "/isbf/learning") {
       return "learning";
@@ -165,6 +169,7 @@ export default class ISBFV2Shell extends Component {
     return [
       "workbench",
       "learning",
+      "library",
       "alumni",
       "marketplace",
       "teamup",
@@ -183,6 +188,10 @@ export default class ISBFV2Shell extends Component {
     return this.pageKind === "teamup";
   }
 
+  get isLibrary() {
+    return this.pageKind === "library";
+  }
+
   get isLearning() {
     return this.pageKind === "learning";
   }
@@ -195,6 +204,7 @@ export default class ISBFV2Shell extends Component {
         "calendar",
         "explore",
         "learning",
+        "library",
         "marketplace",
         "notifications",
         "teamup",
@@ -502,6 +512,7 @@ export default class ISBFV2Shell extends Component {
         {{#if this.isAlumni}}<ISBFAlumni />
         {{else if this.isMarketplace}}<ISBFMarketplace />
         {{else if this.isTeamup}}<ISBFTeamup />
+        {{else if this.isLibrary}}<ISBFLibrary />
         {{else if this.isLearning}}<ISBFLearning />
         {{else if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
 

@@ -356,7 +356,11 @@ assert.notEqual(mobileMenu.identifier, desktopMenu.identifier);
 const workbenchSource = read("components/isbf-v2-workbench.gjs");
 assert.match(workbenchSource, /<ISBFV2MoreMenu @workbench=\{\{true\}\} \/>/);
 assert.doesNotMatch(workbenchSource, /ISBFV2UtilityActions/);
-for (const page of ["isbf-learning.gjs", "isbf-alumni.gjs"]) {
+for (const page of [
+  "isbf-resource-page.gjs",
+  "isbf-library.gjs",
+  "isbf-alumni.gjs",
+]) {
   assert.doesNotMatch(read(`components/${page}`), /ISBFV2MoreMenu/);
 }
 function styleBlock(source, selector) {
