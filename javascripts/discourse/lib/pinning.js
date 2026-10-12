@@ -164,8 +164,8 @@ export class PinExpiryScheduler {
     onChange,
     enabled = () => true,
     now = Date.now,
-    setTimer = setTimeout,
-    clearTimer = clearTimeout,
+    setTimer = (callback, delay) => globalThis.setTimeout(callback, delay),
+    clearTimer = (timer) => globalThis.clearTimeout(timer),
   }) {
     this.#onChange = onChange;
     this.#enabled = enabled;

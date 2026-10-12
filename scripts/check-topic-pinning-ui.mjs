@@ -4,7 +4,24 @@ import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
-const context = vm.createContext({ setTimeout: () => 1, clearTimeout() {} });
+const context = vm.createContext({});
+const browserWindow = vm.runInContext("globalThis", context);
+const browserTimers = new Map();
+let nextBrowserTimer = 0;
+context.setTimeout = function (callback, delay) {
+  if (this !== browserWindow) {
+    throw new TypeError("Illegal invocation");
+  }
+  const id = ++nextBrowserTimer;
+  browserTimers.set(id, { callback, delay });
+  return id;
+};
+context.clearTimeout = function (id) {
+  if (this !== browserWindow) {
+    throw new TypeError("Illegal invocation");
+  }
+  browserTimers.delete(id);
+};
 const calls = [];
 let response;
 let failure;
@@ -386,6 +403,42 @@ assert.match(modalSource, /@clearable={{false}}/);
 assert.match(modalSource, /on "submit" this.submit/);
 assert.match(modalSource, /role="alert"/);
 assert.match(modalSource, /@closeModal={{this.close}}/);
+const nativeTimers = new helper.namespace.PinExpiryScheduler({});
+assert.doesNotThrow(() =>
+  nativeTimers.register({ isbfHomePinScope: true, topics: [] }),
+);
+assert.equal(
+  browserTimers.size,
+  0,
+  "Empty home list initializes without scheduling",
+);
+const futureTopic = {
+  id: 91,
+  created_at: new Date().toISOString(),
+  isbf_home_pinning: {
+    scoped: true,
+    active: true,
+    pinned_at: new Date().toISOString(),
+    pinned_until: new Date(Date.now() + 60000).toISOString(),
+  },
+};
+const timedList = { isbfHomePinScope: true, topics: [futureTopic] };
+assert.doesNotThrow(() => nativeTimers.register(timedList));
+assert.equal(
+  browserTimers.size,
+  1,
+  "Native browser timer scheduled with Window receiver",
+);
+assert.doesNotThrow(() => nativeTimers.refresh());
+assert.equal(
+  browserTimers.size,
+  1,
+  "Refresh replaces rather than duplicates native timer",
+);
+assert.doesNotThrow(() => nativeTimers.remove(timedList));
+assert.equal(browserTimers.size, 0);
+assert.doesNotThrow(() => nativeTimers.destroy());
+
 const lifecycle = [];
 const wrappers = {};
 let destructor;
@@ -493,6 +546,11 @@ assert.equal(lifecycle.at(-1)[0], "willDestroy");
 assert.ok(eventNames.includes("routeDidChange"));
 assert.ok(eventNames.includes("isbf:home-pin-saved"));
 destructor();
+assert.equal(
+  browserTimers.size,
+  0,
+  "Initializer teardown clears native timers",
+);
 assert.ok(cleanupNames.includes("routeDidChange"));
 assert.ok(cleanupNames.includes("isbf:home-pin-saved"));
 
