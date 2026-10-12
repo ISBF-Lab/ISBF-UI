@@ -4,7 +4,7 @@ import { themePrefix } from "virtual:theme";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { alumniConfig } from "../lib/alumni";
-import { learningConfig } from "../lib/learning-resources";
+import { learningConfig, libraryConfig } from "../lib/learning-resources";
 import { marketplaceConfig } from "../lib/marketplace";
 import { teamupConfig } from "../lib/teamup";
 import ISBFV2MoreMenu from "./isbf-v2-more-menu";
@@ -34,13 +34,15 @@ export default class ISBFV2Workbench extends Component {
       href:
         card.key === "learning_resources" && learningConfig(this.site)
           ? "/isbf/learning"
-          : card.key === "marketplace" && marketplaceConfig(this.site)
-            ? "/isbf/marketplace"
-            : card.key === "teamup" && teamupConfig(this.site)
-              ? "/isbf/teamup"
-              : card.key === "alumni"
-                ? "/isbf/alumni"
-                : null,
+          : card.key === "library" && libraryConfig(this.site)
+            ? "/isbf/library"
+            : card.key === "marketplace" && marketplaceConfig(this.site)
+              ? "/isbf/marketplace"
+              : card.key === "teamup" && teamupConfig(this.site)
+                ? "/isbf/teamup"
+                : card.key === "alumni"
+                  ? "/isbf/alumni"
+                  : null,
     }));
   }
 

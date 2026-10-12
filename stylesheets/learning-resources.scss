@@ -1,8 +1,9 @@
-body:has(.isbf-v2-shell--learning) #main-outlet {
+body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   display: none;
 }
 
-.isbf-v2-shell--learning {
+.isbf-v2-shell--learning,
+.isbf-v2-shell--library {
   height: auto;
 }
 
@@ -441,5 +442,23 @@ body:has(.isbf-v2-shell--learning) #main-outlet {
     h3 {
       font-size: var(--isbf-v2-font-md);
     }
+  }
+}
+
+.isbf-resource-parent {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+
+  .isbf-resource-parent__picker {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .isbf-learning__grade .d-button-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
