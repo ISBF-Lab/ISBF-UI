@@ -10,10 +10,12 @@ import {
   buildOfficialQuery,
   OfficialRequestGuard,
 } from "../lib/official-filters";
+import { sortHomePinList } from "../lib/pinning";
 import ISBFOfficialPicker from "./isbf-official-picker";
 import ISBFV2FeedCard from "./isbf-v2-feed-card";
 
 export default class ISBFOfficialFeed extends Component {
+  @service appEvents;
   @service router;
   @service store;
 
@@ -28,11 +30,13 @@ export default class ISBFOfficialFeed extends Component {
 
   constructor() {
     super(...arguments);
+    this.appEvents.on("isbf:home-pins-changed", this.refreshHomePins);
     scheduleOnce("afterRender", this, this.load);
   }
 
   willDestroy() {
     super.willDestroy(...arguments);
+    this.appEvents.off("isbf:home-pins-changed", this.refreshHomePins);
     this.#requests.next();
   }
 
@@ -50,6 +54,14 @@ export default class ISBFOfficialFeed extends Component {
 
   get typeSelections() {
     return this.type ? [this.type] : [];
+  }
+
+  @action
+  refreshHomePins() {
+    if (!this.isDestroying && this.topicList) {
+      sortHomePinList(this.topicList);
+      this.topics = [...this.topicList.topics];
+    }
   }
 
   @action

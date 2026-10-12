@@ -3,6 +3,7 @@ import { tracked } from "@glimmer/tracking";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
+import { schedule } from "@ember/runloop";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
 import { themePrefix } from "virtual:theme";
@@ -15,6 +16,7 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
 import { recordVisibleView } from "../lib/feed-view-tracker";
+import { isPinningContext, pinningMeta, saveHomePin } from "../lib/pinning";
 import {
   compactNumber,
   openQuotedRepost,
@@ -22,6 +24,7 @@ import {
   postCardTitle,
 } from "../lib/post-card-helpers";
 import { isReportedHidden, openPostReport } from "../lib/report-post";
+import ISBFHomePinDialog from "./isbf-home-pin-dialog";
 import { ISBFMarketplacePrice } from "./isbf-marketplace-card";
 
 export default class ISBFV2FeedCard extends Component {
@@ -42,10 +45,12 @@ export default class ISBFV2FeedCard extends Component {
   @tracked hidden = false;
   @tracked isFlagging = false;
   @tracked isLiking = false;
+  @tracked isPinning = false;
   @tracked isReplying = false;
   @tracked liked;
   @tracked likeCount;
   @tracked menuOpen = false;
+  @tracked pinNow = Date.now();
   @tracked repostCount = null;
   @tracked viewCount = null;
 
@@ -61,6 +66,7 @@ export default class ISBFV2FeedCard extends Component {
       isReportedHidden(this.args.topic.first_post_id) ||
       Boolean(this.args.topic.hidden);
     this.appEvents.on("isbf:post-hidden", this.onPostHidden);
+    this.appEvents.on("isbf:home-pins-changed", this.onHomePinsChanged);
     this.bookmarked = Boolean(this.args.topic.bookmarked);
     this.liked = Boolean(this.args.topic.op_liked);
     this.likeCount = Number(this.args.topic.op_like_count) || 0;
@@ -69,6 +75,7 @@ export default class ISBFV2FeedCard extends Component {
   willDestroy() {
     super.willDestroy(...arguments);
     this.appEvents.off("isbf:post-hidden", this.onPostHidden);
+    this.appEvents.off("isbf:home-pins-changed", this.onHomePinsChanged);
     this.#observer?.disconnect();
     this.#viewObserver?.disconnect();
     document.removeEventListener(
@@ -115,6 +122,30 @@ export default class ISBFV2FeedCard extends Component {
   get canLike() {
     return (
       Boolean(this.currentUser) && (this.args.topic.op_can_like || this.liked)
+    );
+  }
+
+  get pinMetadata() {
+    return pinningMeta(this.args.topic, this.pinNow);
+  }
+
+  get showHomePin() {
+    return (
+      !this.hidden &&
+      isPinningContext(this.router, this.site, this.siteSettings) &&
+      this.pinMetadata?.active === true
+    );
+  }
+
+  get canManageHomePin() {
+    const config = this.site.isbf_pinning;
+    return (
+      !this.hidden &&
+      this.currentUser?.admin === true &&
+      config?.enabled === true &&
+      config?.home_actions_enabled === true &&
+      isPinningContext(this.router, this.site, this.siteSettings) &&
+      this.pinMetadata?.can_manage === true
     );
   }
 
@@ -455,6 +486,64 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   @action
+  onHomePinsChanged() {
+    this.pinNow = Date.now();
+  }
+
+  @action
+  async openHomePin() {
+    if (!this.canManageHomePin || this.isPinning) {
+      return;
+    }
+    this.isPinning = true;
+    try {
+      await this.#closePinMenu();
+      if (this.isDestroying || !this.canManageHomePin) {
+        return;
+      }
+      this.modal.show(ISBFHomePinDialog, {
+        model: { topic: this.args.topic, onSaved: this.onHomePinSaved },
+      });
+    } finally {
+      if (!this.isDestroying) {
+        this.isPinning = false;
+      }
+    }
+  }
+
+  @action
+  onHomePinSaved() {
+    if (!this.isDestroying) {
+      this.pinNow = Date.now();
+      this.appEvents.trigger("isbf:home-pin-saved");
+    }
+  }
+
+  @action
+  async cancelHomePin() {
+    if (!this.canManageHomePin || this.isPinning) {
+      return;
+    }
+    this.isPinning = true;
+    try {
+      await this.#closePinMenu();
+      if (this.isDestroying) {
+        return;
+      }
+      await saveHomePin(this.args.topic, { enabled: false });
+      this.onHomePinSaved();
+    } catch (error) {
+      if (!this.isDestroying) {
+        await this.#showError(error);
+      }
+    } finally {
+      if (!this.isDestroying) {
+        this.isPinning = false;
+      }
+    }
+  }
+
+  @action
   onPostHidden(postId, hidden = true) {
     if (Number(postId) === Number(this.args.topic.first_post_id)) {
       this.hidden = hidden;
@@ -522,6 +611,12 @@ export default class ISBFV2FeedCard extends Component {
     }
   }
 
+  async #closePinMenu() {
+    this.#closeMenu();
+    this.#rootElement?.querySelector(".isbf-feed-card__menu-trigger")?.focus();
+    await new Promise((resolve) => schedule("afterRender", resolve));
+  }
+
   #closeMenu() {
     this.menuOpen = false;
     document.removeEventListener("pointerdown", this.onOutsidePointer, true);
@@ -554,6 +649,11 @@ export default class ISBFV2FeedCard extends Component {
         />
       </a>
       <div class="isbf-feed-card__main">
+        {{#if this.showHomePin}}
+          <div class="isbf-feed-card__pin">
+            {{dIcon "thumbtack"}}{{i18n (themePrefix "isbf_v2.pinned")}}
+          </div>
+        {{/if}}
         <header class="isbf-feed-card__header">
           <a
             class="isbf-feed-card__author"
@@ -579,6 +679,28 @@ export default class ISBFV2FeedCard extends Component {
             >{{dIcon "ellipsis"}}</button>
             {{#if this.menuOpen}}
               <div class="isbf-feed-card__menu" role="menu">
+                {{#if this.canManageHomePin}}
+                  <button
+                    disabled={{this.isPinning}}
+                    role="menuitem"
+                    type="button"
+                    {{on "click" this.openHomePin}}
+                  >{{dIcon "thumbtack"}}{{i18n
+                      (themePrefix
+                        (if this.showHomePin "isbf_v2.pin_update" "isbf_v2.pin")
+                      )
+                    }}</button>
+                  {{#if this.showHomePin}}
+                    <button
+                      disabled={{this.isPinning}}
+                      role="menuitem"
+                      type="button"
+                      {{on "click" this.cancelHomePin}}
+                    >{{dIcon "thumbtack"}}{{i18n
+                        (themePrefix "isbf_v2.pin_cancel")
+                      }}</button>
+                  {{/if}}
+                {{/if}}
                 {{#if this.canFlag}}<button
                     disabled={{this.isFlagging}}
                     role="menuitem"
