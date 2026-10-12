@@ -378,6 +378,52 @@ function componentClass(path, globals = {}) {
   });
 }
 
+const workbenchSource = read(
+  "javascripts/discourse/components/isbf-v2-workbench.gjs",
+);
+const workbenchCards = vm.runInNewContext(
+  workbenchSource.match(/const CARDS = (\[[\s\S]*?\n\]);/)[1],
+);
+const Workbench = componentClass("isbf-v2-workbench", {
+  CARDS: workbenchCards,
+  ...resources.namespace,
+  alumniConfig: () => true,
+  marketplaceConfig: () => true,
+  teamupConfig: () => true,
+  services: { site: { isbf_learning: config } },
+});
+const cards = new Workbench().cards;
+assert.deepEqual(plain(cards.map((card) => card.key)), [
+  "learning_resources",
+  "library",
+  "courses",
+  "careers",
+  "resume",
+  "campus_services",
+  "student_identity",
+  "alumni",
+  "marketplace",
+  "teamup",
+]);
+assert.equal(cards[0].href, "/isbf/learning");
+assert.equal(
+  cards[1].href,
+  null,
+  "the library retains its current availability",
+);
+assert.equal(cards[8].href, "/isbf/marketplace");
+assert.equal(cards[9].href, "/isbf/teamup");
+assert.match(workbenchSource, /{{#each this\.cards as \|card\|}}/);
+for (const [locale, title, search] of [
+  ["zh_CN", "课程资源", "搜索全部课程资源"],
+  ["en", "Course resources", "Search all course resources"],
+]) {
+  const text = read(`locales/${locale}.yml`);
+  assert.ok(text.includes(`workbench_learning_resources: "${title}"`));
+  assert.ok(text.includes(`learning_search: "${search}"`));
+  assert.doesNotMatch(text, /学习资源|学习资料|[Ll]earning resources?/);
+}
+
 let completeSubmission;
 let rejectSubmission;
 let submissions = [];
@@ -1812,6 +1858,24 @@ function widthStyles(source, width) {
     position = end;
   }
   return result + source.slice(position);
+}
+for (const width of [390, 430, 1024, 1440]) {
+  const styles = widthStyles(read("common/common.scss"), width);
+  const grids = [
+    ...styles.matchAll(
+      /\.isbf-v2-workbench__grid\s*\{[^}]*grid-template-columns: repeat\((\d+), minmax\(0, 1fr\)\);/g,
+    ),
+  ];
+  assert.equal(
+    Number(grids.at(-1)[1]),
+    width === 1024 ? 3 : 4,
+    `${width}px preserves the existing shared workbench grid`,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.isbf-v2-workbench__card[^}]*\border\s*:/,
+    `${width}px visual order follows the shared card order`,
+  );
 }
 for (const width of [390, 430, 768, 820, 1024, 1440]) {
   const styles = widthStyles(learningStyles, width);
