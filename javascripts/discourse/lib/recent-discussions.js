@@ -1,5 +1,6 @@
 import { ajax } from "discourse/lib/ajax";
 import { marketplaceConfig } from "./marketplace";
+import { teamupConfig } from "./teamup";
 
 const RECENT_WINDOW = 3 * 24 * 60 * 60 * 1000;
 const TOPIC_LIMIT = 4;
@@ -11,6 +12,7 @@ export async function loadRecentDiscussions({
   isStale = () => false,
 } = {}) {
   const categoryId = marketplaceConfig(site)?.category_id;
+  const teamupId = teamupConfig(site)?.category_id;
   const cutoff = now - RECENT_WINDOW;
   const topics = [];
   const seen = new Set();
@@ -44,6 +46,12 @@ export async function loadRecentDiscussions({
       if (
         (Number(topic.category_id) === categoryId || topic.isbf_marketplace) &&
         topic.isbf_marketplace?.show_on_home !== true
+      ) {
+        continue;
+      }
+      if (
+        (Number(topic.category_id) === teamupId || topic.isbf_teamup) &&
+        topic.isbf_teamup?.show_on_home === false
       ) {
         continue;
       }

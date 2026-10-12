@@ -6,13 +6,18 @@ import { themePrefix } from "virtual:theme";
 import { i18n } from "discourse-i18n";
 import { isMarketplaceComposer } from "../lib/marketplace";
 import { isQuickPost } from "../lib/quick-post-scope";
+import { isTeamupComposer } from "../lib/teamup";
 
 export default class ISBFV2ComposerCancel extends Component {
   @service composer;
 
   get visible() {
     const model = this.args.outletArgs?.model;
-    return isQuickPost(model) || isMarketplaceComposer(model);
+    return (
+      isQuickPost(model) ||
+      isMarketplaceComposer(model) ||
+      isTeamupComposer(model)
+    );
   }
 
   @action

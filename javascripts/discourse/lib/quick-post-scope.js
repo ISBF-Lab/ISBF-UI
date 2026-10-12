@@ -1,5 +1,6 @@
 import { settings } from "virtual:theme";
 import { marketplaceConfig } from "./marketplace";
+import { isTeamupCategory } from "./teamup";
 
 export function isQuickPost(model) {
   const eventCategoryId = Number(settings.calendar_category_id);
@@ -7,6 +8,7 @@ export function isQuickPost(model) {
   return (
     model?.action === "createTopic" &&
     !model.creatingEvent &&
+    !isTeamupCategory(model) &&
     Number(model.categoryId) !== marketplaceConfig(model.site)?.category_id &&
     !(
       model?.site?.isbf_learning?.category_id > 0 &&

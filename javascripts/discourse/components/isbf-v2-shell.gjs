@@ -3,6 +3,8 @@ import { action } from "@ember/object";
 import { getOwner } from "@ember/owner";
 import { service } from "@ember/service";
 import { settings, themePrefix } from "virtual:theme";
+import PluginOutlet from "discourse/components/plugin-outlet";
+import lazyHash from "discourse/helpers/lazy-hash";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
@@ -20,8 +22,10 @@ import ISBFLearning from "./isbf-learning";
 import ISBFMarketplace from "./isbf-marketplace";
 import ISBFNotifications from "./isbf-notifications";
 import ISBFOfficialFeed from "./isbf-official-feed";
+import ISBFTeamup from "./isbf-teamup";
 import ISBFV2AccountMenu from "./isbf-v2-account-menu";
 import ISBFV2AnonymousPosts from "./isbf-v2-anonymous-posts";
+import ISBFV2Brand from "./isbf-v2-brand";
 import ISBFV2Calendar from "./isbf-v2-calendar";
 import ISBFV2RightRail from "./isbf-v2-right-rail";
 import ISBFV2SideNav from "./isbf-v2-side-nav";
@@ -74,6 +78,9 @@ export default class ISBFV2Shell extends Component {
     }
     if (path === "/isbf/marketplace") {
       return "marketplace";
+    }
+    if (path === "/isbf/teamup") {
+      return "teamup";
     }
     if (path === "/isbf/learning") {
       return "learning";
@@ -155,9 +162,13 @@ export default class ISBFV2Shell extends Component {
   }
 
   get isWorkbench() {
-    return ["workbench", "learning", "alumni", "marketplace"].includes(
-      this.pageKind,
-    );
+    return [
+      "workbench",
+      "learning",
+      "alumni",
+      "marketplace",
+      "teamup",
+    ].includes(this.pageKind);
   }
 
   get isAlumni() {
@@ -166,6 +177,10 @@ export default class ISBFV2Shell extends Component {
 
   get isMarketplace() {
     return this.pageKind === "marketplace";
+  }
+
+  get isTeamup() {
+    return this.pageKind === "teamup";
   }
 
   get isLearning() {
@@ -182,6 +197,7 @@ export default class ISBFV2Shell extends Component {
         "learning",
         "marketplace",
         "notifications",
+        "teamup",
         "workbench",
       ].includes(this.pageKind)
     );
@@ -283,7 +299,7 @@ export default class ISBFV2Shell extends Component {
     return (
       this.isFeed &&
       (this.latestActive || this.officialActive) &&
-      Boolean(this.currentUser?.staff)
+      Boolean(this.currentUser?.can_review)
     );
   }
 
@@ -389,11 +405,21 @@ export default class ISBFV2Shell extends Component {
                 {{#if this.currentUser}}
                   <a
                     aria-label={{i18n (themePrefix "isbf_v2.profile")}}
-                    class="isbf-v2-feed-header__avatar"
+                    class="isbf-v2-feed-header__avatar isbf-avatar"
                     href={{this.profileHref}}
-                  >{{dAvatar this.currentUser imageSize="small"}}</a>
+                  >{{dAvatar this.currentUser imageSize="small"}}<PluginOutlet
+                      @name="user-avatar-frame"
+                      @outletArgs={{lazyHash
+                        user=this.currentUser
+                        motion="static"
+                      }}
+                    /></a>
                 {{/if}}
                 <span>{{i18n (themePrefix "isbf_v2.home")}}</span>
+                <ISBFV2Brand
+                  class="isbf-v2-feed-header__brand"
+                  @mobile={{true}}
+                />
                 <a
                   aria-label={{i18n (themePrefix "isbf_v2.search")}}
                   class="isbf-v2-feed-header__search"
@@ -420,9 +446,15 @@ export default class ISBFV2Shell extends Component {
               {{#if this.currentUser}}
                 <a
                   aria-label={{this.currentUser.username}}
-                  class="isbf-v2-compose__avatar"
+                  class="isbf-v2-compose__avatar isbf-avatar"
                   href={{this.profileHref}}
-                >{{dAvatar this.currentUser imageSize="large"}}</a>
+                >{{dAvatar this.currentUser imageSize="large"}}<PluginOutlet
+                    @name="user-avatar-frame"
+                    @outletArgs={{lazyHash
+                      user=this.currentUser
+                      motion="static"
+                    }}
+                  /></a>
               {{/if}}
               <a
                 class="isbf-v2-compose__prompt"
@@ -469,6 +501,7 @@ export default class ISBFV2Shell extends Component {
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
         {{#if this.isAlumni}}<ISBFAlumni />
         {{else if this.isMarketplace}}<ISBFMarketplace />
+        {{else if this.isTeamup}}<ISBFTeamup />
         {{else if this.isLearning}}<ISBFLearning />
         {{else if this.isWorkbench}}<ISBFV2Workbench />{{/if}}
 

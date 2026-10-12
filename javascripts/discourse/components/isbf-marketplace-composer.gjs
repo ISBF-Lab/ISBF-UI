@@ -4,6 +4,7 @@ import { action } from "@ember/object";
 import { themePrefix } from "virtual:theme";
 import { i18n } from "discourse-i18n";
 import { isMarketplaceComposer } from "../lib/marketplace";
+import ISBFHomeDisplayOption from "./isbf-home-display-option";
 
 export default class ISBFMarketplaceComposer extends Component {
   get model() {
@@ -53,14 +54,12 @@ export class ISBFMarketplaceHome extends Component {
   <template>
     {{#if this.visible}}
       <div class="isbf-marketplace-composer-options">
-        <label class="isbf-marketplace-composer__home">
-          <input
-            checked={{this.model.isbf_marketplace_home}}
-            type="checkbox"
-            {{on "change" this.changeHome}}
-          />
-          <span>{{i18n (themePrefix "isbf_v2.marketplace_home")}}</span>
-        </label>
+        <ISBFHomeDisplayOption
+          class="isbf-marketplace-composer__home"
+          @checked={{this.model.isbf_marketplace_home}}
+          @label={{i18n (themePrefix "isbf_v2.marketplace_home")}}
+          @onChange={{this.changeHome}}
+        />
       </div>
     {{/if}}
   </template>

@@ -1,11 +1,13 @@
 import Category from "discourse/models/category";
 import { marketplaceConfig } from "./marketplace";
+import { isTeamupCategory } from "./teamup";
 
 export function canPublishAnonymously(model, currentUser, siteSettings) {
   if (
     !model ||
     !currentUser?.can_post_anonymously ||
     currentUser.is_anonymous ||
+    isTeamupCategory(model) ||
     !["createTopic", "reply"].includes(model.action) ||
     model.archetypeId === "private_message" ||
     [true, "true"].includes(model.academy_official)

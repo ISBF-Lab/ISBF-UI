@@ -464,7 +464,12 @@ detailPrice.args.outletArgs.post.post_number = 2;
 assert.equal(detailPrice.price, null);
 assert.equal(detailPrice.images.length, 0);
 
-const styles = read("stylesheets/marketplace.scss");
+const sharedMobileStyles = read("stylesheets/workbench-composer.scss");
+const styles = [
+  read("stylesheets/marketplace.scss"),
+  read("stylesheets/workbench-topics.scss"),
+  sharedMobileStyles,
+].join("\n");
 assert.ok(styles.includes("112px"));
 assert.ok(styles.includes("88px"));
 assert.ok(styles.includes("env(safe-area-inset-bottom)"));
@@ -559,6 +564,9 @@ const composerModule = new vm.SourceTextModule(
   { context },
 );
 await composerModule.link((specifier) => {
+  if (specifier === "./isbf-home-display-option") {
+    return synthetic({ default: class {} });
+  }
   if (specifier === "../lib/marketplace") {
     return module;
   }
@@ -628,6 +636,9 @@ const quickPostModule = new vm.SourceTextModule(
   { context },
 );
 await quickPostModule.link((specifier) => {
+  if (specifier === "./teamup") {
+    return synthetic({ isTeamupCategory: () => false });
+  }
   if (specifier === "./marketplace") {
     return module;
   }
@@ -637,6 +648,12 @@ await quickPostModule.link((specifier) => {
   throw new Error(`Unexpected quick-post import: ${specifier}`);
 });
 await quickPostModule.evaluate();
+const teamupModule = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/teamup.js"),
+  { context },
+);
+await teamupModule.link(() => {});
+await teamupModule.evaluate();
 const cancelSource = read(
   "javascripts/discourse/components/isbf-v2-composer-cancel.gjs",
 );
@@ -648,6 +665,9 @@ const cancelModule = new vm.SourceTextModule(
   { context },
 );
 await cancelModule.link((specifier) => {
+  if (specifier === "../lib/teamup") {
+    return teamupModule;
+  }
   if (specifier === "../lib/marketplace") {
     return module;
   }
@@ -753,12 +773,24 @@ assert.equal(
 const homeSource = composerSource.slice(
   composerSource.indexOf("export class ISBFMarketplaceHome"),
 );
-assert.match(homeSource, /<label\s+class="isbf-marketplace-composer__home"/);
-assert.match(homeSource, /checked=\{\{this\.model\.isbf_marketplace_home\}\}/);
-assert.match(homeSource, /type="checkbox"/);
-assert.match(homeSource, /\{\{on "change" this\.changeHome\}\}/);
-assert.match(homeSource, /<span>[\s\S]*?marketplace_home[\s\S]*?<\/span>/);
-assert.doesNotMatch(homeSource, /\{\{on "click"/);
+assert.match(
+  homeSource,
+  /<ISBFHomeDisplayOption\s+class="isbf-marketplace-composer__home"/,
+);
+assert.match(homeSource, /@checked=\{\{this\.model\.isbf_marketplace_home\}\}/);
+assert.match(homeSource, /@onChange=\{\{this\.changeHome\}\}/);
+assert.match(
+  homeSource,
+  /@label=\{\{i18n \(themePrefix "isbf_v2\.marketplace_home"\)\}\}/,
+);
+const sharedHomeSource = read(
+  "javascripts/discourse/components/isbf-home-display-option.gjs",
+);
+assert.match(sharedHomeSource, /<label class="isbf-home-display-option"/);
+assert.match(sharedHomeSource, /type="checkbox"/);
+assert.match(sharedHomeSource, /\{\{on "change" @onChange\}\}/);
+assert.match(sharedHomeSource, /<span>\{\{@label\}\}<\/span>/);
+assert.doesNotMatch(sharedHomeSource, /\{\{on "click"/);
 // Inspect only the relevant rule blocks; this does not compile SCSS or verify DOM layout.
 function styleRule(source, selector) {
   const match = selector.exec(source);
@@ -796,11 +828,9 @@ const homeStyles = styleRule(
 );
 assert.match(homeStyles, /min-height:\s*44px\s*;/);
 assert.match(homeStyles, /gap:\s*8px\s*;/);
-const mobileStyles = styles.slice(
-  styles.lastIndexOf("@media (width <= 600px)"),
-);
+const mobileStyles = sharedMobileStyles;
 const mobileComposerScope =
-  /html\.composer-open\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):has\(\.isbf-marketplace-composer\)\s*\{/;
+  /html\.composer-open\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\)\s*\)\s*\{/;
 const mobileComposerStyles = styleRule(mobileStyles, mobileComposerScope);
 assert.match(
   styleRule(mobileComposerStyles, /\.d-editor-textarea-column\s*\{/),
@@ -846,11 +876,11 @@ assert.match(
 );
 assert.match(
   mobileComposerStyles,
-  /container:\s*isbf-marketplace-composer\s*\/\s*size\s*;/,
+  /container:\s*isbf-workbench-composer\s*\/\s*size\s*;/,
 );
 const shortViewport = styleRule(
   mobileStyles,
-  /@container isbf-marketplace-composer\s*\(height\s*<\s*360px\)\s*\{/,
+  /@container isbf-workbench-composer\s*\(height\s*<\s*360px\)\s*\{/,
 );
 assert.match(shortViewport, /:has\(\.isbf-marketplace-composer\)/);
 assert.match(
@@ -893,7 +923,7 @@ assert.match(
 );
 const keyboardComposerStyles = styleRule(
   mobileStyles,
-  /html\.keyboard-visible\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):has\(\.isbf-marketplace-composer\)\s*\{/,
+  /html\.keyboard-visible\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\)\s*\)\s*\{/,
 );
 assert.match(
   styleRule(keyboardComposerStyles, /\.wmd-controls\s*\{/),

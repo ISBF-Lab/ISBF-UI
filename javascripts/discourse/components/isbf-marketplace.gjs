@@ -3,13 +3,10 @@ import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
-import { themePrefix } from "virtual:theme";
 import Composer from "discourse/models/composer";
-import DButton from "discourse/ui-kit/d-button";
-import dIcon from "discourse/ui-kit/helpers/d-icon";
-import { i18n } from "discourse-i18n";
 import { marketplaceConfig, marketplaceQuery } from "../lib/marketplace";
 import ISBFMarketplaceCard from "./isbf-marketplace-card";
+import ISBFWorkbenchTopicPage from "./isbf-workbench-topic-page";
 
 export default class ISBFMarketplace extends Component {
   @service appEvents;
@@ -121,62 +118,24 @@ export default class ISBFMarketplace extends Component {
   }
 
   <template>
-    <main aria-busy={{this.loading}} class="isbf-marketplace">
-      <header class="isbf-marketplace__header">
-        <a
-          aria-label={{i18n (themePrefix "isbf_v2.marketplace_back")}}
-          href="/isbf/workbench"
-        >{{dIcon "arrow-left"}}</a>
-        <h1>{{i18n (themePrefix "isbf_v2.workbench_marketplace")}}</h1>
-      </header>
-      {{#if this.config}}
-        {{#if this.currentUser}}
-          {{#each this.topics key="id" as |topic|}}<ISBFMarketplaceCard
-              @topic={{topic}}
-            />{{/each}}
-          {{#if this.loading}}
-            <p class="isbf-marketplace__notice" role="status">{{i18n
-                (themePrefix "isbf_v2.learning_loading")
-              }}</p>
-          {{else if this.error}}
-            <p class="isbf-marketplace__notice" role="alert">{{i18n
-                (themePrefix "isbf_v2.marketplace_error")
-              }}</p>
-            <DButton
-              @action={{this.retry}}
-              @translatedLabel={{i18n (themePrefix "isbf_v2.explore_retry")}}
-            />
-          {{else if this.canLoadMore}}
-            <DButton
-              @action={{this.loadMore}}
-              @translatedLabel={{i18n (themePrefix "isbf_v2.load_more")}}
-            />
-          {{else}}{{#unless this.topics.length}}
-              <p class="isbf-marketplace__notice">{{i18n
-                  (themePrefix "isbf_v2.marketplace_empty")
-                }}</p>
-            {{/unless}}{{/if}}
-          {{#if this.canCreate}}
-            <DButton
-              class="btn-primary isbf-marketplace__create"
-              @action={{this.create}}
-              @icon="plus"
-              @translatedLabel={{i18n
-                (themePrefix "isbf_v2.marketplace_publish")
-              }}
-            />
-          {{/if}}
-        {{else}}
-          <div class="isbf-marketplace__notice">
-            <p>{{i18n (themePrefix "isbf_v2.marketplace_login")}}</p>
-            <DButton @action={{this.login}} @label="log_in" />
-          </div>
-        {{/if}}
-      {{else}}
-        <p class="isbf-marketplace__notice">{{i18n
-            (themePrefix "isbf_v2.marketplace_unavailable")
-          }}</p>
-      {{/if}}
-    </main>
+    <ISBFWorkbenchTopicPage
+      class="isbf-marketplace"
+      @canCreate={{this.canCreate}}
+      @canLoadMore={{this.canLoadMore}}
+      @config={{this.config}}
+      @currentUser={{this.currentUser}}
+      @error={{this.error}}
+      @hasTopics={{this.topics.length}}
+      @kind="marketplace"
+      @loading={{this.loading}}
+      @onCreate={{this.create}}
+      @onLoadMore={{this.loadMore}}
+      @onLogin={{this.login}}
+      @onRetry={{this.retry}}
+    >
+      {{#each this.topics key="id" as |topic|}}
+        <ISBFMarketplaceCard @topic={{topic}} />
+      {{/each}}
+    </ISBFWorkbenchTopicPage>
   </template>
 }
