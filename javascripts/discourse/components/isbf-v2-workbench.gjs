@@ -11,12 +11,12 @@ import ISBFV2MoreMenu from "./isbf-v2-more-menu";
 
 const CARDS = [
   { key: "learning_resources", icon: "book-open", tone: "blue" },
+  { key: "library", icon: "database", tone: "indigo" },
   { key: "courses", icon: "graduation-cap", tone: "violet" },
   { key: "careers", icon: "briefcase", tone: "amber" },
   { key: "resume", icon: "file-lines", tone: "mint" },
   { key: "campus_services", icon: "building-columns", tone: "sky" },
   { key: "student_identity", icon: "id-card", tone: "rose" },
-  { key: "library", icon: "database", tone: "indigo" },
   { key: "alumni", icon: "user-group", tone: "teal" },
   { key: "marketplace", icon: "bag-shopping", tone: "amber" },
   { key: "teamup", icon: "user-group", tone: "violet" },
