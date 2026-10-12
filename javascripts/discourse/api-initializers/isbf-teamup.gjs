@@ -4,6 +4,7 @@ import Composer from "discourse/models/composer";
 import { i18n } from "discourse-i18n";
 import ISBFTeamupComposer from "../components/isbf-teamup-composer";
 import { extendComposerMethod } from "../lib/composer-model-extensions";
+import { invalidateCookedPost } from "../lib/feed-post-loader";
 import {
   isUntitledTopicTitle,
   prepareOptionalTopicTitle,
@@ -62,6 +63,13 @@ export default apiInitializer((api) => {
       if (isQuickPost(model)) {
         prepareOptionalTopicTitle(model);
       }
+    }
+  });
+  api.onAppEvent("composer:edited-post", () => {
+    const model = api.container.lookup("service:composer").model;
+    const id = Number(model?.post?.id);
+    if (isTeamupComposer(model) && Number.isSafeInteger(id) && id > 0) {
+      invalidateCookedPost(id, false);
     }
   });
   api.renderInOutlet("after-title-and-category", ISBFTeamupComposer);

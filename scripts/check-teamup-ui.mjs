@@ -34,6 +34,7 @@ async function load(path, dependencies = {}) {
   return module;
 }
 const lib = "javascripts/discourse/lib/";
+const invalidations = [];
 const teamup = await load(`${lib}teamup.js`);
 const marketplace = await load(`${lib}marketplace.js`);
 const optional = await load(`${lib}optional-topic-title.js`);
@@ -249,11 +250,43 @@ await load("javascripts/discourse/api-initializers/isbf-teamup.gjs", {
   "discourse/models/composer": { default: Composer },
   "discourse-i18n": { i18n: (key) => key },
   "../components/isbf-teamup-composer": component,
+  "../lib/feed-post-loader": {
+    invalidateCookedPost: (id, hidden) => invalidations.push([id, hidden]),
+  },
   "../lib/composer-model-extensions": extensions,
   "../lib/optional-topic-title": optional,
   "../lib/quick-post-scope": quick,
   "../lib/teamup": teamup,
 });
+let editedModel = model({
+  creatingTopic: false,
+  editingPost: true,
+  post: { id: 91, post_number: 1 },
+});
+api.container = { lookup: () => ({ model: editedModel }) };
+registrations.events.get("composer:edited-post")();
+assert.deepEqual(
+  invalidations,
+  [[91, false]],
+  "Group first-post edits invalidate the cooked body cache",
+);
+for (const excluded of [
+  model({
+    categoryId: 43,
+    creatingTopic: false,
+    editingPost: true,
+    post: { id: 92, post_number: 1 },
+  }),
+  model({
+    creatingTopic: false,
+    editingPost: true,
+    post: { id: 93, post_number: 2 },
+  }),
+]) {
+  editedModel = excluded;
+  registrations.events.get("composer:edited-post")();
+}
+assert.equal(invalidations.length, 1);
 for (const kind of ["create", "update"]) {
   assert.equal(
     registrations[kind].get(TEAMUP_HOME_FIELD),

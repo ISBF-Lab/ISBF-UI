@@ -27,14 +27,14 @@ export default class ISBFTeamup extends Component {
   constructor() {
     super(...arguments);
     this.appEvents.on("composer:created-post", this.refresh);
-    this.appEvents.on("composer:edited-post", this.refresh);
+    this.appEvents.on("composer:edited-post", this.editRefresh);
     scheduleOnce("afterRender", this, this.load);
   }
 
   willDestroy() {
     super.willDestroy(...arguments);
     this.appEvents.off("composer:created-post", this.refresh);
-    this.appEvents.off("composer:edited-post", this.refresh);
+    this.appEvents.off("composer:edited-post", this.editRefresh);
   }
 
   get config() {
@@ -143,6 +143,15 @@ export default class ISBFTeamup extends Component {
   @action
   navigateToTopic(topic) {
     this.router.transitionTo(topic.url);
+  }
+
+  @action
+  editRefresh() {
+    if (this.isDestroying) {
+      return;
+    }
+    this.topics = [];
+    return this.refresh();
   }
 
   @action
