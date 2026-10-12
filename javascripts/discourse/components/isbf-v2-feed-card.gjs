@@ -663,7 +663,7 @@ export default class ISBFV2FeedCard extends Component {
             class="isbf-feed-card__username"
             href={{this.profileUrl}}
           >@{{@topic.creator.username}}</a>
-          <span aria-hidden="true">路</span>
+          <span aria-hidden="true">·</span>
           <a
             class="isbf-feed-card__time"
             href={{this.topicUrl}}
