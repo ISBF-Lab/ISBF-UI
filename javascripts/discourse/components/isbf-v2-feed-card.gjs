@@ -681,6 +681,7 @@ export default class ISBFV2FeedCard extends Component {
               <div class="isbf-feed-card__menu" role="menu">
                 {{#if this.canManageHomePin}}
                   <button
+                    class="isbf-feed-card__pin-action"
                     disabled={{this.isPinning}}
                     role="menuitem"
                     type="button"
@@ -692,6 +693,7 @@ export default class ISBFV2FeedCard extends Component {
                     }}</button>
                   {{#if this.showHomePin}}
                     <button
+                      class="isbf-feed-card__pin-action"
                       disabled={{this.isPinning}}
                       role="menuitem"
                       type="button"

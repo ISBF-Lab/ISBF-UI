@@ -73,3 +73,11 @@
 .isbf-feed-card__menu button {
   min-height: 44px;
 }
+
+.isbf-feed-card__menu button.isbf-feed-card__pin-action {
+  color: var(--isbf-v2-text);
+
+  .d-icon {
+    color: var(--isbf-v2-text);
+  }
+}

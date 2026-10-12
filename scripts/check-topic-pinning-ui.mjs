@@ -304,7 +304,42 @@ card.willDestroy();
 assert.ok(registered.some(([name]) => name === "isbf:home-pins-changed"));
 assert.ok(removed.some(([name]) => name === "isbf:home-pins-changed"));
 
+const cardSource = read(
+  "javascripts/discourse/components/isbf-v2-feed-card.gjs",
+);
+const menuButtons = Array.from(cardSource.matchAll(/<button\b([^>]+)>/g));
+for (const action of ["openHomePin", "cancelHomePin"]) {
+  const button = menuButtons.find(([, attributes]) =>
+    attributes.includes(`this.${action}`),
+  );
+  assert.ok(button, `Pin action ${action} exists`);
+  assert.match(
+    button[1],
+    /class="isbf-feed-card__pin-action"/,
+    `Pin action ${action} uses normal menu color`,
+  );
+}
+const reportButton = menuButtons.find(([, attributes]) =>
+  attributes.includes("this.flag}}"),
+);
+assert.ok(reportButton, "Report action exists");
+assert.doesNotMatch(
+  reportButton[1],
+  /isbf-feed-card__pin-action/,
+  "Report retains the danger menu color",
+);
+assert.match(
+  read("common/common.scss"),
+  /\.isbf-feed-card__menu\s*\{[^}]*button\s*\{[^}]*color:\s*var\(--danger\)/,
+  "Unmarked report menu action keeps its danger color",
+);
+
 const styles = read("stylesheets/pinning.scss");
+assert.match(
+  styles,
+  /\.isbf-feed-card__menu button\.isbf-feed-card__pin-action\s*\{\s*color:\s*var\(--isbf-v2-text\);\s*\.d-icon\s*\{\s*color:\s*var\(--isbf-v2-text\);/,
+  "Pin text and icons override the generic danger menu color",
+);
 assert.match(styles, /min-height:\s*44px/);
 assert.match(styles, /width\s*<=\s*600px/);
 assert.match(styles, /width\s*>=\s*601px/);
