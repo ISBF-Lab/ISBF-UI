@@ -6,6 +6,7 @@ import { i18n } from "discourse-i18n";
 import { alumniConfig } from "../lib/alumni";
 import { learningConfig } from "../lib/learning-resources";
 import { marketplaceConfig } from "../lib/marketplace";
+import { teamupConfig } from "../lib/teamup";
 import ISBFV2MoreMenu from "./isbf-v2-more-menu";
 
 const CARDS = [
@@ -18,6 +19,7 @@ const CARDS = [
   { key: "library", icon: "database", tone: "indigo" },
   { key: "alumni", icon: "user-group", tone: "teal" },
   { key: "marketplace", icon: "bag-shopping", tone: "amber" },
+  { key: "teamup", icon: "user-group", tone: "violet" },
 ];
 
 export default class ISBFV2Workbench extends Component {
@@ -34,9 +36,11 @@ export default class ISBFV2Workbench extends Component {
           ? "/isbf/learning"
           : card.key === "marketplace" && marketplaceConfig(this.site)
             ? "/isbf/marketplace"
-            : card.key === "alumni"
-              ? "/isbf/alumni"
-              : null,
+            : card.key === "teamup" && teamupConfig(this.site)
+              ? "/isbf/teamup"
+              : card.key === "alumni"
+                ? "/isbf/alumni"
+                : null,
     }));
   }
 

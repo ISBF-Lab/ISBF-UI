@@ -47,6 +47,7 @@ const deferred = () => {
 const marketplace = await sourceModule(
   "javascripts/discourse/lib/marketplace.js",
 );
+const teamup = await sourceModule("javascripts/discourse/lib/teamup.js");
 const recent = await sourceModule(
   "javascripts/discourse/lib/recent-discussions.js",
   {
@@ -56,6 +57,7 @@ const recent = await sourceModule(
       },
     },
     "./marketplace": marketplace,
+    "./teamup": teamup,
   },
 );
 const { loadRecentDiscussions } = recent.namespace;

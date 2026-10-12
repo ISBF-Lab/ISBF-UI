@@ -29,5 +29,7 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-alumni-ui.mjs
       - run: node --experimental-vm-modules scripts/check-account-menu-ui.mjs
       - run: node --experimental-vm-modules scripts/check-marketplace-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-teamup-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-workbench-topic-pages.mjs
       - run: node --experimental-vm-modules scripts/check-content-images.mjs
       - run: node scripts/check-profile-ui.mjs
