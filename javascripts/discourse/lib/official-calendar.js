@@ -52,22 +52,23 @@ function officialInput(value, allDay) {
   return allDay ? day : `${day}T${date.hour}:${date.minute}`;
 }
 
+function officialTimeFormatter(item) {
+  return new Intl.DateTimeFormat(I18n.currentLocale().replace("_", "-"), {
+    timeZone: OFFICIAL_TIMEZONE,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    ...(!item.all_day
+      ? { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }
+      : {}),
+  });
+}
+
 export function officialTimeLabel(item) {
   if (!item?.starts_at || !item?.ends_at) {
     return "";
   }
-  const format = new Intl.DateTimeFormat(
-    I18n.currentLocale().replace("_", "-"),
-    {
-      timeZone: OFFICIAL_TIMEZONE,
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      ...(!item.all_day
-        ? { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }
-        : {}),
-    },
-  );
+  const format = officialTimeFormatter(item);
   const start = format.format(new Date(item.starts_at));
   if (item.schedule_kind === "deadline") {
     return i18n(
@@ -98,6 +99,43 @@ export function officialTimeLabel(item) {
     start,
     end: format.format(new Date(endTime)),
   });
+}
+
+export function officialActivityTimeLines(item) {
+  const start = new Date(item?.starts_at).getTime();
+  const end = new Date(item?.ends_at).getTime();
+  if (
+    item?.schedule_kind !== "event" ||
+    !item.starts_at ||
+    !item.ends_at ||
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    end < start
+  ) {
+    return [];
+  }
+  const format = officialTimeFormatter(item);
+  const date = format.format(new Date(start));
+  const lines = [
+    i18n(themePrefix("isbf_v2.schedule_activity_start_line"), {
+      date: item.all_day
+        ? i18n(themePrefix("isbf_v2.schedule_activity_day_value"), { date })
+        : date,
+    }),
+  ];
+  const displayedEnd = end - (item.all_day && end > start ? 1 : 0);
+  if (
+    item.all_day
+      ? officialDateKey(start) !== officialDateKey(displayedEnd)
+      : start !== end
+  ) {
+    lines.push(
+      i18n(themePrefix("isbf_v2.schedule_activity_end_line"), {
+        date: format.format(new Date(displayedEnd)),
+      }),
+    );
+  }
+  return lines;
 }
 
 export function isOfficialCalendarComposer(model, site) {

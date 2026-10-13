@@ -43,6 +43,10 @@
     }
   }
 
+  &__time-line {
+    display: block;
+  }
+
   &__deadline {
     display: grid;
     gap: var(--isbf-v2-space-1);
