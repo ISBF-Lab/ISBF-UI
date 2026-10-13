@@ -40,20 +40,6 @@ export default {
           );
         },
       );
-      api.addModelGetter(
-        "composer",
-        "isbfOfficialCalendarDraftItems",
-        function () {
-          const items = this[OFFICIAL_CALENDAR_FIELD];
-          return isOfficialCalendarComposer(this, this.site)
-            ? calendarItemsWithTopicTitle(
-                items,
-                officialCalendarTopicTitle(this),
-                { draft: true },
-              )
-            : items;
-        },
-      );
       Composer.serializeOnCreate(
         OFFICIAL_CALENDAR_FIELD,
         "isbfOfficialCalendarPayload",
@@ -62,10 +48,19 @@ export default {
         OFFICIAL_CALENDAR_FIELD,
         "isbfOfficialCalendarPayload",
       );
-      Composer.serializeToDraft(
-        OFFICIAL_CALENDAR_FIELD,
-        "isbfOfficialCalendarDraftItems",
-      );
+      Composer.serializeToDraft(OFFICIAL_CALENDAR_FIELD);
+
+      extendComposerMethod(api, "serializeDraftData", function (next, ...args) {
+        const data = next(...args);
+        if (isOfficialCalendarComposer(this, this.site)) {
+          data[OFFICIAL_CALENDAR_FIELD] = calendarItemsWithTopicTitle(
+            this[OFFICIAL_CALENDAR_FIELD],
+            officialCalendarTopicTitle(this),
+            { draft: true },
+          );
+        }
+        return data;
+      });
 
       extendComposerMethod(api, "save", function (next, ...args) {
         if (
