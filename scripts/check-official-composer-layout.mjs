@@ -948,6 +948,17 @@ const [desktopLayout, mobileLayout] = officialLayoutSource.split(
 );
 assert.match(
   desktopLayout,
+  /&:not\(:has\(\.isbf-v2-composer-title\)\)\s*\{\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{[^}]*display: block;[^}]*grid-column: 1 \/ -1;[^}]*grid-row: 3;[^}]*min-height: 44px;/,
+  "Official first-post edits restore the native title only when no custom new-topic title is rendered",
+);
+assert.match(
+  mobileLayout,
+  /&:not\(:has\(\.isbf-v2-composer-title\)\)\s*\{\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{\s*grid-row: 4;/,
+  "The native edit title retains the shared title-before-body row under mobile source rules",
+);
+
+assert.match(
+  desktopLayout,
   /\.isbf-v2-composer-options,\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{\s*display: none/,
   "Native generated title stays hidden while its data is retained",
 );
