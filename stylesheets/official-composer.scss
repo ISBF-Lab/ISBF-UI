@@ -5,7 +5,7 @@ html.composer-open
 
   .d-editor-textarea-column {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, fit-content(25%)) minmax(0, 1fr);
     grid-template-rows: auto auto auto minmax(0, 1fr);
     align-items: start;
     gap: var(--isbf-official-compose-gap);
@@ -40,7 +40,10 @@ html.composer-open
     overflow: visible;
   }
 
-  .isbf-v2-composer-options {
+  .isbf-v2-composer,
+  .isbf-v2-composer-options,
+  .title-and-category > .title-input,
+  .composer-fields > .title-input {
     display: none;
   }
 
@@ -52,6 +55,13 @@ html.composer-open
     min-width: 0;
     max-width: 100%;
     margin: 0;
+  }
+
+  .isbf-official-composer__campus,
+  .isbf-official-composer__type,
+  .category-input {
+    justify-self: start;
+    width: max-content;
   }
 
   .isbf-official-composer__campus {
@@ -81,7 +91,9 @@ html.composer-open
   }
 
   .isbf-official-picker__trigger {
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 8px;
+    width: auto;
     padding-inline: 12px;
   }
 
@@ -131,16 +143,29 @@ html.composer-open
     flex: none;
   }
 
-  .title-input {
+  .isbf-v2-composer-title {
     display: block;
+    position: static;
+    inset: auto;
+    z-index: auto;
     grid-column: 1 / -1;
     grid-row: 3;
+    order: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    background: transparent;
+  }
+
+  .isbf-v2-composer-title .title-input {
+    display: block;
     min-width: 0;
     min-height: 44px;
     margin: 0;
   }
 
-  .title-input input {
+  .isbf-v2-composer-title .title-input input {
     box-sizing: border-box;
     width: 100%;
     min-height: 44px;
@@ -269,7 +294,7 @@ html.composer-open
       grid-row: 3;
     }
 
-    .title-input {
+    .isbf-v2-composer-title {
       grid-row: 4;
     }
 
