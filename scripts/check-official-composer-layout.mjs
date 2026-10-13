@@ -472,6 +472,10 @@ assert.equal(closes, 3);
 const modelFields = [];
 const serializers = [];
 const getters = {};
+const draftMappings = new Map([
+  ["title", "title"],
+  ["reply", "reply"],
+]);
 class NativeComposer {
   static proto() {
     return this.prototype;
@@ -485,8 +489,17 @@ class NativeComposer {
     serializers.push(["update", ...args]);
   }
 
-  static serializeToDraft(...args) {
-    serializers.push(["draft", ...args]);
+  static serializeToDraft(field, property = field) {
+    serializers.push(["draft", field, property]);
+    draftMappings.set(field, property);
+  }
+
+  serializeDraftData(...args) {
+    this.draftArgs = args;
+    this.nativeDraftResult = Object.fromEntries(
+      [...draftMappings].map(([field, property]) => [field, this[property]]),
+    );
+    return this.nativeDraftResult;
   }
 
   save(...args) {
@@ -500,8 +513,18 @@ class NativeComposer {
     return "cleared";
   }
 
-  open(...args) {
-    this.openArgs = args;
+  open(opts, ...args) {
+    this.openArgs = [opts, ...args];
+    // Core hydrates every registered draft property before open resolves.
+    for (const [field, property] of draftMappings) {
+      this.set(property, opts[field]);
+    }
+    if (Object.hasOwn(opts, "post")) {
+      this.post = opts.post;
+    }
+    if (Object.hasOwn(opts, "topic")) {
+      this.topic = opts.topic;
+    }
     return Promise.resolve("opened");
   }
 
@@ -515,6 +538,10 @@ const calendarApi = {
   },
   addModelGetter(modelName, key, callback) {
     getters[key] = callback;
+    Object.defineProperty(NativeComposer.prototype, key, {
+      configurable: true,
+      get: callback,
+    });
   },
   addModelMethod(modelName, key, callback) {
     NativeComposer.prototype[key] = callback;
@@ -562,8 +589,27 @@ assert.deepEqual(plain(modelFields), [
 assert.deepEqual(serializers, [
   ["create", OFFICIAL_CALENDAR_FIELD, "isbfOfficialCalendarPayload"],
   ["update", OFFICIAL_CALENDAR_FIELD, "isbfOfficialCalendarPayload"],
-  ["draft", OFFICIAL_CALENDAR_FIELD, "isbfOfficialCalendarDraftItems"],
+  ["draft", OFFICIAL_CALENDAR_FIELD, OFFICIAL_CALENDAR_FIELD],
 ]);
+// Prove that the harness rejects the historical read-only draft mapping.
+const legacyProperty = "isbfOfficialCalendarDraftItems";
+Object.defineProperty(NativeComposer.prototype, legacyProperty, {
+  configurable: true,
+  get() {
+    return this[OFFICIAL_CALENDAR_FIELD];
+  },
+});
+draftMappings.set(OFFICIAL_CALENDAR_FIELD, legacyProperty);
+try {
+  assert.throws(
+    () => new NativeComposer().open({ title: "Legacy new topic" }),
+    TypeError,
+    "Core hydration must fail when a draft mapping targets a getter",
+  );
+} finally {
+  draftMappings.set(OFFICIAL_CALENDAR_FIELD, OFFICIAL_CALENDAR_FIELD);
+  delete NativeComposer.prototype[legacyProperty];
+}
 const nativeComposer = new NativeComposer();
 Object.assign(nativeComposer, {
   categoryId: 6,
@@ -579,9 +625,26 @@ assert.deepEqual(
 assert.equal(nativeComposer.clearState("native-clear"), "cleared");
 assert.deepEqual(nativeComposer.clearArgs, ["native-clear"]);
 assert.equal(nativeComposer[OFFICIAL_CALENDAR_FIELD], null);
-nativeComposer[OFFICIAL_CALENDAR_FIELD] = saved;
-assert.equal(await nativeComposer.open("restored-draft"), "opened");
-assert.deepEqual(nativeComposer.openArgs, ["restored-draft"]);
+const newTopicOptions = { title: "Official title", reply: "New topic body" };
+assert.equal(await nativeComposer.open(newTopicOptions, "new-topic"), "opened");
+assert.deepEqual(nativeComposer.openArgs, [newTopicOptions, "new-topic"]);
+assert.deepEqual(plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]), []);
+assert.equal(getters.isbfOfficialCalendarDraftItems, undefined);
+assert.equal(
+  Object.getOwnPropertyDescriptor(
+    NativeComposer.prototype,
+    "isbfOfficialCalendarPayload",
+  ).set,
+  undefined,
+  "Model getters have the same read-only semantics as the real plugin API",
+);
+const restoredOptions = {
+  title: "Official title",
+  reply: "Restored body",
+  [OFFICIAL_CALENDAR_FIELD]: saved,
+};
+assert.equal(await nativeComposer.open(restoredOptions), "opened");
+assert.deepEqual(nativeComposer.openArgs, [restoredOptions]);
 assert.deepEqual(
   plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]),
   plain(calendarItemsWithTopicTitle(saved, "Official title")),
@@ -590,12 +653,34 @@ assert.deepEqual(
 nativeComposer[OFFICIAL_CALENDAR_FIELD] = null;
 nativeComposer.creatingTopic = false;
 nativeComposer.editingFirstPost = true;
-nativeComposer.post = { [OFFICIAL_CALENDAR_FIELD]: items };
-await nativeComposer.open("edit");
+await nativeComposer.open({
+  title: "Official title",
+  reply: "First post body",
+  post: { [OFFICIAL_CALENDAR_FIELD]: items },
+});
 assert.deepEqual(
   plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]),
   plain(calendarItemsWithTopicTitle(items, "Official title")),
 );
+const editDraft = nativeComposer.serializeDraftData("edit-draft-options");
+assert.equal(editDraft, nativeComposer.nativeDraftResult);
+assert.equal(editDraft.reply, "First post body");
+assert.deepEqual(nativeComposer.draftArgs, ["edit-draft-options"]);
+const topicItems = [make("topic-fallback", "event")];
+await nativeComposer.open({
+  title: "Topic metadata title",
+  topic: { [OFFICIAL_CALENDAR_FIELD]: topicItems },
+  post: {},
+});
+assert.deepEqual(
+  plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]),
+  plain(calendarItemsWithTopicTitle(topicItems, "Topic metadata title")),
+  "First-post editing falls back to topic metadata when the post lacks it",
+);
+await nativeComposer.open({
+  title: "Official title",
+  post: { [OFFICIAL_CALENDAR_FIELD]: items },
+});
 const renamedPayload = () =>
   JSON.parse(getters.isbfOfficialCalendarPayload.call(nativeComposer));
 nativeComposer.title = "Changed after editor";
@@ -613,21 +698,49 @@ for (const blank of [
     getters.isbfOfficialCalendarPayload.call(nativeComposer),
     undefined,
   );
-  const draftItems =
-    getters.isbfOfficialCalendarDraftItems.call(nativeComposer);
+  const backingItems = nativeComposer[OFFICIAL_CALENDAR_FIELD];
+  const originalBacking = plain(backingItems);
+  const draftOptions = { preserve: "native arguments" };
+  const draft = nativeComposer.serializeDraftData(
+    draftOptions,
+    "extra-argument",
+  );
+  assert.equal(draft, nativeComposer.nativeDraftResult);
+  assert.deepEqual(nativeComposer.draftArgs, [draftOptions, "extra-argument"]);
+  assert.equal(draft.title, nativeComposer.title);
+  assert.equal(draft.reply, nativeComposer.reply);
+  assert.equal(nativeComposer[OFFICIAL_CALENDAR_FIELD], backingItems);
+  assert.deepEqual(plain(backingItems), originalBacking);
+  const draftItems = draft[OFFICIAL_CALENDAR_FIELD];
+  assert.notEqual(draftItems, backingItems);
   assert.deepEqual(
     plain(draftItems),
     plain(calendarItemsWithTopicTitle(items, "", { draft: true })),
   );
-  nativeComposer[OFFICIAL_CALENDAR_FIELD] = draftItems;
-  await nativeComposer.open("restore-blank-title");
+  await nativeComposer.open(draft, "restore-blank-title");
   assert.deepEqual(
     plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]),
     plain(draftItems),
   );
 }
-nativeComposer.isbf_optional_title = "Restored title";
+nativeComposer.isbf_optional_title = "  Restored title  ";
 assert.ok(renamedPayload().every((item) => item.title === "Restored title"));
+const namedBacking = nativeComposer[OFFICIAL_CALENDAR_FIELD];
+const namedDraft = nativeComposer.serializeDraftData();
+assert.deepEqual(
+  plain(namedDraft[OFFICIAL_CALENDAR_FIELD]),
+  plain(calendarItemsWithTopicTitle(items, "Restored title")),
+  "Draft titles use the latest normalized composer title and retain metadata",
+);
+assert.equal(nativeComposer[OFFICIAL_CALENDAR_FIELD], namedBacking);
+assert.equal(
+  namedDraft[OFFICIAL_CALENDAR_FIELD][1].registration_deadline_index,
+  2,
+);
+assert.equal(namedDraft[OFFICIAL_CALENDAR_FIELD][1].id, "event");
+assert.equal(namedDraft[OFFICIAL_CALENDAR_FIELD][1].revision, 3);
+assert.equal(namedDraft[OFFICIAL_CALENDAR_FIELD][1].location, "Hall");
+assert.equal(namedDraft[OFFICIAL_CALENDAR_FIELD][1].organizer, "Club");
 nativeComposer[OFFICIAL_CALENDAR_FIELD] = [];
 nativeComposer.isbf_optional_title = "";
 assert.deepEqual(renamedPayload(), []);
@@ -723,13 +836,52 @@ for (const patch of [
   Object.assign(nativeComposer, patch);
   assert.equal(nativeComposer.save("unaffected-options"), nativeResult);
 }
-assert.equal(
-  getters.isbfOfficialCalendarDraftItems.call(nativeComposer),
-  nativeComposer[OFFICIAL_CALENDAR_FIELD],
-  "Unavailable plugin draft leaves raw data intact",
-);
-nativeComposer[OFFICIAL_CALENDAR_FIELD] = null;
-assert.equal(getters.isbfOfficialCalendarDraftItems.call(nativeComposer), null);
+for (const scope of [
+  { creatingTopic: true, editingFirstPost: false, categoryId: 7 },
+  { creatingTopic: false, editingFirstPost: false, categoryId: 6 },
+  {
+    creatingTopic: true,
+    editingFirstPost: false,
+    categoryId: 6,
+    privateMessage: true,
+  },
+  {
+    creatingTopic: true,
+    editingFirstPost: false,
+    categoryId: 6,
+    creatingPrivateMessage: true,
+  },
+  {
+    creatingTopic: true,
+    editingFirstPost: false,
+    categoryId: 6,
+    archetypeId: "private_message",
+  },
+  { creatingTopic: true, editingFirstPost: false, categoryId: 6, site: {} },
+]) {
+  Object.assign(nativeComposer, {
+    privateMessage: false,
+    creatingPrivateMessage: false,
+    archetypeId: "regular",
+    site: { isbf_calendar: { official_category_id: 6 } },
+    ...scope,
+  });
+  for (const raw of [items, null]) {
+    const options = {
+      title: "Native title",
+      reply: "Native body",
+      [OFFICIAL_CALENDAR_FIELD]: raw,
+    };
+    assert.equal(await nativeComposer.open(options), "opened");
+    assert.equal(nativeComposer[OFFICIAL_CALENDAR_FIELD], raw);
+    const draft = nativeComposer.serializeDraftData("out-of-scope");
+    assert.equal(draft, nativeComposer.nativeDraftResult);
+    assert.equal(draft[OFFICIAL_CALENDAR_FIELD], raw);
+    assert.equal(draft.title, options.title);
+    assert.equal(draft.reply, options.reply);
+    assert.deepEqual(nativeComposer.draftArgs, ["out-of-scope"]);
+  }
+}
 delete globalThis.document;
 nativeComposer.categoryId = 7;
 assert.equal(
