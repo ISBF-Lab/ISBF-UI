@@ -4634,6 +4634,10 @@ body:has(.isbf-v2-shell--custom-explore) #main-outlet {
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
+  > .isbf-explore__toolbar + .isbf-explore-group {
+    margin-top: 0;
+  }
+
   &__order,
   &__compose,
   .isbf-explore-picker__trigger {
