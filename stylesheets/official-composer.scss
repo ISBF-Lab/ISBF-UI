@@ -215,6 +215,72 @@ html.composer-open
     min-width: 0;
   }
 
+  .isbf-official-calendar-editor__datetime {
+    position: relative;
+    min-width: 0;
+  }
+
+  .isbf-official-calendar-editor__date-placeholder {
+    display: none;
+    position: absolute;
+    top: 50%;
+    right: 44px;
+    left: 12px;
+    color: var(--isbf-v2-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  // Native date segments must remain visible during keyboard entry.
+  .isbf-official-calendar-editor__datetime[data-empty="true"]:not(
+      :focus-within
+    ) {
+    input {
+      color: transparent;
+    }
+
+    input::-webkit-datetime-edit {
+      opacity: 0;
+    }
+
+    input::-webkit-calendar-picker-indicator {
+      color: var(--isbf-v2-text);
+      opacity: 1;
+    }
+
+    .isbf-official-calendar-editor__date-placeholder {
+      display: block;
+    }
+  }
+
+  .isbf-official-calendar-editor__remove {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--danger);
+    border-radius: var(--isbf-v2-radius-sm);
+    background: transparent;
+    color: var(--danger);
+
+    .d-icon {
+      color: inherit;
+    }
+
+    &:hover {
+      background: var(--danger-low);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--isbf-v2-focus-ring);
+      outline-offset: 2px;
+    }
+  }
+
   input,
   select {
     box-sizing: border-box;

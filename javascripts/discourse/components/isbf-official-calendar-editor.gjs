@@ -240,13 +240,35 @@ export default class ISBFOfficialCalendarEditor extends Component {
                   @type={{if item.all_day "input-date" "input-datetime-local"}}
                   @validation={{if this.isEventSection "required"}}
                   as |field|
-                ><field.Control /></collection.Field>
+                ><div
+                    class="isbf-official-calendar-editor__datetime"
+                    data-empty={{not item.start}}
+                  >
+                    <field.Control />
+                    <span
+                      aria-hidden="true"
+                      class="isbf-official-calendar-editor__date-placeholder"
+                    >{{i18n
+                        (themePrefix "isbf_v2.schedule_date_placeholder")
+                      }}{{#unless item.all_day}} --:--{{/unless}}</span>
+                  </div></collection.Field>
                 <collection.Field
                   @name="end"
                   @title={{i18n (themePrefix "isbf_v2.schedule_end_optional")}}
                   @type={{if item.all_day "input-date" "input-datetime-local"}}
                   as |field|
-                ><field.Control /></collection.Field>
+                ><div
+                    class="isbf-official-calendar-editor__datetime"
+                    data-empty={{not item.end}}
+                  >
+                    <field.Control />
+                    <span
+                      aria-hidden="true"
+                      class="isbf-official-calendar-editor__date-placeholder"
+                    >{{i18n
+                        (themePrefix "isbf_v2.schedule_date_placeholder")
+                      }}{{#unless item.all_day}} --:--{{/unless}}</span>
+                  </div></collection.Field>
                 <collection.Field
                   @name="location"
                   @title={{i18n (themePrefix "isbf_v2.schedule_location")}}
@@ -260,7 +282,9 @@ export default class ISBFOfficialCalendarEditor extends Component {
                   as |field|
                 ><field.Control maxlength="120" /></collection.Field>
                 <DButton
+                  class="isbf-official-calendar-editor__remove"
                   @action={{fn this.removeItem "events" index}}
+                  @icon="trash-can"
                   @label={{themePrefix "isbf_v2.schedule_remove_item"}}
                 />
               </div></form.Collection></div>
@@ -292,7 +316,18 @@ export default class ISBFOfficialCalendarEditor extends Component {
                   @type={{if item.all_day "input-date" "input-datetime-local"}}
                   @validation={{if this.isEventSection null "required"}}
                   as |field|
-                ><field.Control /></collection.Field>
+                ><div
+                    class="isbf-official-calendar-editor__datetime"
+                    data-empty={{not item.start}}
+                  >
+                    <field.Control />
+                    <span
+                      aria-hidden="true"
+                      class="isbf-official-calendar-editor__date-placeholder"
+                    >{{i18n
+                        (themePrefix "isbf_v2.schedule_date_placeholder")
+                      }}{{#unless item.all_day}} --:--{{/unless}}</span>
+                  </div></collection.Field>
                 <collection.Field
                   @name="related_event"
                   @title={{i18n (themePrefix "isbf_v2.schedule_related_event")}}
@@ -307,7 +342,9 @@ export default class ISBFOfficialCalendarEditor extends Component {
                         @value={{option.value}}
                       >{{option.label}}</select.Option>{{/each}}</field.Control></collection.Field>
                 <DButton
+                  class="isbf-official-calendar-editor__remove"
                   @action={{fn this.removeItem "deadlines" index}}
+                  @icon="trash-can"
                   @label={{themePrefix "isbf_v2.schedule_remove_item"}}
                 />
               </div></form.Collection></div>

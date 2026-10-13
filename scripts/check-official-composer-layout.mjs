@@ -539,6 +539,47 @@ assert.match(
   /setOptionalTopicTitle\(this.model, event.target.value\)/,
 );
 assert.match(mobileLayout, /repeat\(2, minmax\(0, 1fr\)\)/);
+assert.equal(
+  (editorSource.match(/data-empty={{not item\.(?:start|end)}}/g) || []).length,
+  3,
+);
+assert.equal(
+  (editorSource.match(/isbf-official-calendar-editor__date-placeholder/g) || [])
+    .length,
+  3,
+);
+assert.equal(
+  (
+    editorSource.match(
+      /@type={{if item.all_day "input-date" "input-datetime-local"}}/g,
+    ) || []
+  ).length,
+  3,
+);
+assert.equal((editorSource.match(/@icon="trash-can"/g) || []).length, 2);
+assert.equal(
+  (editorSource.match(/class="isbf-official-calendar-editor__remove"/g) || [])
+    .length,
+  2,
+);
+assert.match(
+  officialLayoutSource,
+  /data-empty="true"\]:not\(\s*:focus-within\s*\)/,
+);
+assert.match(officialLayoutSource, /pointer-events: none/);
+assert.match(
+  officialLayoutSource,
+  /\.isbf-official-calendar-editor__remove\s*\{[^}]*min-height: 44px;[^}]*border: 1px solid var\(--danger\)/,
+);
+assert.match(
+  officialLayoutSource,
+  /&:focus-visible\s*\{\s*outline: 2px solid var\(--isbf-v2-focus-ring\)/,
+);
+const calendarZh = read("locales/zh_CN.yml");
+assert.match(calendarZh, /schedule_start: "活动开始时间"/);
+assert.match(calendarZh, /schedule_end_optional: "活动结束时间"/);
+assert.match(calendarZh, /schedule_date_placeholder: "年\/月\/日"/);
+assert.match(read("locales/en.yml"), /schedule_start: "Activity start time"/);
 // eslint-disable-next-line no-console
 console.log(
   "Official-only Grid, responsive ordering, native controls and safety spacing source constraints: PASS",
