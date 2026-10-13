@@ -24,3 +24,19 @@ versions, and 24 offline layout scenes using actual rendered DOM and stylesheet
 assets. The scene widths are 1440, 800, 601, 600, 390, and 320 pixels, for both
 lists and both palettes. These checks validate geometry; live page loading is
 verified separately after the field update.
+
+The production update completed on 2026-10-14 at 00:26:10 Asia/Taipei.
+Only field 375 (`extra_scss/workbench-topics`) changed; the other 175 theme
+fields, theme settings, JavaScript cache, relations, translations, and palettes
+were preserved. The complete Core source and 64 plugin trees matched the
+recorded baseline after deployment. Native theme compilation and eight live
+desktop/mobile, light/dark scenes passed, with both lists fully loaded. One
+initial teamup query failed and recovered through its existing retry action
+with HTTP 200; no query logic was changed.
+
+The deployed stylesheet SHA-256 is
+`adbba36ff81f32992fecb88c5bbe68c608abd57663ebd3737bac42f9a27c3020`.
+The fresh original-field backup and guarded rollback record are in
+`/home/luo/backup/20261014-002437+0800-workbench-list-ui/`.
+Theme source checks passed in GitHub Actions run `38429224401`; the source
+remains under review in pull request #81 and has not been merged.
