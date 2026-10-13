@@ -171,6 +171,25 @@ html.composer-open
     min-height: 44px;
   }
 
+  &:not(:has(.isbf-v2-composer-title)) {
+    .title-and-category > .title-input,
+    .composer-fields > .title-input {
+      display: block;
+      position: static;
+      grid-column: 1 / -1;
+      grid-row: 3;
+      min-width: 0;
+      min-height: 44px;
+      margin: 0;
+    }
+
+    .title-input input {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 44px;
+    }
+  }
+
   .d-editor-textarea-wrapper {
     position: static;
     grid-column: 1 / -1;
@@ -409,6 +428,13 @@ html.composer-open
 
     .isbf-official-calendar-composer {
       grid-row: 3;
+    }
+
+    &:not(:has(.isbf-v2-composer-title)) {
+      .title-and-category > .title-input,
+      .composer-fields > .title-input {
+        grid-row: 4;
+      }
     }
 
     .isbf-v2-composer-title {
