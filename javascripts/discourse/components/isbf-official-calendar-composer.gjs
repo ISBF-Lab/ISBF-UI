@@ -9,6 +9,7 @@ import {
   canonicalCalendarItems,
   isOfficialCalendarComposer,
   OFFICIAL_CALENDAR_FIELD,
+  officialCalendarTopicTitle,
 } from "../lib/official-calendar";
 import ISBFOfficialCalendarEditor from "./isbf-official-calendar-editor";
 
@@ -67,7 +68,17 @@ export default class ISBFOfficialCalendarComposer extends Component {
       model: {
         section,
         items: model[OFFICIAL_CALENDAR_FIELD] ?? [],
-        onSave: (items) => model.set(OFFICIAL_CALENDAR_FIELD, items),
+        getTopicTitle: () => officialCalendarTopicTitle(model),
+        onSave: (items) => {
+          if (
+            this.isDestroying ||
+            model !== this.args.model ||
+            !isOfficialCalendarComposer(model, this.site)
+          ) {
+            throw new Error("Official composer is no longer active");
+          }
+          model.set(OFFICIAL_CALENDAR_FIELD, items);
+        },
       },
     });
   }
