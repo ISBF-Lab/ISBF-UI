@@ -5,8 +5,17 @@ import vm from "node:vm";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
 const plain = (value) => JSON.parse(JSON.stringify(value));
+const timeTranslations = {
+  "isbf_v2.schedule_activity_start_line": "Start: %{date}",
+  "isbf_v2.schedule_activity_end_line": "End: %{date}",
+  "isbf_v2.schedule_activity_day_value": "%{date} · All day",
+};
 const i18n = (key, options = {}) =>
-  key + (options.count ? " · " + options.count : "");
+  key === "isbf_v2.official_campus_separator"
+    ? "、"
+    : timeTranslations[key]
+      ? timeTranslations[key].replace("%{date}", options.date)
+      : key + (options.count ? " · " + options.count : "");
 const helper = new vm.SourceTextModule(
   read("javascripts/discourse/lib/official-calendar.js"),
 );
@@ -22,11 +31,18 @@ await helper.link((name) => {
   });
 });
 await helper.evaluate();
+const filters = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/official-filters.js"),
+);
+await filters.link(() => {});
+await filters.evaluate();
 const {
   canonicalCalendarItems,
   calendarEditorSections,
   calendarItemsFromSections,
   OFFICIAL_CALENDAR_FIELD,
+  officialActivityTimeLines,
+  officialTimeLabel,
 } = helper.namespace;
 const make = (id, kind, extra = {}) => ({
   id,
@@ -137,6 +153,111 @@ assert.deepEqual(
   [allDay],
 );
 
+const activityTimeCases = [
+  [
+    "Timed range",
+    make("range", "event", { ends_at: "2026-10-20T03:45:00Z" }),
+    ["Start: Oct 20, 2026, 09:30", "End: Oct 20, 2026, 11:45"],
+  ],
+  [
+    "Optional end is stored as equal timestamps",
+    make("instant", "event"),
+    ["Start: Oct 20, 2026, 09:30"],
+  ],
+  [
+    "Equal instants with different timestamp representations",
+    make("equal", "event", { ends_at: "2026-10-20T09:30:13.123+08:00" }),
+    ["Start: Oct 20, 2026, 09:30"],
+  ],
+  [
+    "Legacy date-only zero duration",
+    make("day-instant", "event", { all_day: true }),
+    ["Start: Oct 20, 2026 · All day"],
+  ],
+  [
+    "Date-only single day uses exclusive end",
+    { ...allDay, schedule_kind: "event" },
+    ["Start: Oct 20, 2026 · All day"],
+  ],
+  [
+    "Date-only multiple days use inclusive display end",
+    { ...allDay, schedule_kind: "event", ends_at: "2026-10-22T16:00:00Z" },
+    ["Start: Oct 20, 2026 · All day", "End: Oct 22, 2026"],
+  ],
+  [
+    "Timed range crosses local midnight and year",
+    make("year", "event", {
+      starts_at: "2026-12-31T15:30:00Z",
+      ends_at: "2026-12-31T16:30:00Z",
+    }),
+    ["Start: Dec 31, 2026, 23:30", "End: Jan 1, 2027, 00:30"],
+  ],
+  [
+    "Date-only range crosses year with exclusive end",
+    make("day-year", "event", {
+      all_day: true,
+      starts_at: "2026-12-30T16:00:00Z",
+      ends_at: "2027-01-01T16:00:00Z",
+    }),
+    ["Start: Dec 31, 2026 · All day", "End: Jan 1, 2027"],
+  ],
+  [
+    "Shanghai date differs from timestamp offset date",
+    make("offset", "event", {
+      starts_at: "2026-10-19T20:00:00-04:00",
+      ends_at: "2026-10-19T21:00:00-04:00",
+    }),
+    ["Start: Oct 20, 2026, 08:00", "End: Oct 20, 2026, 09:00"],
+  ],
+];
+for (const [description, item, expected] of activityTimeCases) {
+  const original = plain(item);
+  assert.deepEqual(
+    plain(officialActivityTimeLines(item)),
+    expected,
+    description,
+  );
+  assert.deepEqual(item, original, description + " does not mutate its input");
+  for (const line of officialActivityTimeLines(item)) {
+    assert.doesNotMatch(line, /Beijing|Shanghai|UTC|GMT|北京时间/i);
+  }
+}
+for (const item of [
+  undefined,
+  null,
+  {},
+  make("deadline", "deadline"),
+  make("other", "other"),
+  make("missing-start", "event", { starts_at: undefined }),
+  make("missing-end", "event", { ends_at: undefined }),
+  make("empty-start", "event", { starts_at: "" }),
+  make("empty-end", "event", { ends_at: "" }),
+  make("invalid-start", "event", { starts_at: "invalid" }),
+  make("invalid-end", "event", { ends_at: "invalid" }),
+  make("reverse", "event", { ends_at: "2026-10-20T01:00:00Z" }),
+  make("reverse-day", "event", {
+    all_day: true,
+    starts_at: "2026-10-20T16:00:00Z",
+    ends_at: "2026-10-19T16:00:00Z",
+  }),
+]) {
+  const original = structuredClone(item);
+  assert.deepEqual(plain(officialActivityTimeLines(item)), []);
+  assert.deepEqual(item, original, "Invalid inputs are not mutated");
+}
+for (const [item, key] of [
+  [make("old-event", "event"), "schedule_event_time"],
+  [
+    make("old-range", "event", { ends_at: "2026-10-20T03:00:00Z" }),
+    "schedule_event_range",
+  ],
+  [{ ...allDay, schedule_kind: "event" }, "schedule_event_day"],
+  [make("old-deadline", "deadline"), "schedule_deadline_time"],
+  [allDay, "schedule_deadline_day"],
+]) {
+  assert.equal(officialTimeLabel(item), "isbf_v2." + key);
+}
+
 function componentClass(name, globals = {}) {
   const source = read("javascripts/discourse/components/" + name + ".gjs");
   const className = source.match(/export default class (\w+)/)[1];
@@ -160,6 +281,7 @@ function componentClass(name, globals = {}) {
     themePrefix: (key) => key,
     i18n,
     ...helper.namespace,
+    ...filters.namespace,
     ...globals,
   });
 }
@@ -583,4 +705,94 @@ assert.match(read("locales/en.yml"), /schedule_start: "Activity start time"/);
 // eslint-disable-next-line no-console
 console.log(
   "Official-only Grid, responsive ordering, native controls and safety spacing source constraints: PASS",
+);
+
+const Summary = componentClass("isbf-official-activity-summary");
+const summaryItems = plain(items);
+const summaryCampuses = ["shenzhen", "zhuhai", "shenzhen", "unknown"];
+const summary = new Summary({
+  items: summaryItems,
+  campusIds: summaryCampuses,
+});
+const summaryConfig = {
+  category_id: 6,
+  campuses: [
+    { id: "zhuhai", label: "珠海校区" },
+    { id: "shenzhen", label: "深圳校区" },
+  ],
+  types: [{ id: "clubs", label: "社团" }],
+};
+summary.site = { isbf_official: summaryConfig };
+const originalSummaryConfig = structuredClone(summaryConfig);
+const eventGroup = summary.groups.find((group) => group.item.id === "event");
+assert.deepEqual(plain(eventGroup.timeLines), ["Start: Oct 20, 2026, 09:30"]);
+assert.equal(eventGroup.timeLabel, null);
+assert.equal(eventGroup.locationLabel, "珠海校区、深圳校区 · Hall");
+assert.deepEqual(summaryCampuses, [
+  "shenzhen",
+  "zhuhai",
+  "shenzhen",
+  "unknown",
+]);
+assert.deepEqual(summaryConfig, originalSummaryConfig);
+summary.args.campusIds = [];
+assert.equal(
+  summary.groups.find((group) => group.item.id === "event").locationLabel,
+  "Hall",
+);
+summary.site = {};
+assert.equal(
+  summary.groups.find((group) => group.item.id === "event").locationLabel,
+  "Hall",
+);
+assert.equal(eventGroup.deadlineLabel, "isbf_v2.schedule_deadline_time");
+const deadlineGroup = summary.groups.find(
+  (group) => group.item.id === "independent",
+);
+assert.deepEqual(plain(deadlineGroup.timeLines), []);
+assert.equal(deadlineGroup.timeLabel, "isbf_v2.schedule_deadline_time");
+assert.deepEqual(
+  summaryItems,
+  items,
+  "Summary grouping does not mutate inputs",
+);
+const summarySource = read(
+  "javascripts/discourse/components/isbf-official-activity-summary.gjs",
+);
+assert.match(
+  summarySource,
+  /timeLines:\s*officialActivityTimeLines\(group\.item\)/,
+);
+assert.match(
+  summarySource,
+  /<dd>\s*{{#each group\.timeLines as \|line\|}}\s*<span\s+class="isbf-official-activity-summary__time-line"\s*>\s*{{line}}\s*<\/span>\s*{{\/each}}\s*<\/dd>/,
+);
+assert.match(summarySource, /officialTimeLabel\(group\.deadline\)/);
+assert.match(
+  read("stylesheets/official-calendar.scss"),
+  /(?:\.isbf-official-activity-summary__time-line|&__time-line)\s*\{[^}]*display: block;/,
+);
+// eslint-disable-next-line no-console
+console.log("Official activity start/end lines and summary layout: PASS");
+
+assert.match(
+  summarySource,
+  /<dd>{{if\s+group\.locationLabel\s+group\.locationLabel/,
+);
+assert.match(
+  officialFieldsSource,
+  /@allKey="isbf_v2\.official_campus_optional"/,
+);
+assert.match(officialFieldsSource, /@labelKey="isbf_v2\.official_campus"/);
+assert.match(
+  read("javascripts/discourse/components/isbf-v2-feed-card.gjs"),
+  /<ISBFOfficialActivitySummary\s+[^>]*@campusIds={{@topic\.isbf_official_campuses}}[^>]*\/>/,
+);
+for (const locale of ["locales/zh_CN.yml", "locales/en.yml"]) {
+  assert.match(read(locale), /official_campus_optional:\s*"[^"\n]+"/);
+  assert.match(read(locale), /official_campus_separator:\s*"[^"\n]+"/);
+}
+// eslint-disable-next-line no-console
+console.log(
+  "Optional campus picker and campus-prefixed activity location: PASS",
 );

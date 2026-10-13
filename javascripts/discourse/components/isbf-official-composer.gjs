@@ -56,6 +56,7 @@ export default class ISBFOfficialComposer extends Component {
         <div class="isbf-official-composer__menus">
           <div class="isbf-official-composer__campus">
             <ISBFOfficialPicker
+              @allKey="isbf_v2.official_campus_optional"
               @items={{this.config.campuses}}
               @labelKey="isbf_v2.official_campus"
               @multiple={{true}}

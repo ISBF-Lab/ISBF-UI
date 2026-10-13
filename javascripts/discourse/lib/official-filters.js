@@ -16,7 +16,7 @@ export function officialConfig(site) {
         item &&
         typeof item.id === "string" &&
         /^[a-z][a-z0-9-]*$/.test(item.id) &&
-        typeof item.label === "string"
+        typeof item.label === "string",
     )
     ? config
     : null;
@@ -54,7 +54,7 @@ export function isOfficialComposer(model, config) {
     model.topic?.archetype !== "private_message" &&
     Number(model.categoryId ?? model.topic?.category_id) ===
       config.category_id &&
-    (model.creatingTopic || model.editingFirstPost)
+    (model.creatingTopic || model.editingFirstPost),
   );
 }
 
@@ -70,8 +70,8 @@ export function restoreOfficialSelections(model, config) {
           model.editingFirstPost
             ? (model.post?.[field] ?? model.topic?.[field])
             : [],
-          index === 0 ? config.campuses : config.types
-        )
+          index === 0 ? config.campuses : config.types,
+        ),
       );
     }
   });
@@ -84,16 +84,32 @@ export function officialPayload(model, config, field) {
   return JSON.stringify(
     officialSelections(
       model[field],
-      field === OFFICIAL_FIELDS[0] ? config.campuses : config.types
-    )
+      field === OFFICIAL_FIELDS[0] ? config.campuses : config.types,
+    ),
   );
 }
 
 export function officialSelectionsComplete(model, config) {
-  return OFFICIAL_FIELDS.every(
-    (field) =>
-      JSON.parse(officialPayload(model, config, field) ?? "[]").length > 0
+  return (
+    JSON.parse(officialPayload(model, config, "isbf_official_types") ?? "[]")
+      .length > 0
   );
+}
+
+export function officialLocationLabel(
+  location,
+  campusIds,
+  config,
+  separator = "、",
+) {
+  const campuses = config?.campuses ?? [];
+  const selected = new Set(officialSelections(campusIds, campuses));
+  const labels = campuses
+    .filter((campus) => selected.has(campus.id))
+    .map((campus) => campus.label)
+    .join(separator);
+  const address = typeof location === "string" ? location.trim() : "";
+  return [labels, address].filter(Boolean).join(" · ");
 }
 
 export class OfficialRequestGuard {

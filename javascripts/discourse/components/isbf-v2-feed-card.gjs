@@ -6,7 +6,9 @@ import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { schedule } from "@ember/runloop";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
-import { themePrefix } from "virtual:theme";
+import { settings, themePrefix } from "virtual:theme";
+import PluginOutlet from "discourse/components/plugin-outlet";
+import lazyHash from "discourse/helpers/lazy-hash";
 import { ajax } from "discourse/lib/ajax";
 import Composer from "discourse/models/composer";
 import Draft from "discourse/models/draft";
@@ -16,6 +18,7 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
 import { recordVisibleView } from "../lib/feed-view-tracker";
+import { isOfficialCalendarPath } from "../lib/official-calendar";
 import { isPinningContext, pinningMeta, saveHomePin } from "../lib/pinning";
 import {
   compactNumber,
@@ -26,6 +29,8 @@ import {
 import { isReportedHidden, openPostReport } from "../lib/report-post";
 import ISBFHomePinDialog from "./isbf-home-pin-dialog";
 import { ISBFMarketplacePrice } from "./isbf-marketplace-card";
+import ISBFOfficialActivitySummary from "./isbf-official-activity-summary";
+import ISBFOfficialCalendarItems from "./isbf-official-calendar-items";
 
 export default class ISBFV2FeedCard extends Component {
   @service appEvents;
@@ -105,6 +110,13 @@ export default class ISBFV2FeedCard extends Component {
 
   get contentReady() {
     return this.body !== null || this.bodyFailed;
+  }
+
+  get officialLayout() {
+    return (
+      this.args.officialLayout ||
+      isOfficialCalendarPath(this.router.currentURL, settings.official_path)
+    );
   }
 
   get canFlag() {
@@ -639,13 +651,17 @@ export default class ISBFV2FeedCard extends Component {
       {{didInsert this.observeVisibleView}}
       {{on "click" this.openTopic}}
     >
-      <a class="isbf-feed-card__avatar" href={{this.profileUrl}}>
+      <a class="isbf-feed-card__avatar isbf-avatar" href={{this.profileUrl}}>
         <img
           alt=""
           height="42"
           loading="lazy"
           src={{this.avatarUrl}}
           width="42"
+        />
+        <PluginOutlet
+          @name="user-avatar-frame"
+          @outletArgs={{lazyHash user=@topic.creator motion="static"}}
         />
       </a>
       <div class="isbf-feed-card__main">
@@ -745,6 +761,19 @@ export default class ISBFV2FeedCard extends Component {
                 (if this.expanded "isbf_v2.show_less" "isbf_v2.show_more")
               )
             }}</button>{{/if}}
+        {{#unless this.hidden}}
+          {{#if this.officialLayout}}
+            <ISBFOfficialActivitySummary
+              @campusIds={{@topic.isbf_official_campuses}}
+              @items={{@topic.isbf_official_calendar_items}}
+            />
+          {{else}}
+            <ISBFOfficialCalendarItems
+              @items={{@topic.isbf_official_calendar_items}}
+              @readOnly={{true}}
+            />
+          {{/if}}
+        {{/unless}}
         {{#unless this.hidden}}<ISBFMarketplacePrice
             @metadata={{@topic.isbf_marketplace}}
           />{{/unless}}
@@ -754,24 +783,27 @@ export default class ISBFV2FeedCard extends Component {
             disabled={{this.isReplying}}
             type="button"
             {{on "click" this.reply}}
-          >{{dIcon "comment"}}<span>{{this.formattedReplyCount}}</span></button>
+          >{{dIcon "comment"}}{{#if this.formattedReplyCount}}<span
+              >{{this.formattedReplyCount}}</span>{{/if}}</button>
           <button
             aria-label={{i18n (themePrefix "isbf_v2.repost")}}
             type="button"
             {{on "click" this.repost}}
-          >{{dIcon "retweet"}}<span
-            >{{this.formattedRepostCount}}</span></button>
+          >{{dIcon "retweet"}}{{#if this.formattedRepostCount}}<span
+              >{{this.formattedRepostCount}}</span>{{/if}}</button>
           <button
             aria-label={{i18n (themePrefix "isbf_v2.like")}}
             class={{if this.liked "is-liked"}}
             disabled={{this.isLiking}}
             type="button"
             {{on "click" this.toggleLike}}
-          >{{dIcon "heart"}}<span>{{this.formattedLikeCount}}</span></button>
+          >{{dIcon "heart"}}{{#if this.formattedLikeCount}}<span
+              >{{this.formattedLikeCount}}</span>{{/if}}</button>
           <span
             aria-label={{this.viewLabel}}
             class="isbf-feed-card__views"
-          >{{dIcon "chart-bar"}}<span>{{this.formattedViewCount}}</span></span>
+          >{{dIcon "chart-bar"}}{{#if this.formattedViewCount}}<span
+              >{{this.formattedViewCount}}</span>{{/if}}</span>
           <button
             aria-label={{i18n (themePrefix "isbf_v2.bookmark_action")}}
             class={{if this.bookmarked "is-bookmarked"}}
