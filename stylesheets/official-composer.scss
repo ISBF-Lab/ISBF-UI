@@ -1,0 +1,329 @@
+html.composer-open
+  body:has(.isbf-v2-shell)
+  #reply-control.open:has(.isbf-v2-composer):has(.isbf-official-composer) {
+  --isbf-official-compose-gap: 8px;
+
+  .d-editor-textarea-column {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--isbf-official-compose-gap);
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+    padding: 12px 16px 8px;
+    overflow-y: auto;
+    scroll-padding-block: 12px;
+  }
+
+  .composer-fields,
+  .composer-fields > span,
+  .title-and-category,
+  .isbf-official-composer,
+  .isbf-official-composer__menus {
+    display: contents;
+  }
+
+  .composer-fields,
+  .title-and-category {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    width: auto;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .isbf-v2-composer-options {
+    display: none;
+  }
+
+  .isbf-official-composer__campus,
+  .isbf-official-composer__type,
+  .category-input,
+  .tags-input {
+    grid-row: 1;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .isbf-official-composer__campus {
+    grid-column: 1;
+  }
+
+  .isbf-official-composer__type {
+    grid-column: 2;
+  }
+
+  .category-input {
+    grid-column: 3;
+  }
+
+  .tags-input {
+    grid-column: 4;
+  }
+
+  .isbf-official-picker__trigger,
+  .select-kit,
+  .select-kit-header {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+  }
+
+  .isbf-official-picker__trigger {
+    justify-content: space-between;
+    padding-inline: 12px;
+  }
+
+  .isbf-official-picker__trigger .d-button-label,
+  .select-kit-header .selected-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .isbf-official-calendar-composer {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--isbf-official-compose-gap);
+    min-width: 0;
+    margin: 0;
+  }
+
+  .isbf-official-calendar-composer .btn {
+    justify-content: flex-start;
+    gap: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--isbf-v2-border);
+    border-radius: var(--isbf-v2-radius-sm);
+    background: var(--isbf-v2-surface);
+    color: var(--isbf-v2-text);
+    font-size: var(--isbf-v2-font-sm);
+  }
+
+  .isbf-official-calendar-composer .d-button-label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .isbf-official-calendar-composer .d-icon {
+    flex: none;
+  }
+
+  .title-input {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+  }
+
+  .title-input input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .d-editor-textarea-wrapper {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: 4;
+    align-self: stretch;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .d-editor-input {
+    flex: 1 1 0;
+    box-sizing: border-box;
+    min-height: 0;
+    padding: 12px;
+    overflow-y: auto;
+  }
+}
+
+.isbf-official-calendar-editor {
+  .isbf-official-calendar-editor__tabs {
+    display: flex;
+    gap: 8px;
+    margin-block-end: 12px;
+  }
+
+  .isbf-official-calendar-editor__tabs .btn {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .isbf-official-calendar-editor__tabs .btn[aria-selected="true"] {
+    background: var(--isbf-v2-hover);
+    color: var(--isbf-v2-text);
+    box-shadow: inset 0 -2px var(--isbf-v2-accent);
+  }
+
+  .form-kit__field {
+    min-width: 0;
+  }
+
+  input,
+  select {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+}
+
+@media (width <= 600px) {
+  html.composer-open
+    body:has(.isbf-v2-shell)
+    #reply-control.open:has(.isbf-v2-composer):has(.isbf-official-composer) {
+    height: calc(var(--composer-vh, 1dvh) * 100);
+    max-height: calc(var(--composer-vh, 1dvh) * 100);
+
+    .reply-area {
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      height: 100%;
+      min-height: 0;
+      padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    }
+
+    .reply-to {
+      position: static;
+      flex: none;
+      align-items: center;
+      height: 48px;
+      min-height: 48px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--isbf-v2-border);
+    }
+
+    .reply-to .composer-action-title,
+    .reply-to .composer-controls {
+      display: flex;
+    }
+
+    .isbf-v2-composer-cancel {
+      display: none;
+    }
+
+    .wmd-controls {
+      display: flex;
+      position: relative;
+      flex: 1 1 0;
+      flex-direction: column;
+      box-sizing: border-box;
+      min-height: 0;
+      padding-bottom: 0;
+      overflow: hidden;
+    }
+
+    .d-editor,
+    .d-editor-container {
+      position: static;
+      flex: 1 1 0;
+      min-height: 0;
+    }
+
+    .d-editor-textarea-column {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto auto auto auto minmax(84px, 1fr);
+    }
+
+    .category-input {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .tags-input {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .isbf-official-calendar-composer {
+      grid-row: 3;
+    }
+
+    .title-input {
+      grid-row: 4;
+    }
+
+    .d-editor-textarea-wrapper {
+      grid-row: 5;
+    }
+
+    .d-editor-button-bar__wrap {
+      position: static;
+      inset: auto;
+      flex: none;
+      width: auto;
+      height: auto;
+      min-height: 44px;
+      padding: 4px 8px;
+    }
+
+    .submit-panel {
+      position: static;
+      inset: auto;
+      flex: none;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+      box-sizing: border-box;
+      width: 100%;
+      height: auto;
+      min-height: 52px;
+      padding: 4px 16px;
+    }
+
+    .submit-panel > span {
+      min-width: 0;
+    }
+
+    .save-or-cancel {
+      position: static;
+      inset: auto;
+      flex: none;
+      gap: 8px;
+      width: auto;
+      height: auto;
+      min-height: 44px;
+      margin-left: auto;
+      padding: 0;
+    }
+
+    .save-or-cancel .btn-primary,
+    .save-or-cancel .discard-button {
+      display: inline-flex;
+      position: static;
+      min-width: 44px;
+      min-height: 44px;
+      margin: 0;
+    }
+  }
+}
