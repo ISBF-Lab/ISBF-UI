@@ -1,9 +1,14 @@
+import { themePrefix } from "virtual:theme";
 import { withPluginApi } from "discourse/lib/plugin-api";
 import Composer from "discourse/models/composer";
+import { i18n } from "discourse-i18n";
+import { extendComposerMethod } from "../lib/composer-model-extensions";
 import {
-  canonicalCalendarItems,
+  calendarItemsWithTopicTitle,
   isOfficialCalendarComposer,
   OFFICIAL_CALENDAR_FIELD,
+  officialCalendarNeedsTitle,
+  officialCalendarTopicTitle,
 } from "../lib/official-calendar";
 
 export default {
@@ -20,11 +25,33 @@ export default {
         "composer",
         "isbfOfficialCalendarPayload",
         function () {
+          if (
+            !isOfficialCalendarComposer(this, this.site) ||
+            (officialCalendarNeedsTitle(this, this.site) &&
+              !officialCalendarTopicTitle(this))
+          ) {
+            return;
+          }
+          return JSON.stringify(
+            calendarItemsWithTopicTitle(
+              this[OFFICIAL_CALENDAR_FIELD],
+              officialCalendarTopicTitle(this),
+            ),
+          );
+        },
+      );
+      api.addModelGetter(
+        "composer",
+        "isbfOfficialCalendarDraftItems",
+        function () {
+          const items = this[OFFICIAL_CALENDAR_FIELD];
           return isOfficialCalendarComposer(this, this.site)
-            ? JSON.stringify(
-                canonicalCalendarItems(this[OFFICIAL_CALENDAR_FIELD] ?? []),
+            ? calendarItemsWithTopicTitle(
+                items,
+                officialCalendarTopicTitle(this),
+                { draft: true },
               )
-            : undefined;
+            : items;
         },
       );
       Composer.serializeOnCreate(
@@ -37,8 +64,33 @@ export default {
       );
       Composer.serializeToDraft(
         OFFICIAL_CALENDAR_FIELD,
-        OFFICIAL_CALENDAR_FIELD,
+        "isbfOfficialCalendarDraftItems",
       );
+
+      extendComposerMethod(api, "save", function (next, ...args) {
+        if (
+          officialCalendarNeedsTitle(this, this.site) &&
+          !officialCalendarTopicTitle(this)
+        ) {
+          return Promise.resolve(
+            this.dialog.alert(
+              i18n(themePrefix("isbf_v2.schedule_title_required")),
+            ),
+          ).then(() => {
+            if (
+              !this.isDestroying &&
+              officialCalendarNeedsTitle(this, this.site) &&
+              !officialCalendarTopicTitle(this)
+            ) {
+              const input =
+                document.querySelector("#reply-control #isbf-optional-title") ??
+                document.querySelector("#reply-control .title-input input");
+              input?.focus();
+            }
+          });
+        }
+        return next(...args);
+      });
 
       const originalClearState = Composer.prototype.clearState;
       api.addModelMethod("composer", "clearState", function (...args) {
@@ -50,18 +102,22 @@ export default {
       const originalOpen = Composer.prototype.open;
       api.addModelMethod("composer", "open", function (...args) {
         return originalOpen.apply(this, args).then((result) => {
-          if (
-            isOfficialCalendarComposer(this, this.site) &&
-            this[OFFICIAL_CALENDAR_FIELD] == null
-          ) {
+          if (isOfficialCalendarComposer(this, this.site)) {
+            const items =
+              this[OFFICIAL_CALENDAR_FIELD] ??
+              (this.editingFirstPost
+                ? (this.post?.[OFFICIAL_CALENDAR_FIELD] ??
+                  this.topic?.[OFFICIAL_CALENDAR_FIELD] ??
+                  [])
+                : []);
             this.set(
               OFFICIAL_CALENDAR_FIELD,
-              canonicalCalendarItems(
-                this.editingFirstPost
-                  ? (this.post?.[OFFICIAL_CALENDAR_FIELD] ??
-                      this.topic?.[OFFICIAL_CALENDAR_FIELD] ??
-                      [])
-                  : [],
+              calendarItemsWithTopicTitle(
+                items,
+                officialCalendarTopicTitle(this),
+                {
+                  draft: true,
+                },
               ),
             );
           }

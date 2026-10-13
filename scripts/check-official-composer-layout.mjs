@@ -16,10 +16,18 @@ const i18n = (key, options = {}) =>
     : timeTranslations[key]
       ? timeTranslations[key].replace("%{date}", options.date)
       : key + (options.count ? " · " + options.count : "");
+const optionalTitles = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/optional-topic-title.js"),
+);
+await optionalTitles.link(() => {});
+await optionalTitles.evaluate();
 const helper = new vm.SourceTextModule(
   read("javascripts/discourse/lib/official-calendar.js"),
 );
 await helper.link((name) => {
+  if (name.endsWith("optional-topic-title")) {
+    return optionalTitles;
+  }
   const values =
     name === "virtual:theme"
       ? { themePrefix: (key) => key }
@@ -40,6 +48,7 @@ const {
   canonicalCalendarItems,
   calendarEditorSections,
   calendarItemsFromSections,
+  calendarItemsWithTopicTitle,
   OFFICIAL_CALENDAR_FIELD,
   officialActivityTimeLines,
   officialTimeLabel,
@@ -289,6 +298,7 @@ const opens = [];
 const model = {
   categoryId: 6,
   creatingTopic: true,
+  title: "Official title",
   [OFFICIAL_CALENDAR_FIELD]: items,
   set(key, value) {
     this[key] = value;
@@ -340,6 +350,7 @@ function mount(initial = items, section = "deadline", max = 20) {
     model: {
       items: initial,
       section,
+      getTopicTitle: () => "Official title",
       onSave() {
         saves++;
       },
@@ -419,19 +430,20 @@ assert.equal(editor.canAdd, false);
 editor.addItem();
 assert.equal(data.events.length + data.deadlines.length, 4);
 editor.site.isbf_calendar.max_items = 3;
-editor.save(data);
+await editor.save(data);
 assert.equal(saves, 0);
 assert.match(editor.error, /schedule_too_many_items/);
 editor.site.isbf_calendar.max_items = 20;
 data.events[0].start = "";
-editor.save(data);
+await editor.save(data);
 assert.equal(saves, 0);
 assert.equal(closes, 0);
 assert.match(editor.error, /schedule_invalid_item/);
 assert.equal(editor.section, "event");
 ({ editor, data } = mount(items, "event"));
-data.deadlines[0].title = "";
-editor.save(data);
+const validDeadlineStart = data.deadlines[0].start;
+data.deadlines[0].start = "";
+await editor.save(data);
 assert.equal(saves, 0);
 assert.equal(closes, 0);
 assert.equal(
@@ -439,13 +451,13 @@ assert.equal(
   "deadline",
   "Invalid inactive section becomes active",
 );
-assert.equal(data.deadlines[0].title, "");
-data.deadlines[0].title = "Corrected deadline";
-editor.save(data);
+assert.equal(data.deadlines[0].start, "");
+data.deadlines[0].start = validDeadlineStart;
+await editor.save(data);
 assert.equal(saves, 1);
 assert.equal(closes, 1);
 ({ editor, data } = mount());
-editor.save(data);
+await editor.save(data);
 assert.equal(saves, 2);
 assert.equal(closes, 2);
 ({ editor, data } = mount());
@@ -461,6 +473,10 @@ const modelFields = [];
 const serializers = [];
 const getters = {};
 class NativeComposer {
+  static proto() {
+    return this.prototype;
+  }
+
   static serializeOnCreate(...args) {
     serializers.push(["create", ...args]);
   }
@@ -471,6 +487,12 @@ class NativeComposer {
 
   static serializeToDraft(...args) {
     serializers.push(["draft", ...args]);
+  }
+
+  save(...args) {
+    this.nativeSaves = (this.nativeSaves ?? 0) + 1;
+    this.saveArgs = args;
+    return this.nativeResult;
   }
 
   clearState(...args) {
@@ -498,17 +520,34 @@ const calendarApi = {
     NativeComposer.prototype[key] = callback;
   },
 };
+const extensions = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/composer-model-extensions.js"),
+);
+await extensions.link(
+  () =>
+    new vm.SyntheticModule(["default"], function () {
+      this.setExport("default", NativeComposer);
+    }),
+);
+await extensions.evaluate();
 const calendarInitializer = new vm.SourceTextModule(
   read("javascripts/discourse/pre-initializers/isbf-official-calendar.js"),
 );
 await calendarInitializer.link((name) => {
+  if (name === "../lib/composer-model-extensions") {
+    return extensions;
+  }
   if (name === "../lib/official-calendar") {
     return helper;
   }
   const values =
     name === "discourse/models/composer"
       ? { default: NativeComposer }
-      : { withPluginApi: (callback) => callback(calendarApi) };
+      : name === "virtual:theme"
+        ? { themePrefix: (key) => key }
+        : name === "discourse-i18n"
+          ? { i18n }
+          : { withPluginApi: (callback) => callback(calendarApi) };
   return new vm.SyntheticModule(Object.keys(values), function () {
     for (const [key, value] of Object.entries(values)) {
       this.setExport(key, value);
@@ -523,18 +562,19 @@ assert.deepEqual(plain(modelFields), [
 assert.deepEqual(serializers, [
   ["create", OFFICIAL_CALENDAR_FIELD, "isbfOfficialCalendarPayload"],
   ["update", OFFICIAL_CALENDAR_FIELD, "isbfOfficialCalendarPayload"],
-  ["draft", OFFICIAL_CALENDAR_FIELD, OFFICIAL_CALENDAR_FIELD],
+  ["draft", OFFICIAL_CALENDAR_FIELD, "isbfOfficialCalendarDraftItems"],
 ]);
 const nativeComposer = new NativeComposer();
 Object.assign(nativeComposer, {
   categoryId: 6,
   creatingTopic: true,
+  title: "Official title",
   site: { isbf_calendar: { official_category_id: 6 } },
   [OFFICIAL_CALENDAR_FIELD]: saved,
 });
 assert.deepEqual(
   JSON.parse(getters.isbfOfficialCalendarPayload.call(nativeComposer)),
-  plain(saved),
+  plain(calendarItemsWithTopicTitle(saved, "Official title")),
 );
 assert.equal(nativeComposer.clearState("native-clear"), "cleared");
 assert.deepEqual(nativeComposer.clearArgs, ["native-clear"]);
@@ -544,7 +584,7 @@ assert.equal(await nativeComposer.open("restored-draft"), "opened");
 assert.deepEqual(nativeComposer.openArgs, ["restored-draft"]);
 assert.deepEqual(
   plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]),
-  plain(saved),
+  plain(calendarItemsWithTopicTitle(saved, "Official title")),
   "Opening a restored draft keeps both sections and associations",
 );
 nativeComposer[OFFICIAL_CALENDAR_FIELD] = null;
@@ -554,8 +594,143 @@ nativeComposer.post = { [OFFICIAL_CALENDAR_FIELD]: items };
 await nativeComposer.open("edit");
 assert.deepEqual(
   plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]),
-  plain(canonicalCalendarItems(items)),
+  plain(calendarItemsWithTopicTitle(items, "Official title")),
 );
+const renamedPayload = () =>
+  JSON.parse(getters.isbfOfficialCalendarPayload.call(nativeComposer));
+nativeComposer.title = "Changed after editor";
+assert.ok(
+  renamedPayload().every((item) => item.title === "Changed after editor"),
+);
+nativeComposer.creatingTopic = true;
+for (const blank of [
+  "",
+  " \n ",
+  "校园动态 [isbf-untitled:22222222-2222-4222-8222-222222222222]",
+]) {
+  nativeComposer.isbf_optional_title = blank;
+  assert.equal(
+    getters.isbfOfficialCalendarPayload.call(nativeComposer),
+    undefined,
+  );
+  const draftItems =
+    getters.isbfOfficialCalendarDraftItems.call(nativeComposer);
+  assert.deepEqual(
+    plain(draftItems),
+    plain(calendarItemsWithTopicTitle(items, "", { draft: true })),
+  );
+  nativeComposer[OFFICIAL_CALENDAR_FIELD] = draftItems;
+  await nativeComposer.open("restore-blank-title");
+  assert.deepEqual(
+    plain(nativeComposer[OFFICIAL_CALENDAR_FIELD]),
+    plain(draftItems),
+  );
+}
+nativeComposer.isbf_optional_title = "Restored title";
+assert.ok(renamedPayload().every((item) => item.title === "Restored title"));
+nativeComposer[OFFICIAL_CALENDAR_FIELD] = [];
+nativeComposer.isbf_optional_title = "";
+assert.deepEqual(renamedPayload(), []);
+let focused = 0;
+let customTitleAvailable = true;
+let nativeTitleFocused = 0;
+let settleAlert;
+globalThis.document = {
+  querySelector(selector) {
+    assert.ok(
+      [
+        "#reply-control #isbf-optional-title",
+        "#reply-control .title-input input",
+      ].includes(selector),
+    );
+    if (
+      selector === "#reply-control #isbf-optional-title" &&
+      !customTitleAvailable
+    ) {
+      return null;
+    }
+    return {
+      focus() {
+        focused++;
+        if (selector === "#reply-control .title-input input") {
+          nativeTitleFocused++;
+        }
+      },
+    };
+  },
+};
+nativeComposer.dialog = {
+  alert(message) {
+    assert.match(message, /schedule_title_required/);
+    return new Promise((resolve) => {
+      settleAlert = resolve;
+    });
+  },
+};
+nativeComposer[OFFICIAL_CALENDAR_FIELD] = items;
+nativeComposer.title = "Native stale";
+nativeComposer.isbf_optional_title = " \n ";
+const blocked = nativeComposer.save("blocked-options");
+assert.equal(nativeComposer.nativeSaves, undefined);
+assert.equal(focused, 0);
+settleAlert();
+await blocked;
+assert.equal(focused, 1);
+assert.equal(
+  nativeTitleFocused,
+  0,
+  "The explicit custom title wins over the hidden native input",
+);
+customTitleAvailable = false;
+assert.equal(nativeComposer[OFFICIAL_CALENDAR_FIELD], items);
+nativeComposer.creatingTopic = false;
+nativeComposer.title = "";
+nativeComposer.isbf_optional_title = "Stale draft";
+const blockedEdit = nativeComposer.save("edit-options");
+settleAlert();
+await blockedEdit;
+assert.equal(focused, 2);
+assert.equal(
+  nativeTitleFocused,
+  1,
+  "First-post editing falls back to the current native title",
+);
+nativeComposer.title = "Current edit title";
+const nativeResult = Promise.resolve("native-save");
+nativeComposer.nativeResult = nativeResult;
+assert.equal(
+  nativeComposer.save("valid-edit-options"),
+  nativeResult,
+  "Preserve native return identity",
+);
+assert.deepEqual(nativeComposer.saveArgs, ["valid-edit-options"]);
+nativeComposer.creatingTopic = true;
+nativeComposer.isbf_optional_title = "";
+for (const patch of [
+  { [OFFICIAL_CALENDAR_FIELD]: [] },
+  {
+    [OFFICIAL_CALENDAR_FIELD]: [items[2], { ...items[0], cancelled: true }],
+    categoryId: 7,
+  },
+  {
+    [OFFICIAL_CALENDAR_FIELD]: items,
+    categoryId: 6,
+    creatingTopic: false,
+    editingFirstPost: false,
+  },
+  { creatingTopic: true, site: {} },
+]) {
+  Object.assign(nativeComposer, patch);
+  assert.equal(nativeComposer.save("unaffected-options"), nativeResult);
+}
+assert.equal(
+  getters.isbfOfficialCalendarDraftItems.call(nativeComposer),
+  nativeComposer[OFFICIAL_CALENDAR_FIELD],
+  "Unavailable plugin draft leaves raw data intact",
+);
+nativeComposer[OFFICIAL_CALENDAR_FIELD] = null;
+assert.equal(getters.isbfOfficialCalendarDraftItems.call(nativeComposer), null);
+delete globalThis.document;
 nativeComposer.categoryId = 7;
 assert.equal(
   getters.isbfOfficialCalendarPayload.call(nativeComposer),
@@ -652,6 +827,15 @@ assert.ok(
   gridRow(mobileLayout, "isbf-v2-composer-title") <
     gridRow(mobileLayout, "d-editor-textarea-wrapper"),
 );
+// These are source layout constraints, not browser viewport regressions.
+for (const width of [390, 430, 768, 1024, 1440]) {
+  const layout = width <= 600 ? mobileLayout : desktopLayout;
+  assert.ok(
+    gridRow(layout, "isbf-v2-composer-title") <
+      gridRow(layout, "d-editor-textarea-wrapper"),
+    `Title precedes body under the ${width}px layout rules`,
+  );
+}
 const titleSource = read(
   "javascripts/discourse/components/isbf-v2-composer-title.gjs",
 );

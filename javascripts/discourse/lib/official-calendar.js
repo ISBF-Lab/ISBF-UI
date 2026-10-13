@@ -1,5 +1,6 @@
 import { themePrefix } from "virtual:theme";
 import I18n, { i18n } from "discourse-i18n";
+import { optionalTopicTitle } from "./optional-topic-title";
 
 export const OFFICIAL_CALENDAR_FIELD = "isbf_official_calendar_items";
 export const OFFICIAL_TIMEZONE = "Asia/Shanghai";
@@ -151,6 +152,79 @@ export function isOfficialCalendarComposer(model, site) {
       Number(categoryId) &&
     (model.creatingTopic || model.editingFirstPost),
   );
+}
+
+export function officialCalendarTopicTitle(model) {
+  const value =
+    model?.creatingTopic && typeof model.isbf_optional_title === "string"
+      ? model.isbf_optional_title
+      : (model?.title ?? model?.topic?.title);
+  return optionalTopicTitle(typeof value === "string" ? value : "").trim();
+}
+
+export function officialCalendarNeedsTitle(model, site = model?.site) {
+  return Boolean(
+    isOfficialCalendarComposer(model, site) &&
+    (model[OFFICIAL_CALENDAR_FIELD] ?? []).some(
+      (item) => item && !item.cancelled,
+    ),
+  );
+}
+
+export function officialCalendarItemTitle(
+  topicTitle,
+  kind,
+  { draft = false } = {},
+) {
+  const title = optionalTopicTitle(
+    typeof topicTitle === "string" ? topicTitle : "",
+  ).trim();
+  if (!title) {
+    if (!draft) {
+      throw new RangeError("Official time items require a topic title");
+    }
+    return i18n(
+      themePrefix(
+        kind === "deadline"
+          ? "isbf_v2.schedule_registration_deadline"
+          : "isbf_v2.schedule_activity_time",
+      ),
+    );
+  }
+  if (Array.from(title).length <= 120) {
+    return title;
+  }
+  let result = "";
+  let count = 0;
+  for (const { segment } of new Intl.Segmenter(undefined, {
+    granularity: "grapheme",
+  }).segment(title)) {
+    const length = Array.from(segment).length;
+    if (count + length > 120) {
+      break;
+    }
+    result += segment;
+    count += length;
+  }
+  return result;
+}
+
+export function calendarItemsWithTopicTitle(items, topicTitle, options = {}) {
+  return canonicalCalendarItems(items ?? []).map((item) => ({
+    ...item,
+    title: officialCalendarItemTitle(topicTitle, item.schedule_kind, options),
+  }));
+}
+
+export function officialCalendarEventOptionLabel(event, index) {
+  const label = i18n(themePrefix("isbf_v2.schedule_unnamed_event"), {
+    number: index + 1,
+  });
+  const start =
+    typeof event?.start === "string"
+      ? event.start.slice(0, 16).replaceAll("-", "/").replace("T", " ")
+      : "";
+  return start ? label + " · " + start : label;
 }
 
 export function canonicalCalendarItems(items = []) {
@@ -340,7 +414,10 @@ export function calendarEditorSections(items = []) {
   return { events, deadlines };
 }
 
-export function calendarItemsFromSections({ events = [], deadlines = [] }) {
+export function calendarItemsFromSections(
+  { events = [], deadlines = [] },
+  topicTitle,
+) {
   const invalid = (section, message) => {
     const error = new RangeError(message);
     error.section = section;
@@ -368,11 +445,20 @@ export function calendarItemsFromSections({ events = [], deadlines = [] }) {
   const rows = [...events, ...deadlines].sort(
     (a, b) => a.editor_position - b.editor_position,
   );
-  const result = rows.map((row) => {
+  const result = rows.map((source) => {
+    const row =
+      topicTitle === undefined
+        ? source
+        : {
+            ...source,
+            title: officialCalendarItemTitle(topicTitle, source.schedule_kind, {
+              draft: true,
+            }),
+          };
     if (
       typeof row.title !== "string" ||
       !row.title.trim() ||
-      row.title.length > 120
+      Array.from(row.title).length > 120
     ) {
       throw invalid(row.schedule_kind, "Invalid official calendar title");
     }

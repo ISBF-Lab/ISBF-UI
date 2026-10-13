@@ -375,3 +375,6 @@ en:
     schedule_activity_day_value: "%{date} · All day"
     official_campus_optional: "Campus (optional)"
     official_campus_separator: ", "
+    schedule_post_title: "Title (required)"
+    schedule_title_required: "Official posts with time items require a post title."
+    schedule_save_error: "Could not save time items. Please try again."

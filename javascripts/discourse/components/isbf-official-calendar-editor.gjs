@@ -13,12 +13,16 @@ import { i18n } from "discourse-i18n";
 import {
   calendarEditorSections,
   calendarItemsFromSections,
+  calendarItemsWithTopicTitle,
+  officialCalendarEventOptionLabel,
+  officialCalendarItemTitle,
 } from "../lib/official-calendar";
 
 export default class ISBFOfficialCalendarEditor extends Component {
   @service site;
 
   @tracked error = null;
+  @tracked saving = false;
   @tracked
   section = this.args.model.section === "deadline" ? "deadline" : "event";
   #formApi;
@@ -28,7 +32,13 @@ export default class ISBFOfficialCalendarEditor extends Component {
 
   @cached
   get formData() {
-    return calendarEditorSections(this.args.model.items);
+    return calendarEditorSections(
+      calendarItemsWithTopicTitle(
+        this.args.model.items,
+        this.args.model.getTopicTitle?.() ?? "",
+        { draft: true },
+      ),
+    );
   }
 
   get isEventSection() {
@@ -39,17 +49,13 @@ export default class ISBFOfficialCalendarEditor extends Component {
     const count =
       this._itemCount ??
       this.formData.events.length + this.formData.deadlines.length;
-    return count < (this.site.isbf_calendar?.max_items ?? 20);
+    return !this.saving && count < (this.site.isbf_calendar?.max_items ?? 20);
   }
 
   get eventOptions() {
     return (this._events ?? this.formData.events).map((event, index) => ({
       value: event.editor_key,
-      label:
-        event.title?.trim() ||
-        i18n(themePrefix("isbf_v2.schedule_unnamed_event"), {
-          number: index + 1,
-        }),
+      label: officialCalendarEventOptionLabel(event, index),
     }));
   }
 
@@ -116,7 +122,11 @@ export default class ISBFOfficialCalendarEditor extends Component {
     this.#formApi.set(
       collection,
       this.#formApi.get(collection).concat({
-        title: "",
+        title: officialCalendarItemTitle(
+          this.args.model.getTopicTitle?.() ?? "",
+          event ? "event" : "deadline",
+          { draft: true },
+        ),
         schedule_kind: event ? "event" : "deadline",
         all_day: false,
         start: "",
@@ -131,6 +141,9 @@ export default class ISBFOfficialCalendarEditor extends Component {
 
   @action
   removeItem(collection, index) {
+    if (this.saving) {
+      return;
+    }
     const rows = this.#formApi.get(collection);
     if (collection === "events") {
       const key = rows[index].editor_key;
@@ -148,10 +161,16 @@ export default class ISBFOfficialCalendarEditor extends Component {
   }
 
   @action
-  save(data) {
+  async save(data) {
+    if (this.saving) {
+      return;
+    }
     let items;
     try {
-      items = calendarItemsFromSections(data);
+      items = calendarItemsFromSections(
+        data,
+        this.args.model.getTopicTitle?.() ?? "",
+      );
     } catch (error) {
       if (error.section) {
         this.section = error.section;
@@ -166,8 +185,20 @@ export default class ISBFOfficialCalendarEditor extends Component {
       });
       return;
     }
-    this.args.model.onSave(items);
-    this.args.closeModal();
+    this.saving = true;
+    this.error = null;
+    try {
+      await this.args.model.onSave(items);
+      if (!this.isDestroying) {
+        this.args.closeModal();
+      }
+    } catch {
+      if (!this.isDestroying) {
+        this.error = i18n(themePrefix("isbf_v2.schedule_save_error"));
+      }
+    } finally {
+      this.saving = false;
+    }
   }
 
   <template>
@@ -221,13 +252,6 @@ export default class ISBFOfficialCalendarEditor extends Component {
           ><form.Collection @name="events" as |collection index item|><div
                 class="isbf-official-calendar-editor__item"
               >
-                <collection.Field
-                  @name="title"
-                  @title={{i18n (themePrefix "isbf_v2.schedule_name")}}
-                  @type="input"
-                  @validation={{if this.isEventSection "required"}}
-                  as |field|
-                ><field.Control maxlength="120" /></collection.Field>
                 <collection.Field
                   @name="all_day"
                   @title={{i18n (themePrefix "isbf_v2.schedule_date_only")}}
@@ -284,6 +308,7 @@ export default class ISBFOfficialCalendarEditor extends Component {
                 <DButton
                   class="isbf-official-calendar-editor__remove"
                   @action={{fn this.removeItem "events" index}}
+                  @disabled={{this.saving}}
                   @icon="trash-can"
                   @label={{themePrefix "isbf_v2.schedule_remove_item"}}
                 />
@@ -297,13 +322,6 @@ export default class ISBFOfficialCalendarEditor extends Component {
           ><form.Collection @name="deadlines" as |collection index item|><div
                 class="isbf-official-calendar-editor__item"
               >
-                <collection.Field
-                  @name="title"
-                  @title={{i18n (themePrefix "isbf_v2.schedule_name")}}
-                  @type="input"
-                  @validation={{if this.isEventSection null "required"}}
-                  as |field|
-                ><field.Control maxlength="120" /></collection.Field>
                 <collection.Field
                   @name="all_day"
                   @title={{i18n (themePrefix "isbf_v2.schedule_date_only")}}
@@ -344,6 +362,7 @@ export default class ISBFOfficialCalendarEditor extends Component {
                 <DButton
                   class="isbf-official-calendar-editor__remove"
                   @action={{fn this.removeItem "deadlines" index}}
+                  @disabled={{this.saving}}
                   @icon="trash-can"
                   @label={{themePrefix "isbf_v2.schedule_remove_item"}}
                 />
@@ -359,7 +378,10 @@ export default class ISBFOfficialCalendarEditor extends Component {
               class="isbf-official-calendar-editor__error"
               role="alert"
             >{{this.error}}</p>{{/if}}
-          <form.Submit @label={{themePrefix "isbf_v2.schedule_save_items"}} />
+          <form.Submit
+            @disabled={{this.saving}}
+            @label={{themePrefix "isbf_v2.schedule_save_items"}}
+          />
         </Form>
       </:body>
     </DModal>

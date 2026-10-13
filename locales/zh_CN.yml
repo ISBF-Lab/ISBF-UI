@@ -375,3 +375,6 @@ zh_CN:
     schedule_activity_day_value: "%{date} · 全天"
     official_campus_optional: "校区（可选）"
     official_campus_separator: "、"
+    schedule_post_title: "标题（必填）"
+    schedule_title_required: "含时间项的官方信息必须填写发布标题。"
+    schedule_save_error: "时间项保存失败，请重试。"
