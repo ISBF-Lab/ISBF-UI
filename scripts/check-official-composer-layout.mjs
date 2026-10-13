@@ -473,7 +473,7 @@ assert.match(
 );
 assert.match(
   officialLayoutSource,
-  /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/,
+  /grid-template-columns: repeat\(3, fit-content\(25%\)\) minmax\(0, 1fr\)/,
 );
 assert.match(officialLayoutSource, /@media \(width <= 600px\)/);
 assert.match(
@@ -494,15 +494,51 @@ assert.doesNotMatch(
   officialLayoutSource,
   /min-height: 160px|isbf-marketplace|isbf-teamup/,
 );
-for (const width of [390, 430, 768, 1024, 1440]) {
-  const columns = width <= 600 ? 2 : 4;
-  const composerWidth = width <= 600 ? width : Math.min(width, 600);
-  const controlWidth = (composerWidth - 32 - 8 * (columns - 1)) / columns;
-  assert.ok(
-    controlWidth > 120,
-    `Controls can shrink with long values at ${width}px`,
+const [desktopLayout, mobileLayout] = officialLayoutSource.split(
+  "@media (width <= 600px)",
+);
+assert.match(
+  desktopLayout,
+  /\.isbf-v2-composer-options,\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{\s*display: none/,
+  "Native generated title stays hidden while its data is retained",
+);
+assert.match(
+  desktopLayout,
+  /\.isbf-v2-composer-title\s*\{[^}]*position: static;[^}]*inset: auto;[^}]*grid-column: 1 \/ -1;[^}]*grid-row: 3;/,
+  "Place the optional-title wrapper in the Grid instead of its nested input",
+);
+assert.match(
+  desktopLayout,
+  /\.isbf-official-picker__trigger\s*\{[^}]*justify-content: flex-start;[^}]*gap: 8px;[^}]*width: auto;/,
+);
+assert.match(
+  desktopLayout,
+  /\.isbf-official-composer__type,\s*\.category-input\s*\{[^}]*justify-self: start;[^}]*width: max-content;/,
+);
+function gridRow(source, selector) {
+  const rule = source.match(
+    new RegExp("\\." + selector + "\\s*\\{[^}]*grid-row: (\\d+);"),
   );
+  assert.ok(rule, "Missing explicit Grid row for " + selector);
+  return Number(rule[1]);
 }
+assert.ok(
+  gridRow(desktopLayout, "isbf-v2-composer-title") <
+    gridRow(desktopLayout, "d-editor-textarea-wrapper"),
+);
+assert.ok(
+  gridRow(mobileLayout, "isbf-v2-composer-title") <
+    gridRow(mobileLayout, "d-editor-textarea-wrapper"),
+);
+const titleSource = read(
+  "javascripts/discourse/components/isbf-v2-composer-title.gjs",
+);
+assert.match(titleSource, /@value={{this.model.isbf_optional_title}}/);
+assert.match(
+  titleSource,
+  /setOptionalTopicTitle\(this.model, event.target.value\)/,
+);
+assert.match(mobileLayout, /repeat\(2, minmax\(0, 1fr\)\)/);
 // eslint-disable-next-line no-console
 console.log(
   "Official-only Grid, responsive ordering, native controls and safety spacing source constraints: PASS",
