@@ -211,8 +211,56 @@ html.composer-open
     box-shadow: inset 0 -2px var(--isbf-v2-accent);
   }
 
-  .form-kit__field {
+  .form-kit,
+  [role="tabpanel"],
+  .form-kit__collection,
+  .isbf-official-calendar-editor__item,
+  .form-kit__field,
+  .form-kit__container-content,
+  .form-kit__control-input-wrapper,
+  .isbf-official-calendar-editor__datetime {
+    box-sizing: border-box;
+    width: 100%;
     min-width: 0;
+    max-width: 100%;
+  }
+
+  .form-kit {
+    gap: 12px;
+  }
+
+  [role="tabpanel"][hidden] {
+    display: none;
+  }
+
+  [role="tabpanel"]:not([hidden]) > .form-kit__collection {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .isbf-official-calendar-editor__item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .form-kit__field {
+    gap: 4px;
+  }
+
+  .form-kit__control-checkbox-label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .isbf-official-calendar-editor__add,
+  .form-kit__button,
+  .modal-close {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .isbf-official-calendar-editor__datetime {
@@ -281,10 +329,13 @@ html.composer-open
     }
   }
 
-  input,
+  input:not([type="checkbox"]),
   select {
     box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     max-width: 100%;
+    min-height: 44px;
   }
 }
 

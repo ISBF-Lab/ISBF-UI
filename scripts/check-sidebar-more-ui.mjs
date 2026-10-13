@@ -24,6 +24,7 @@ class Component {
 const common = {
   default: Component,
   action: (value) => value,
+  on: () => {},
   service: () => {},
   fn:
     (fn, ...args) =>

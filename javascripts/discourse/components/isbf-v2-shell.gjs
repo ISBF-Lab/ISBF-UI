@@ -1,4 +1,5 @@
 import Component from "@glimmer/component";
+import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { getOwner } from "@ember/owner";
 import { service } from "@ember/service";
@@ -34,6 +35,7 @@ import ISBFV2Workbench from "./isbf-v2-workbench";
 
 export default class ISBFV2Shell extends Component {
   @service categoryTypeChooser;
+  @service composer;
   @service currentUser;
   @service router;
   @service site;
@@ -290,14 +292,18 @@ export default class ISBFV2Shell extends Component {
     if (!this.officialActive) {
       return true;
     }
+    return Boolean(
+      this.currentUser?.academy_official_member &&
+      this.officialCategory?.canCreateTopic,
+    );
+  }
+
+  get officialCategory() {
     const categoryId =
       this.officialConfig?.category_id ??
       Number(settings.official_path.split("/")[3]);
-    const category = this.site.categories?.find(
-      (item) => item.id === categoryId,
-    );
-    return Boolean(
-      this.currentUser?.academy_official_member && category?.canCreateTopic,
+    return this.site.categories?.find(
+      (item) => Number(item.id) === Number(categoryId),
     );
   }
 
@@ -387,6 +393,28 @@ export default class ISBFV2Shell extends Component {
   }
 
   @action
+  openComposer(event) {
+    if (
+      !this.officialActive ||
+      !this.currentUser ||
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    if (!this.canCompose) {
+      return;
+    }
+    return this.composer.openNewTopic({ category: this.officialCategory });
+  }
+
+  @action
   createExploreCategory() {
     if (this.canCreateExploreCategory) {
       this.categoryTypeChooser.createCategory();
@@ -469,10 +497,12 @@ export default class ISBFV2Shell extends Component {
               <a
                 class="isbf-v2-compose__prompt"
                 href={{this.composeHref}}
+                {{on "click" this.openComposer}}
               >{{this.composePrompt}}</a>
               <a
                 class="isbf-v2-compose__button"
                 href={{this.composeHref}}
+                {{on "click" this.openComposer}}
               >{{i18n (themePrefix "isbf_v2.compose")}}</a>
             </div>
           {{/if}}
@@ -521,6 +551,7 @@ export default class ISBFV2Shell extends Component {
             aria-label={{i18n (themePrefix "isbf_v2.compose")}}
             class="isbf-v2-mobile-compose"
             href={{this.composeHref}}
+            {{on "click" this.openComposer}}
           >{{dIcon "plus"}}</a>
         {{/if}}
 

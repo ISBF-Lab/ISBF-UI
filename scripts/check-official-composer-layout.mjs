@@ -827,6 +827,65 @@ assert.ok(
   gridRow(mobileLayout, "isbf-v2-composer-title") <
     gridRow(mobileLayout, "d-editor-textarea-wrapper"),
 );
+const calendarEditorLayout = desktopLayout.slice(
+  desktopLayout.indexOf(".isbf-official-calendar-editor {"),
+);
+function editorRule(selector) {
+  const source = calendarEditorLayout.replace(/\s+/g, " ");
+  const normalized = selector.replace(/\s+/g, " ");
+  const start = source.indexOf(normalized + " {");
+  assert.ok(start >= 0, "Missing scoped editor rule: " + selector);
+  const bodyStart = source.indexOf("{", start) + 1;
+  return source.slice(bodyStart, source.indexOf("}", bodyStart));
+}
+const fullWidthWrappers = editorRule(
+  '.form-kit,\n  [role="tabpanel"],\n  .form-kit__collection,\n  .isbf-official-calendar-editor__item,\n  .form-kit__field,\n  .form-kit__container-content,\n  .form-kit__control-input-wrapper,\n  .isbf-official-calendar-editor__datetime',
+);
+const fullWidthControls = editorRule('input:not([type="checkbox"]),\n  select');
+assert.match(editorRule(".form-kit"), /gap: 12px;/);
+assert.match(editorRule('[role="tabpanel"][hidden]'), /display: none;/);
+assert.match(
+  editorRule('[role="tabpanel"]:not([hidden]) > .form-kit__collection'),
+  /display: grid;[\s\S]*grid-template-columns: minmax\(0, 1fr\);[\s\S]*gap: 12px;/,
+);
+assert.match(
+  editorRule(".isbf-official-calendar-editor__item"),
+  /display: flex;[\s\S]*flex-direction: column;[\s\S]*gap: 8px;[\s\S]*margin: 0;/,
+);
+assert.match(editorRule(".form-kit__field"), /gap: 4px;/);
+assert.match(
+  editorRule(".form-kit__control-checkbox-label"),
+  /min-height: 44px;/,
+);
+assert.match(
+  editorRule(
+    ".isbf-official-calendar-editor__add,\n  .form-kit__button,\n  .modal-close",
+  ),
+  /min-width: 44px;[\s\S]*min-height: 44px;/,
+);
+assert.doesNotMatch(
+  calendarEditorLayout,
+  /(?:^|\n)\s*\[role="tabpanel"\]\s*\{[^}]*display:/,
+  "Panel layout must not reveal an inactive native hidden panel",
+);
+assert.doesNotMatch(
+  calendarEditorLayout,
+  /(?:^|\n)\s*(?:overflow-y|max-height|height):/,
+  "Editor styles preserve native modal scrolling and safe area behavior",
+);
+for (const width of [390, 430, 768, 1024, 1440, 1920]) {
+  for (const rule of [fullWidthWrappers, fullWidthControls]) {
+    assert.match(rule, /box-sizing: border-box;/);
+    assert.match(rule, /(?:^|\s)width: 100%;/);
+    assert.match(rule, /min-width: 0;/);
+    assert.match(rule, /max-width: 100%;/);
+  }
+  assert.match(
+    fullWidthControls,
+    /min-height: 44px;/,
+    `Native controls fill their field with a 44px target at ${width}px`,
+  );
+}
 // These are source layout constraints, not browser viewport regressions.
 for (const width of [390, 430, 768, 1024, 1440]) {
   const layout = width <= 600 ? mobileLayout : desktopLayout;
