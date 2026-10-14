@@ -76,7 +76,7 @@ function checkDirectory(dir) {
 
     const js = source
       .replace(/<template>[\s\S]*?<\/template>/g, "")
-      .replace(/@(service|tracked|cached|action)\s+/g, "")
+      .replace(/@(service|tracked|cached|action|bind)\s+/g, "")
       .replace(/@(computed|alias)\([^)]*\)\s*/g, "");
     const module = new vm.SourceTextModule(js, { identifier: path });
     assert.equal(module.status, "unlinked");
@@ -84,6 +84,6 @@ function checkDirectory(dir) {
 }
 
 checkDirectory(fileURLToPath(new URL("javascripts/discourse", root)));
-console.log(
-  "Theme metadata, localization, template blocks and JavaScript syntax OK",
+process.stdout.write(
+  "Theme metadata, localization, template blocks and JavaScript syntax OK\n",
 );
