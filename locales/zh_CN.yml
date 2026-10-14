@@ -299,6 +299,8 @@ zh_CN:
     schedule_invalid_time: "请检查日期和时间，结束时间不能早于开始时间。"
     schedule_item_count: "时间与截止日期 · %{count}"
     schedule_add: "添加到我的日历"
+    schedule_add_event: "添加活动到日历"
+    schedule_add_deadline: "添加报名截止到日历"
     schedule_added: "已添加"
     schedule_add_error: "添加失败，官方时间信息可能已变更，请核对时间后重试。"
     schedule_deadline_day: "%{date} 截止 · 仅日期 · 北京时间"

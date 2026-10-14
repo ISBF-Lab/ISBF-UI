@@ -40,3 +40,5 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-topic-pinning-ui.mjs
       - run: node --experimental-vm-modules scripts/check-solved-ui.mjs
       - run: node --experimental-vm-modules scripts/check-poll-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-official-activity-summary.mjs
+      - run: node --experimental-vm-modules scripts/check-official-feed-detail.mjs

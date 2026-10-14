@@ -85,7 +85,7 @@ export default class ISBFV2FeedCard extends Component {
     this.#viewObserver?.disconnect();
     document.removeEventListener(
       "visibilitychange",
-      this.onDocumentVisibilityChange,
+      this.onDocumentVisibilityChange
     );
     document.removeEventListener("pointerdown", this.onOutsidePointer, true);
     document.removeEventListener("keydown", this.onDocumentKeydown, true);
@@ -243,7 +243,7 @@ export default class ISBFV2FeedCard extends Component {
           this.#loadContent();
         }
       },
-      { rootMargin: "320px 0px" },
+      { rootMargin: "320px 0px" }
     );
     this.#observer.observe(element);
   }
@@ -263,18 +263,18 @@ export default class ISBFV2FeedCard extends Component {
             (entry) =>
               entry.isIntersecting &&
               entry.intersectionRect.width > 0 &&
-              entry.intersectionRect.height > 0,
+              entry.intersectionRect.height > 0
           )
         ) {
           this.#recordView();
         }
       },
-      { rootMargin: "0px", threshold: 0 },
+      { rootMargin: "0px", threshold: 0 }
     );
     this.#viewObserver.observe(element);
     document.addEventListener(
       "visibilitychange",
-      this.onDocumentVisibilityChange,
+      this.onDocumentVisibilityChange
     );
   }
 
@@ -310,7 +310,7 @@ export default class ISBFV2FeedCard extends Component {
       event.shiftKey ||
       window.getSelection()?.toString() ||
       event.target.closest(
-        "a, button, input, select, textarea, summary, audio, video, [contenteditable], [role='button'], [role='link']",
+        "a, button, input, select, textarea, summary, audio, video, [contenteditable], [role='button'], [role='link']"
       )
     ) {
       return;
@@ -576,7 +576,7 @@ export default class ISBFV2FeedCard extends Component {
     this.#viewInFlight = true;
     const count = await recordVisibleView(
       this.args.topic.id,
-      this.currentUser.id,
+      this.currentUser.id
     );
     this.#viewInFlight = false;
     if (count !== null && !this.isDestroying) {
@@ -584,7 +584,7 @@ export default class ISBFV2FeedCard extends Component {
       this.#viewObserver?.disconnect();
       document.removeEventListener(
         "visibilitychange",
-        this.onDocumentVisibilityChange,
+        this.onDocumentVisibilityChange
       );
     }
   }
@@ -766,6 +766,7 @@ export default class ISBFV2FeedCard extends Component {
             <ISBFOfficialActivitySummary
               @campusIds={{@topic.isbf_official_campuses}}
               @items={{@topic.isbf_official_calendar_items}}
+              @topicTitle={{@topic.title}}
             />
           {{else}}
             <ISBFOfficialCalendarItems
