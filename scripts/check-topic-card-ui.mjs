@@ -124,6 +124,51 @@ const More = (await componentModule("components/isbf-topic-more.gjs")).default;
 assert.equal(More.extraControls(), true);
 assert.equal(More.shouldRender(), true);
 
+const editCalls = [];
+const nativeButtonActions = {
+  otherAction: () => "unchanged",
+  editPost(...args) {
+    assert.equal(this, nativeButtonActions, "Native action receiver retained");
+    editCalls.push(args);
+  },
+};
+const editMenu = new More({ buttonActions: nativeButtonActions });
+let closeEditMenu;
+editMenu.registerMenu({
+  close: () =>
+    new Promise((resolve) => {
+      closeEditMenu = resolve;
+    }),
+});
+assert.equal(
+  editMenu.buttonActions.otherAction,
+  nativeButtonActions.otherAction
+);
+const nativeEditArgs = { postId: 305 };
+const pendingEdit = editMenu.editPost(nativeEditArgs);
+await editMenu.editPost(nativeEditArgs);
+assert.equal(editCalls.length, 0, "Editing waits for menu dismissal");
+closeEditMenu();
+await pendingEdit;
+assert.equal(editCalls.length, 1, "Repeated clicks open editor once");
+assert.equal(editCalls[0][0], nativeEditArgs);
+const destroyedEdit = editMenu.editPost(nativeEditArgs);
+editMenu.isDestroying = true;
+closeEditMenu();
+await destroyedEdit;
+assert.equal(editCalls.length, 1, "Destroyed menu cannot open editor");
+const failedMenu = new More({ buttonActions: nativeButtonActions });
+failedMenu.registerMenu({
+  close: async () => {
+    throw new Error("close failed");
+  },
+});
+await assert.rejects(() => failedMenu.editPost(), /close failed/);
+assert.equal(editCalls.length, 1, "Failed menu close cannot open editor");
+failedMenu.registerMenu({ close: async () => {} });
+await failedMenu.editPost(nativeEditArgs);
+assert.equal(editCalls.length, 2, "Menu close failure permits retry");
+
 const transformers = new Map();
 const outlets = [];
 const router = { currentURL: path };
@@ -407,6 +452,6 @@ assert.match(
   actionSource,
   /\{\{#if this\.isFirstPost\}\}[\s\S]*?\{\{else\}\}\s*<PostMenuBookmarkButton[\s\S]*?@buttonActions=\{\{@buttonActions\}\}/
 );
-console.log(
-  "Topic card guards, native menu retention, primary order, quote target and bookmark delegation OK"
+process.stdout.write(
+  "Topic card guards, native menu retention, primary order, quote target and bookmark delegation OK\n"
 );
