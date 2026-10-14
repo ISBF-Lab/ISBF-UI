@@ -140,6 +140,12 @@ await initializer.link((name) => {
   if (name.endsWith("/topic-card-scope")) {
     return scope;
   }
+  if (name.endsWith("/isbf-solved-action")) {
+    return synthetic({ default: () => class NativeSolvedWrapper {} });
+  }
+  if (name.endsWith("/isbf-solved-summary")) {
+    return synthetic({ default: class SolvedSummary {} });
+  }
   if (name.endsWith("/isbf-topic-actions")) {
     return synthetic(Object.fromEntries(Object.entries(actions)));
   }
@@ -158,6 +164,9 @@ await initializer.evaluate();
 initializer.namespace.default({
   container: {
     lookup: (name) => {
+      if (name === "service:site-settings") {
+        return { solved_enabled: true };
+      }
       assert.equal(name, "service:router");
       return router;
     },
@@ -168,7 +177,10 @@ initializer.namespace.default({
   registerValueTransformer: (name, callback) =>
     transformers.set(name, callback),
 });
-assert.deepEqual(outlets, [["wrapper", "post-metadata", Metadata]]);
+assert.equal(outlets.length, 2);
+assert.deepEqual(outlets[0], ["wrapper", "post-metadata", Metadata]);
+assert.equal(outlets[1][0], "after");
+assert.equal(outlets[1][1], "post-content-cooked-html");
 
 class SimpleDAG {
   nodes = new Map();

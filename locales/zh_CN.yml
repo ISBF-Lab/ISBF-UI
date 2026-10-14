@@ -2,6 +2,13 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    poll_button: "投票"
+    poll_button_title: "创建投票"
+    solved_accept: "采纳答案"
+    solved_unaccept: "取消采纳"
+    solved_accepted: "已采纳"
+    solved_view_answer: "已采纳 · 查看回答"
+    solved_accepted_by: "由 %{username} 采纳"
     library_directory_error: "目录保存失败，请检查名称、权限后重试。"
     library_delete_confirm: "确认删除这份资料？"
     library_category: "分类"

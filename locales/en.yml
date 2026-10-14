@@ -2,6 +2,13 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    poll_button: "Poll"
+    poll_button_title: "Create poll"
+    solved_accept: "Accept answer"
+    solved_unaccept: "Unaccept answer"
+    solved_accepted: "Accepted"
+    solved_view_answer: "Accepted · View answer"
+    solved_accepted_by: "Accepted by %{username}"
     library_directory_error: "Could not save this directory. Check the name and permissions and try again."
     library_delete_confirm: "Delete this resource?"
     library_category: "Category"
