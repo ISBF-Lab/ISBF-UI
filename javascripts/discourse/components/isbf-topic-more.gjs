@@ -3,15 +3,15 @@ import { fn } from "@ember/helper";
 import { action } from "@ember/object";
 import { getOwner } from "@ember/owner";
 import { service } from "@ember/service";
-import DMenu from "discourse/float-kit/components/d-menu";
+import { themePrefix } from "virtual:theme";
 import PostMenuButtonConfig from "discourse/components/post/menu/button-config";
 import PostMenuButtonWrapper from "discourse/components/post/menu/button-wrapper";
+import DMenu from "discourse/float-kit/components/d-menu";
 import DButton from "discourse/ui-kit/d-button";
 import DDropdownMenu from "discourse/ui-kit/d-dropdown-menu";
 import { i18n } from "discourse-i18n";
-import { themePrefix } from "virtual:theme";
-import ISBFTopicInfo from "./isbf-topic-info";
 import { secondaryMenuFor } from "../lib/topic-card-scope";
+import ISBFTopicInfo from "./isbf-topic-info";
 
 export default class ISBFTopicMore extends Component {
   static shouldRender() {
@@ -23,6 +23,13 @@ export default class ISBFTopicMore extends Component {
   }
 
   @service modal;
+
+  #menu;
+  #openingEdit = false;
+
+  get buttonActions() {
+    return { ...this.args.buttonActions, editPost: this.editPost };
+  }
 
   get buttons() {
     return secondaryMenuFor(this.args.post)
@@ -56,6 +63,27 @@ export default class ISBFTopicMore extends Component {
   }
 
   @action
+  registerMenu(menu) {
+    this.#menu = menu;
+  }
+
+  @action
+  async editPost(...args) {
+    if (this.#openingEdit || this.isDestroying) {
+      return;
+    }
+    this.#openingEdit = true;
+    try {
+      await this.#menu?.close();
+      if (!this.isDestroying) {
+        return await this.args.buttonActions.editPost(...args);
+      }
+    } finally {
+      this.#openingEdit = false;
+    }
+  }
+
+  @action
   async showTopicInfo(menu) {
     await menu.close();
     this.modal.show(ISBFTopicInfo, { model: this.args.post.topic });
@@ -68,6 +96,7 @@ export default class ISBFTopicMore extends Component {
         @icon="ellipsis"
         @identifier={{this.identifier}}
         @modalForMobile={{true}}
+        @onRegisterApi={{this.registerMenu}}
         @title={{i18n "more"}}
         @triggerClass="btn-flat isbf-topic-card__more show-more-actions"
       >
@@ -76,7 +105,7 @@ export default class ISBFTopicMore extends Component {
             {{#each this.buttons key="key" as |button|}}
               <dropdown.item>
                 <PostMenuButtonWrapper
-                  @buttonActions={{@buttonActions}}
+                  @buttonActions={{this.buttonActions}}
                   @buttonConfig={{button}}
                   @post={{@post}}
                   @state={{@state}}
