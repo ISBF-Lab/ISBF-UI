@@ -299,6 +299,8 @@ en:
     schedule_invalid_time: "Check the dates and times. An end cannot be before its start."
     schedule_item_count: "Times and deadlines · %{count}"
     schedule_add: "Add to my calendar"
+    schedule_add_event: "Add event to calendar"
+    schedule_add_deadline: "Add registration deadline to calendar"
     schedule_added: "Added"
     schedule_add_error: "Could not add this item. Its information may have changed; check the times and try again."
     schedule_deadline_day: "Due %{date} · Date only · Beijing time"

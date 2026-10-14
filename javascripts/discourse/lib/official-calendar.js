@@ -28,7 +28,7 @@ function parts(value, withTime = false) {
         : {}),
     })
       .formatToParts(new Date(value))
-      .map((part) => [part.type, part.value]),
+      .map((part) => [part.type, part.value])
   );
 }
 
@@ -76,9 +76,9 @@ export function officialTimeLabel(item) {
       themePrefix(
         item.all_day
           ? "isbf_v2.schedule_deadline_day"
-          : "isbf_v2.schedule_deadline_time",
+          : "isbf_v2.schedule_deadline_time"
       ),
-      { date: start },
+      { date: start }
     );
   }
   const endTime = new Date(item.ends_at).getTime() - (item.all_day ? 1 : 0);
@@ -91,9 +91,9 @@ export function officialTimeLabel(item) {
       themePrefix(
         item.all_day
           ? "isbf_v2.schedule_event_day"
-          : "isbf_v2.schedule_event_time",
+          : "isbf_v2.schedule_event_time"
       ),
-      { date: start },
+      { date: start }
     );
   }
   return i18n(themePrefix("isbf_v2.schedule_event_range"), {
@@ -133,7 +133,7 @@ export function officialActivityTimeLines(item) {
     lines.push(
       i18n(themePrefix("isbf_v2.schedule_activity_end_line"), {
         date: format.format(new Date(displayedEnd)),
-      }),
+      })
     );
   }
   return lines;
@@ -150,7 +150,7 @@ export function isOfficialCalendarComposer(model, site) {
     model.topic?.archetype !== "private_message" &&
     Number(model.categoryId ?? model.topic?.category_id) ===
       Number(categoryId) &&
-    (model.creatingTopic || model.editingFirstPost),
+    (model.creatingTopic || model.editingFirstPost)
   );
 }
 
@@ -166,18 +166,18 @@ export function officialCalendarNeedsTitle(model, site = model?.site) {
   return Boolean(
     isOfficialCalendarComposer(model, site) &&
     (model[OFFICIAL_CALENDAR_FIELD] ?? []).some(
-      (item) => item && !item.cancelled,
-    ),
+      (item) => item && !item.cancelled
+    )
   );
 }
 
 export function officialCalendarItemTitle(
   topicTitle,
   kind,
-  { draft = false } = {},
+  { draft = false } = {}
 ) {
   const title = optionalTopicTitle(
-    typeof topicTitle === "string" ? topicTitle : "",
+    typeof topicTitle === "string" ? topicTitle : ""
   ).trim();
   if (!title) {
     if (!draft) {
@@ -187,8 +187,8 @@ export function officialCalendarItemTitle(
       themePrefix(
         kind === "deadline"
           ? "isbf_v2.schedule_registration_deadline"
-          : "isbf_v2.schedule_activity_time",
-      ),
+          : "isbf_v2.schedule_activity_time"
+      )
     );
   }
   if (Array.from(title).length <= 120) {
@@ -207,6 +207,19 @@ export function officialCalendarItemTitle(
     count += length;
   }
   return result;
+}
+
+export function officialCalendarTitleDuplicatesTopic(item, topicTitle) {
+  const title = optionalTopicTitle(
+    typeof topicTitle === "string" ? topicTitle : ""
+  ).trim();
+  const itemTitle = typeof item?.title === "string" ? item.title.trim() : "";
+  return Boolean(
+    title &&
+    itemTitle &&
+    (itemTitle === title ||
+      itemTitle === officialCalendarItemTitle(title, item.schedule_kind))
+  );
 }
 
 export function calendarItemsWithTopicTitle(items, topicTitle, options = {}) {
@@ -263,7 +276,7 @@ function registrationDeadline(item, items) {
     ? items[item.registration_deadline_index]
     : items.find(
         (candidate) =>
-          candidate.id && candidate.id === item.registration_deadline_id,
+          candidate.id && candidate.id === item.registration_deadline_id
       );
   return deadline &&
     !deadline.cancelled &&
@@ -295,7 +308,7 @@ function calendarEditorItem(item) {
         ? ""
         : officialInput(
             new Date(item.ends_at).getTime() - (item.all_day ? 86400000 : 0),
-            item.all_day,
+            item.all_day
           ),
   };
 }
@@ -314,7 +327,7 @@ export function calendarEditorItems(items) {
             start: "",
             end: "",
           },
-    }),
+    })
   );
 }
 
@@ -339,7 +352,7 @@ export function calendarItemsFromEditor(items) {
                 name: item.title,
               }).slice(0, 120),
           schedule_kind: "deadline",
-        }),
+        })
       );
     }
   }
@@ -348,7 +361,7 @@ export function calendarItemsFromEditor(items) {
 
 export function calendarItemFromEditor(item) {
   const starts = new Date(
-    `${item.start}${item.all_day ? "T00:00:00" : ""}+08:00`,
+    `${item.start}${item.all_day ? "T00:00:00" : ""}+08:00`
   );
   if (
     !Number.isFinite(starts.getTime()) ||
@@ -402,7 +415,7 @@ export function calendarEditorSections(items = []) {
   });
   for (const event of events) {
     const deadline = deadlines.find(
-      (item) => item.editor_position === event.registration_deadline_index,
+      (item) => item.editor_position === event.registration_deadline_index
     );
     if (deadline) {
       if (deadline.related_event) {
@@ -416,7 +429,7 @@ export function calendarEditorSections(items = []) {
 
 export function calendarItemsFromSections(
   { events = [], deadlines = [] },
-  topicTitle,
+  topicTitle
 ) {
   const invalid = (section, message) => {
     const error = new RangeError(message);
@@ -443,7 +456,7 @@ export function calendarItemsFromSections(
     }
   }
   const rows = [...events, ...deadlines].sort(
-    (a, b) => a.editor_position - b.editor_position,
+    (a, b) => a.editor_position - b.editor_position
   );
   const result = rows.map((source) => {
     const row =

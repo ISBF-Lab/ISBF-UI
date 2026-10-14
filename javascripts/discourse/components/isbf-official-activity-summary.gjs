@@ -5,6 +5,7 @@ import { i18n } from "discourse-i18n";
 import {
   officialActivityTimeLines,
   officialCalendarGroups,
+  officialCalendarTitleDuplicatesTopic,
   officialTimeLabel,
 } from "../lib/official-calendar";
 import { officialConfig, officialLocationLabel } from "../lib/official-filters";
@@ -15,12 +16,16 @@ export default class ISBFOfficialActivitySummary extends Component {
   get groups() {
     return officialCalendarGroups(this.args.items).map((group) => ({
       ...group,
+      showTitle: !officialCalendarTitleDuplicatesTopic(
+        group.item,
+        this.args.topicTitle
+      ),
       timeLines: officialActivityTimeLines(group.item),
       locationLabel: officialLocationLabel(
         group.item.location,
         this.args.campusIds,
         officialConfig(this.site),
-        i18n(themePrefix("isbf_v2.official_campus_separator")),
+        i18n(themePrefix("isbf_v2.official_campus_separator"))
       ),
       timeLabel: group.isEvent ? null : officialTimeLabel(group.item),
       deadlineLabel: group.deadline
@@ -38,10 +43,13 @@ export default class ISBFOfficialActivitySummary extends Component {
               aria-label={{group.item.title}}
               class="isbf-official-activity-summary__activity"
               data-schedule-id={{group.item.id}}
+              role="group"
             >
-              <h3
-                class="isbf-official-activity-summary__title"
-              >{{group.item.title}}</h3>
+              {{#if group.showTitle}}
+                <h3
+                  class="isbf-official-activity-summary__title"
+                >{{group.item.title}}</h3>
+              {{/if}}
               <dl class="isbf-official-activity-summary__fields">
                 <div class="isbf-official-activity-summary__field">
                   <dt>{{i18n
@@ -78,15 +86,32 @@ export default class ISBFOfficialActivitySummary extends Component {
                     }}</dd>
                 </div>
               </dl>
+              {{#if (has-block)}}
+                <div class="isbf-official-activity-summary__actions">
+                  {{yield group.item}}
+                  {{#if group.deadline}}
+                    {{yield group.deadline}}
+                  {{/if}}
+                </div>
+              {{/if}}
             </section>
           {{else}}
-            <div
+            <section
+              aria-label={{group.item.title}}
               class="isbf-official-activity-summary__deadline"
               data-schedule-id={{group.item.id}}
+              role="group"
             >
-              <strong>{{group.item.title}}</strong>
+              {{#if group.showTitle}}
+                <strong>{{group.item.title}}</strong>
+              {{/if}}
               <span>{{group.timeLabel}}</span>
-            </div>
+              {{#if (has-block)}}
+                <div class="isbf-official-activity-summary__actions">
+                  {{yield group.item}}
+                </div>
+              {{/if}}
+            </section>
           {{/if}}
         {{/each}}
       </div>
