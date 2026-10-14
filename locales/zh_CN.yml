@@ -95,6 +95,7 @@ zh_CN:
     learning_save: "保存"
     official_campus: "校区"
     official_type: "分类"
+    official_tags: "标签"
     official_all_campuses: "全部校区"
     official_all_types: "全部分类"
     official_loading: "正在加载官方信息…"

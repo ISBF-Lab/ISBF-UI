@@ -411,7 +411,18 @@ export default class ISBFV2Shell extends Component {
     if (!this.canCompose) {
       return;
     }
-    return this.composer.openNewTopic({ category: this.officialCategory });
+    const category = this.officialCategory;
+    return this.composer.openNewTopic({ category }).then((result) => {
+      const model = this.composer.model;
+      if (
+        !this.isDestroying &&
+        model?.creatingTopic &&
+        Number(model.categoryId) === Number(category.id)
+      ) {
+        this.composer.set("readOnlyCategoryId", category.id);
+      }
+      return result;
+    });
   }
 
   @action

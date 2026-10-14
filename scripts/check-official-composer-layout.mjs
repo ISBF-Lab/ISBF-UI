@@ -922,7 +922,7 @@ assert.match(
 );
 assert.match(
   officialLayoutSource,
-  /grid-template-columns: repeat\(3, fit-content\(25%\)\) minmax\(0, 1fr\)/,
+  /grid-template-columns: fit-content\(40%\) fit-content\(24%\) minmax\(0, 1fr\)/,
 );
 assert.match(officialLayoutSource, /@media \(width <= 600px\)/);
 assert.match(
@@ -951,15 +951,15 @@ assert.match(
   /&:not\(:has\(\.isbf-v2-composer-title\)\)\s*\{\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{[^}]*display: block;[^}]*grid-column: 1 \/ -1;[^}]*grid-row: 3;[^}]*min-height: 44px;/,
   "Official first-post edits restore the native title only when no custom new-topic title is rendered",
 );
-assert.match(
+assert.doesNotMatch(
   mobileLayout,
-  /&:not\(:has\(\.isbf-v2-composer-title\)\)\s*\{\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{\s*grid-row: 4;/,
-  "The native edit title retains the shared title-before-body row under mobile source rules",
+  /\.isbf-v2-composer-title\s*\{[^}]*grid-row:/,
+  "Mobile inherits the shared title-before-body row",
 );
 
 assert.match(
   desktopLayout,
-  /\.isbf-v2-composer-options,\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{\s*display: none/,
+  /\.isbf-v2-composer-options,\s*\.category-input,\s*\.title-and-category > \.title-input,\s*\.composer-fields > \.title-input\s*\{\s*display: none/,
   "Native generated title stays hidden while its data is retained",
 );
 assert.match(
@@ -973,12 +973,13 @@ assert.match(
 );
 assert.match(
   desktopLayout,
-  /\.isbf-official-composer__type,\s*\.category-input\s*\{[^}]*justify-self: start;[^}]*width: max-content;/,
+  /\.isbf-official-composer__type\s*\{[^}]*justify-self: start;[^}]*width: max-content;/,
 );
-function gridRow(source, selector) {
-  const rule = source.match(
-    new RegExp("\\." + selector + "\\s*\\{[^}]*grid-row: (\\d+);"),
+function gridRow(source, selector, inherited = "") {
+  const pattern = new RegExp(
+    "\\." + selector + "\\s*\\{[^}]*grid-row: (\\d+);",
   );
+  const rule = source.match(pattern) ?? inherited.match(pattern);
   assert.ok(rule, "Missing explicit Grid row for " + selector);
   return Number(rule[1]);
 }
@@ -987,8 +988,8 @@ assert.ok(
     gridRow(desktopLayout, "d-editor-textarea-wrapper"),
 );
 assert.ok(
-  gridRow(mobileLayout, "isbf-v2-composer-title") <
-    gridRow(mobileLayout, "d-editor-textarea-wrapper"),
+  gridRow(mobileLayout, "isbf-v2-composer-title", desktopLayout) <
+    gridRow(mobileLayout, "d-editor-textarea-wrapper", desktopLayout),
 );
 const calendarEditorLayout = desktopLayout.slice(
   desktopLayout.indexOf(".isbf-official-calendar-editor {"),
@@ -996,9 +997,9 @@ const calendarEditorLayout = desktopLayout.slice(
 function editorRule(selector) {
   const source = calendarEditorLayout.replace(/\s+/g, " ");
   const normalized = selector.replace(/\s+/g, " ");
-  const start = source.indexOf(normalized + " {");
-  assert.ok(start >= 0, "Missing scoped editor rule: " + selector);
-  const bodyStart = source.indexOf("{", start) + 1;
+  const ruleStart = source.indexOf(normalized + " {");
+  assert.ok(ruleStart >= 0, "Missing scoped editor rule: " + selector);
+  const bodyStart = source.indexOf("{", ruleStart) + 1;
   return source.slice(bodyStart, source.indexOf("}", bodyStart));
 }
 const fullWidthWrappers = editorRule(
@@ -1053,8 +1054,8 @@ for (const width of [390, 430, 768, 1024, 1440, 1920]) {
 for (const width of [390, 430, 768, 1024, 1440]) {
   const layout = width <= 600 ? mobileLayout : desktopLayout;
   assert.ok(
-    gridRow(layout, "isbf-v2-composer-title") <
-      gridRow(layout, "d-editor-textarea-wrapper"),
+    gridRow(layout, "isbf-v2-composer-title", desktopLayout) <
+      gridRow(layout, "d-editor-textarea-wrapper", desktopLayout),
     `Title precedes body under the ${width}px layout rules`,
   );
 }
@@ -1066,7 +1067,10 @@ assert.match(
   titleSource,
   /setOptionalTopicTitle\(this.model, event.target.value\)/,
 );
-assert.match(mobileLayout, /repeat\(2, minmax\(0, 1fr\)\)/);
+assert.match(
+  mobileLayout,
+  /grid-template-rows: auto auto auto minmax\(84px, 1fr\)/,
+);
 assert.equal(
   (editorSource.match(/data-empty={{not item\.(?:start|end)}}/g) || []).length,
   3,

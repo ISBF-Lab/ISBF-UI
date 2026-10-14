@@ -95,6 +95,7 @@ en:
     learning_save: "Save"
     official_campus: "Campus"
     official_type: "Type"
+    official_tags: "Tags"
     official_all_campuses: "All campuses"
     official_all_types: "All types"
     official_loading: "Loading official posts…"
