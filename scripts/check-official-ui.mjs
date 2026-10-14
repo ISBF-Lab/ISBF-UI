@@ -6,10 +6,10 @@ const helper = new vm.SourceTextModule(
   readFileSync(
     new URL(
       "../javascripts/discourse/lib/official-filters.js",
-      import.meta.url,
+      import.meta.url
     ),
-    "utf8",
-  ),
+    "utf8"
+  )
 );
 await helper.link(() => {});
 await helper.evaluate();
@@ -45,7 +45,7 @@ const model = (values) => ({
 assert.equal(officialConfig({}), null);
 assert.equal(
   officialConfig({ isbf_official: { ...config, category_id: 0 } }),
-  null,
+  null
 );
 assert.equal(officialConfig({ isbf_official: config }), config);
 assert.equal(
@@ -55,29 +55,26 @@ assert.equal(
       campuses: [{ id: "x order:created", label: "bad" }],
     },
   }),
-  null,
+  null
 );
 assert.equal(buildOfficialQuery(config), "isbf-official:6 order:activity");
 assert.equal(
   buildOfficialQuery(config, "zhuhai", "academic"),
-  "isbf-official:6 isbf-campus:zhuhai isbf-official-type:academic order:activity",
+  "isbf-official:6 isbf-campus:zhuhai isbf-official-type:academic order:activity"
 );
 assert.equal(
   buildOfficialQuery(config, "", "clubs"),
-  "isbf-official:6 isbf-official-type:clubs order:activity",
+  "isbf-official:6 isbf-official-type:clubs order:activity"
 );
 assert.equal(
   buildOfficialQuery(config, "invalid", "x"),
-  "isbf-official:6 order:activity",
+  "isbf-official:6 order:activity"
 );
 assert.deepEqual(
   plain(
-    officialSelections(
-      ["zhuhai", "zhuhai", "bad", "shenzhen"],
-      config.campuses,
-    ),
+    officialSelections(["zhuhai", "zhuhai", "bad", "shenzhen"], config.campuses)
   ),
-  ["zhuhai", "shenzhen"],
+  ["zhuhai", "shenzhen"]
 );
 const fresh = model({ categoryId: 6, creatingTopic: true });
 restoreOfficialSelections(fresh, config);
@@ -86,7 +83,7 @@ fresh.isbf_official_types = ["academic"];
 assert.equal(
   officialSelectionsComplete(fresh, config),
   true,
-  "Campus is optional",
+  "Campus is optional"
 );
 assert.equal(officialPayload(fresh, config, "isbf_official_campuses"), "[]");
 fresh.isbf_official_campuses = ["zhuhai", "shenzhen"];
@@ -94,11 +91,11 @@ fresh.isbf_official_types = ["academic", "clubs"];
 assert.equal(officialSelectionsComplete(fresh, config), true);
 assert.equal(
   officialPayload(fresh, config, "isbf_official_campuses"),
-  '["zhuhai","shenzhen"]',
+  '["zhuhai","shenzhen"]'
 );
 assert.equal(
   officialPayload(fresh, config, "isbf_official_types"),
-  '["academic","clubs"]',
+  '["academic","clubs"]'
 );
 fresh.isbf_official_campuses = [];
 assert.equal(officialSelectionsComplete(fresh, config), true);
@@ -107,7 +104,7 @@ fresh.isbf_official_types = [];
 assert.equal(
   officialSelectionsComplete(fresh, config),
   false,
-  "Type remains required",
+  "Type remains required"
 );
 fresh.isbf_official_types = ["unknown"];
 assert.equal(officialSelectionsComplete(fresh, config), false);
@@ -121,10 +118,10 @@ for (const campuses of [[], ["zhuhai"]]) {
           isbf_official_campuses: campuses,
           isbf_official_types: types,
         },
-        config,
+        config
       ),
       false,
-      "A valid type is required regardless of campus selection",
+      "A valid type is required regardless of campus selection"
     );
   }
 }
@@ -180,7 +177,7 @@ for (const excluded of [
   assert.equal(isOfficialComposer(excluded, config), false);
   assert.equal(
     officialPayload(excluded, config, "isbf_official_campuses"),
-    undefined,
+    undefined
   );
 }
 for (const [location, campusIds, catalog, separator, expected] of [
@@ -214,12 +211,12 @@ for (const [location, campusIds, catalog, separator, expected] of [
   const original = structuredClone(input);
   assert.equal(
     officialLocationLabel(location, campusIds, catalog, separator),
-    expected,
+    expected
   );
   assert.deepEqual(
     input,
     original,
-    "Location formatting does not mutate persisted values or catalog",
+    "Location formatting does not mutate persisted values or catalog"
   );
 }
 const guard = new OfficialRequestGuard();
@@ -244,5 +241,123 @@ assert.deepEqual(visible, [2]);
 guard.next();
 assert.equal(guard.isCurrent(latest), false);
 process.stdout.write(
-  "Official filters, optional campuses, required type, location labels, draft/edit hydration and stale-response guard OK\n",
+  "Official filters, optional campuses, required type, location labels, draft/edit hydration and stale-response guard OK\n"
+);
+
+const registrations = [];
+class Composer {
+  static serializeOnCreate(field) {
+    registrations.push(`create:${field}`);
+  }
+
+  static serializeOnUpdate(field) {
+    registrations.push(`update:${field}`);
+  }
+
+  static serializeToDraft(field) {
+    registrations.push(`draft:${field}`);
+  }
+}
+const api = {
+  addModelField(name, field, options) {
+    assert.equal(name, "composer");
+    assert.equal(options.defaultValue, null);
+    registrations.push(`field:${field}`);
+  },
+  addModelGetter(name, property) {
+    assert.equal(name, "composer");
+    assert.equal(
+      registrations.filter((entry) => entry.startsWith("field:")).length,
+      2
+    );
+    registrations.push(`getter:${property}`);
+  },
+};
+const setupModule = new vm.SourceTextModule(
+  readFileSync(
+    new URL(
+      "../javascripts/discourse/lib/official-composer-setup.js",
+      import.meta.url
+    ),
+    "utf8"
+  )
+);
+const stub = (values) =>
+  new vm.SyntheticModule(Object.keys(values), function () {
+    for (const [key, value] of Object.entries(values)) {
+      this.setExport(key, value);
+    }
+  });
+await setupModule.link((name) => {
+  if (name.endsWith("official-filters")) {
+    return helper;
+  }
+  if (name.endsWith("composer-model-extensions")) {
+    return stub({
+      extendComposerMethod: (_api, method) =>
+        registrations.push(`method:${method}`),
+    });
+  }
+  if (name === "discourse/models/composer") {
+    return stub({ default: Composer });
+  }
+  if (name === "virtual:theme") {
+    return stub({ themePrefix: (key) => key });
+  }
+  if (name === "discourse-i18n") {
+    return stub({ i18n: (key) => key });
+  }
+  assert.equal(name, "discourse/lib/ajax");
+  return stub({
+    ajax: () => assert.fail("Registration must not request site metadata"),
+  });
+});
+await setupModule.evaluate();
+for (const path of [
+  "pre-initializers/isbf-official-composer.js",
+  "api-initializers/isbf-official.gjs",
+]) {
+  const entry = new vm.SourceTextModule(
+    readFileSync(
+      new URL(`../javascripts/discourse/${path}`, import.meta.url),
+      "utf8"
+    )
+  );
+  await entry.link((name) => {
+    if (name.endsWith("official-composer-setup")) {
+      return setupModule;
+    }
+    if (name === "discourse/lib/plugin-api") {
+      return stub({ withPluginApi: (callback) => callback({ ...api }) });
+    }
+    assert.equal(name, "discourse/lib/api");
+    return stub({ apiInitializer: (callback) => callback });
+  });
+  await entry.evaluate();
+  if (path.startsWith("pre-")) {
+    entry.namespace.default.initialize();
+  } else {
+    entry.namespace.default({ ...api });
+  }
+}
+for (const field of helper.namespace.OFFICIAL_FIELDS) {
+  for (const kind of ["field", "create", "update", "draft"]) {
+    assert.equal(
+      registrations.filter((entry) => entry === `${kind}:${field}`).length,
+      1
+    );
+  }
+}
+assert.equal(
+  registrations.filter((entry) => entry.startsWith("getter:")).length,
+  2
+);
+for (const method of ["clearState", "open", "save"]) {
+  assert.equal(
+    registrations.filter((entry) => entry === `method:${method}`).length,
+    1
+  );
+}
+process.stdout.write(
+  "Official early/API entry points share one Composer registration OK\n"
 );

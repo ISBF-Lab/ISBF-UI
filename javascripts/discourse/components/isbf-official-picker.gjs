@@ -28,6 +28,12 @@ export default class ISBFOfficialPicker extends Component {
   get options() {
     return this.args.items.map((item) => ({
       ...item,
+      label:
+        item.enabled === false
+          ? i18n(themePrefix("isbf_v2.official_inactive"), {
+              label: item.label,
+            })
+          : item.label,
       selected: this.args.selectedIds.includes(item.id),
     }));
   }

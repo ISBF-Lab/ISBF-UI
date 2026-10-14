@@ -388,3 +388,6 @@ en:
     schedule_post_title: "Title (required)"
     schedule_title_required: "Official posts with time items require a post title."
     schedule_save_error: "Could not save time items. Please try again."
+    official_inactive: "Inactive: %{label}"
+    official_classification_stale: "Official classifications have changed. Remove unavailable selections and select again. Your draft has been kept."
+    official_refresh_error: "Could not refresh official classifications. Your draft has been kept. Please retry."

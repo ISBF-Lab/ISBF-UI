@@ -4,22 +4,67 @@ export const OFFICIAL_FIELDS = [
 ];
 
 export function officialConfig(site) {
-  const config = site?.isbf_official;
+  const config = site?.get ? site.get("isbf_official") : site?.isbf_official;
   return Number.isSafeInteger(config?.category_id) &&
     config.category_id > 0 &&
     Array.isArray(config.campuses) &&
     Array.isArray(config.types) &&
-    config.campuses.length > 0 &&
     config.types.length > 0 &&
+    (config.revision === undefined || Number.isSafeInteger(config.revision)) &&
     [...config.campuses, ...config.types].every(
       (item) =>
         item &&
         typeof item.id === "string" &&
         /^[a-z][a-z0-9-]*$/.test(item.id) &&
-        typeof item.label === "string",
+        typeof item.label === "string" &&
+        (item.enabled === undefined || typeof item.enabled === "boolean")
     )
     ? config
     : null;
+}
+
+export function officialSelectionIds(values) {
+  return Array.isArray(values)
+    ? [...new Set(values.filter((id) => typeof id === "string"))]
+    : [];
+}
+
+export function officialSelectionLimit(values) {
+  return (
+    Array.isArray(values) &&
+    values.length <= 100 &&
+    new TextEncoder().encode(JSON.stringify(values)).length <= 4096
+  );
+}
+
+export function officialComposerItems(items, selectedIds) {
+  const selected = new Set(officialSelectionIds(selectedIds));
+  const known = new Set(items.map((item) => item.id));
+  return [
+    ...items.filter((item) => item.enabled !== false || selected.has(item.id)),
+    ...[...selected]
+      .filter((id) => !known.has(id))
+      .map((id) => ({ id, label: id, enabled: false })),
+  ];
+}
+
+export function officialSelectionsAvailable(model, config) {
+  return OFFICIAL_FIELDS.every((field, index) => {
+    const values = model[field] ?? [];
+    const items = index === 0 ? config.campuses : config.types;
+    const original = model.editingFirstPost
+      ? officialSelectionIds(model.post?.[field] ?? model.topic?.[field])
+      : [];
+    return (
+      officialSelectionLimit(values) &&
+      values.every((id) =>
+        items.some(
+          (item) =>
+            item.id === id && (item.enabled !== false || original.includes(id))
+        )
+      )
+    );
+  });
 }
 
 export function officialSelections(values, items) {
@@ -54,7 +99,7 @@ export function isOfficialComposer(model, config) {
     model.topic?.archetype !== "private_message" &&
     Number(model.categoryId ?? model.topic?.category_id) ===
       config.category_id &&
-    (model.creatingTopic || model.editingFirstPost),
+    (model.creatingTopic || model.editingFirstPost)
   );
 }
 
@@ -62,16 +107,15 @@ export function restoreOfficialSelections(model, config) {
   if (!isOfficialComposer(model, config)) {
     return;
   }
-  OFFICIAL_FIELDS.forEach((field, index) => {
+  OFFICIAL_FIELDS.forEach((field) => {
     if (model[field] === undefined || model[field] === null) {
       model.set(
         field,
-        officialSelections(
+        officialSelectionIds(
           model.editingFirstPost
             ? (model.post?.[field] ?? model.topic?.[field])
-            : [],
-          index === 0 ? config.campuses : config.types,
-        ),
+            : []
+        )
       );
     }
   });
@@ -81,18 +125,13 @@ export function officialPayload(model, config, field) {
   if (!isOfficialComposer(model, config)) {
     return undefined;
   }
-  return JSON.stringify(
-    officialSelections(
-      model[field],
-      field === OFFICIAL_FIELDS[0] ? config.campuses : config.types,
-    ),
-  );
+  return JSON.stringify(model[field] ?? []);
 }
 
 export function officialSelectionsComplete(model, config) {
   return (
-    JSON.parse(officialPayload(model, config, "isbf_official_types") ?? "[]")
-      .length > 0
+    isOfficialComposer(model, config) &&
+    officialSelections(model.isbf_official_types, config.types).length > 0
   );
 }
 
@@ -100,7 +139,7 @@ export function officialLocationLabel(
   location,
   campusIds,
   config,
-  separator = "、",
+  separator = "、"
 ) {
   const campuses = config?.campuses ?? [];
   const selected = new Set(officialSelections(campusIds, campuses));

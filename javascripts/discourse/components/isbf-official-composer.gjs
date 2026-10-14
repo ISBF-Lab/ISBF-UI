@@ -4,8 +4,10 @@ import { action, get } from "@ember/object";
 import { service } from "@ember/service";
 import {
   isOfficialComposer,
+  officialComposerItems,
   officialConfig,
-  officialSelections,
+  officialSelectionIds,
+  officialSelectionLimit,
 } from "../lib/official-filters";
 import ISBFOfficialCalendarComposer from "./isbf-official-calendar-composer";
 import ISBFOfficialPicker from "./isbf-official-picker";
@@ -22,17 +24,19 @@ export default class ISBFOfficialComposer extends Component {
   }
 
   get campuses() {
-    return officialSelections(
-      get(this.args.model, "isbf_official_campuses"),
-      this.config.campuses,
-    );
+    return officialSelectionIds(get(this.args.model, "isbf_official_campuses"));
   }
 
   get types() {
-    return officialSelections(
-      get(this.args.model, "isbf_official_types"),
-      this.config.types,
-    );
+    return officialSelectionIds(get(this.args.model, "isbf_official_types"));
+  }
+
+  get campusItems() {
+    return officialComposerItems(this.config.campuses, this.campuses);
+  }
+
+  get typeItems() {
+    return officialComposerItems(this.config.types, this.types);
   }
 
   @action
@@ -41,32 +45,41 @@ export default class ISBFOfficialComposer extends Component {
       field === "isbf_official_campuses"
         ? this.config.campuses
         : this.config.types;
-    const selected = officialSelections(this.args.model[field], items);
-    this.args.model.set(
-      field,
-      checked
-        ? [...new Set([...selected, id])]
-        : selected.filter((value) => value !== id),
-    );
+    const selected = officialSelectionIds(this.args.model[field]);
+    if (
+      checked &&
+      !items.some((item) => item.id === id && item.enabled !== false)
+    ) {
+      return;
+    }
+    const next = checked
+      ? [...new Set([...selected, id])]
+      : selected.filter((value) => value !== id);
+    if (checked && !officialSelectionLimit(next)) {
+      return;
+    }
+    this.args.model.set(field, next);
   }
 
   <template>
     {{#if this.visible}}
       <div class="isbf-official-composer">
         <div class="isbf-official-composer__menus">
-          <div class="isbf-official-composer__campus">
-            <ISBFOfficialPicker
-              @allKey="isbf_v2.official_campus_optional"
-              @items={{this.config.campuses}}
-              @labelKey="isbf_v2.official_campus"
-              @multiple={{true}}
-              @onSelect={{fn this.select "isbf_official_campuses"}}
-              @selectedIds={{this.campuses}}
-            />
-          </div>
+          {{#if this.campusItems.length}}
+            <div class="isbf-official-composer__campus">
+              <ISBFOfficialPicker
+                @allKey="isbf_v2.official_campus_optional"
+                @items={{this.campusItems}}
+                @labelKey="isbf_v2.official_campus"
+                @multiple={{true}}
+                @onSelect={{fn this.select "isbf_official_campuses"}}
+                @selectedIds={{this.campuses}}
+              />
+            </div>
+          {{/if}}
           <div class="isbf-official-composer__type">
             <ISBFOfficialPicker
-              @items={{this.config.types}}
+              @items={{this.typeItems}}
               @labelKey="isbf_v2.official_type"
               @multiple={{true}}
               @onSelect={{fn this.select "isbf_official_types"}}
