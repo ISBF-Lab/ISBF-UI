@@ -388,3 +388,6 @@ zh_CN:
     schedule_post_title: "标题（必填）"
     schedule_title_required: "含时间项的官方信息必须填写发布标题。"
     schedule_save_error: "时间项保存失败，请重试。"
+    official_inactive: "%{label}（已停用）"
+    official_classification_stale: "官方分类已变更，请移除不可用选项并重新选择。当前草稿已保留。"
+    official_refresh_error: "官方分类刷新失败，当前草稿已保留，请稍后重试。"
