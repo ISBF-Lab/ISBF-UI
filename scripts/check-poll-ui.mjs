@@ -231,3 +231,9 @@ assert.ok(
 process.stdout.write(
   "Poll native toolbar, permission parity, optional plugin, duplicate registration, event identity and insertion context checks OK\n"
 );
+
+assert.match(
+  styles,
+  /\.btn,\s*\.select-kit-header,[\s\S]*?min-height: 44px;/,
+  "Native Poll controls retain a 44px touch height"
+);

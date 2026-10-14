@@ -27,6 +27,25 @@ body:has(.isbf-v2-shell) #reply-control .d-editor-button-bar .isbf-poll {
 body:has(.isbf-v2-shell):not(.admin-interface) .poll-ui-builder {
   color: var(--isbf-v2-text);
 
+  .btn,
+  .select-kit-header,
+  input:not([type="checkbox"], [type="radio"]),
+  select,
+  textarea {
+    box-sizing: border-box;
+    min-height: 44px;
+  }
+
+  .btn {
+    min-width: 44px;
+  }
+
+  .d-toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
   .d-modal__container {
     border: 1px solid var(--isbf-v2-border);
     background: var(--isbf-v2-surface);
