@@ -11,11 +11,15 @@ let confirm = true;
 let copied;
 let copyFails = false;
 let nextModel = {};
+let navigationRect = { width: 390, height: 64, top: 780 };
 const emittedURLs = [];
 const user = { id: 7 };
 const context = vm.createContext({
   URL,
-  window: { location: { origin: "https://isbf.test" } },
+  window: { location: { origin: "https://isbf.test" }, innerHeight: 844 },
+  document: {
+    querySelector: () => ({ getBoundingClientRect: () => navigationRect }),
+  },
 });
 const synthetic = (values) =>
   new vm.SyntheticModule(
@@ -352,13 +356,15 @@ const triggerModule = new vm.SourceTextModule(
   trigger
     .replace(/<template>[\s\S]*<\/template>/, "")
     .replace(/^\s*@service\s+\w+;\s*$/gm, "")
-    .replace(/@action\s+/g, ""),
+    .replace(/@(tracked|action)\s+/g, ""),
   { context }
 );
 const triggerDependencies = {
   ...dependencies,
+  "@glimmer/tracking": { tracked: null },
   "@ember/helper": { fn: null },
   "discourse/float-kit/components/d-menu": { default: null },
+  "discourse/lib/offset-calculator": { headerOffset: () => 0 },
   "discourse/ui-kit/d-dropdown-menu": { default: null },
   "./isbf-calendar-provider-icon": { default: null },
   "./isbf-calendar-subscription": { default: Dialog },
@@ -371,6 +377,34 @@ await triggerModule.link((name) =>
 await triggerModule.evaluate();
 const Trigger = triggerModule.namespace.default;
 const rootTrigger = new Trigger();
+const nativeMenu = { options: {} };
+rootTrigger.registerMenu(nativeMenu);
+assert.deepEqual(Array.from(nativeMenu.options.allowedPlacements), [
+  "top-end",
+  "bottom-end",
+]);
+assert.equal(
+  nativeMenu.options.padding.bottom,
+  76,
+  "menu avoids the mobile tab bar"
+);
+navigationRect = { width: 0, height: 0, top: 0 };
+assert.equal(
+  nativeMenu.options.padding.bottom,
+  12,
+  "hidden tabs do not reserve space on desktop"
+);
+context.window.visualViewport = { offsetTop: 0, height: 600 };
+navigationRect = { width: 390, height: 64, top: 536 };
+assert.equal(
+  nativeMenu.options.padding.bottom,
+  76,
+  "viewport resizing rereads tab bounds"
+);
+rootTrigger.positioned({ dataset: { placement: "top-end" } });
+assert.equal(rootTrigger.opensUp, true);
+rootTrigger.positioned({ dataset: { placement: "bottom-end" } });
+assert.equal(rootTrigger.opensUp, false);
 rootTrigger.site = { isbf_calendar: { subscription_feed: "isbf_personal" } };
 const shown = [];
 rootTrigger.modal = { show: (...args) => shown.push(args) };
@@ -448,6 +482,22 @@ assert.doesNotMatch(source, /localStorage|sessionStorage|console\./);
 assert.doesNotMatch(trigger, /localStorage|sessionStorage|console\./);
 assert.match(trigger, /@modalForMobile=\{\{false\}\}/);
 assert.match(trigger, /@placement="bottom-end"/);
+assert.match(trigger, /@visibilityOptimizer="autoPlacement"/);
+assert.match(trigger, /@onRegisterApi=\{\{this\.registerMenu\}\}/);
+assert.match(trigger, /@onPositioned=\{\{this\.positioned\}\}/);
+const calendar = read("javascripts/discourse/components/isbf-v2-calendar.gjs");
+assert.equal((calendar.match(/<ISBFCalendarSubscribe\s*\/>/g) || []).length, 1);
+assert.match(
+  calendar,
+  /class="isbf-v2-calendar__month-footer"[\s\S]*?class="isbf-v2-calendar__legend"[\s\S]*?<ISBFCalendarSubscribe\s*\/>/
+);
+assert.doesNotMatch(
+  calendar.slice(
+    calendar.indexOf('<div class="isbf-v2-calendar__heading">'),
+    calendar.indexOf('class="isbf-v2-calendar__filters"')
+  ),
+  /ISBFCalendarSubscribe/
+);
 assert.match(source, /readonly[\s\S]*value=\{\{this\.subscriptionURL\}\}/);
 const providerURLs = [...source.matchAll(/href="(https:[^"]+)"/g)].map(
   (match) => match[1]
@@ -473,6 +523,14 @@ assert.match(
   /<CalendarSubscriptionUrl/
 );
 const style = read("stylesheets/official-calendar.scss");
+assert.match(
+  style,
+  /\.isbf-v2-calendar__month-footer\s*\{[\s\S]*?justify-content: space-between;/
+);
+assert.match(
+  style,
+  /\.isbf-v2-calendar__legend\s*\{[\s\S]*?justify-content: flex-start;/
+);
 assert.match(style, /min-height: 44px/);
 assert.match(style, /safe-area-inset-bottom/);
 assert.match(style, /flex-wrap: wrap/);
@@ -496,6 +554,8 @@ assert.match(icons, /<svg[\s\S]*?aria-hidden="true"/);
 assert.doesNotMatch(icons, /https?:|<script|<image/);
 for (const locale of ["en", "zh_CN"]) {
   const yaml = read(`locales/${locale}.yml`);
+  assert.match(yaml, /^    calendar_subscription_apple: "Apple"$/m);
+  assert.match(yaml, /^    calendar_subscription_google: "Google"$/m);
   for (const key of [
     "calendar_subscribe_apple",
     "calendar_subscription_replace",

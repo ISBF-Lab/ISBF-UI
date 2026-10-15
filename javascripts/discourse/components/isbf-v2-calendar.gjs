@@ -1,10 +1,13 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { fn } from "@ember/helper";
+import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
 import { settings, themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
+import { eq } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import I18n, { i18n } from "discourse-i18n";
@@ -585,7 +588,6 @@ export default class ISBFV2Calendar extends Component {
           <h1>{{i18n (themePrefix "isbf_v2.calendar")}}</h1>
         </div>
         <div class="isbf-v2-calendar__heading-actions">
-          <ISBFCalendarSubscribe />
           {{#if this.currentUser}}<button
               class="isbf-v2-calendar__primary"
               type="button"
@@ -699,13 +701,16 @@ export default class ISBFV2Calendar extends Component {
               </button>
             {{/each}}
           </div>
-          <div class="isbf-v2-calendar__legend"><span><i
-                class="is-personal"
-              ></i>{{i18n
-                (themePrefix "isbf_v2.calendar_personal")
-              }}</span><span><i class="is-community"></i>{{i18n
-                (themePrefix "isbf_v2.calendar_community")
-              }}</span></div>
+          <div class="isbf-v2-calendar__month-footer">
+            <div class="isbf-v2-calendar__legend"><span><i
+                  class="is-personal"
+                ></i>{{i18n
+                  (themePrefix "isbf_v2.calendar_personal")
+                }}</span><span><i class="is-community"></i>{{i18n
+                  (themePrefix "isbf_v2.calendar_community")
+                }}</span></div>
+            <ISBFCalendarSubscribe />
+          </div>
         </section>
 
         <section
