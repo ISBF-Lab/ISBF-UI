@@ -79,9 +79,10 @@ function checkDirectory(dir) {
         /export default <template>[\s\S]*?<\/template>/g,
         "export default null;"
       )
+      .replace(/=\s*<template>[\s\S]*?<\/template>/g, "= null")
       .replace(/<template>[\s\S]*?<\/template>/g, "")
       .replace(/@(service|tracked|cached|action|bind)\s+/g, "")
-      .replace(/@(computed|alias)\([^)]*\)\s*/g, "");
+      .replace(/@(service|computed|alias)\([^)]*\)\s*/g, "");
     const module = new vm.SourceTextModule(js, { identifier: path });
     assert.equal(module.status, "unlinked");
   }
