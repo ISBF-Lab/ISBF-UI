@@ -292,7 +292,7 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
 
 .isbf-calendar-subscription-menu {
   box-sizing: border-box;
-  width: 190px;
+  width: max-content;
   max-width: calc(
     100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)
   );
@@ -307,6 +307,10 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .dropdown-menu {
@@ -330,7 +334,9 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
     padding: 0 12px;
     border-radius: var(--isbf-v2-radius-sm);
     color: var(--isbf-v2-text);
+    font-size: 14px;
     text-align: start;
+    white-space: nowrap;
 
     > span {
       flex: 1;
