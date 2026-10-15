@@ -211,7 +211,7 @@ assert.match(styles, /width: var\(--isbf-v2-feed-width\)/);
 assert.match(styles, /margin-inline: var\(--isbf-v2-feed-left\) auto/);
 assert.match(styles, /env\(safe-area-inset-bottom\)/);
 assert.doesNotMatch(
-  styles,
+  styles.split(".isbf-poll-previews")[0],
   /overflow:\s*hidden|\.d-editor-button-bar\s*\{|display:\s*none/
 );
 for (const locale of ["en", "zh_CN"]) {

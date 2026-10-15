@@ -1,9 +1,12 @@
 import { ajax } from "discourse/lib/ajax";
 
 const cache = new Map();
+const pendingRequests = new Map();
 const invalidatedPosts = new Set();
 const generations = new Map();
 const queue = [];
+const pollCache = new Map();
+const pendingPolls = new Map();
 let activeRequests = 0;
 
 function runQueue() {
@@ -14,50 +17,117 @@ function runQueue() {
 }
 
 function runJob(job) {
-  const generation = generations.get(Number(job.postId));
-  ajax(`/posts/${job.postId}/cooked`)
+  const isPoll = job.kind === "polls";
+  const { generation, postId } = job;
+  ajax(isPoll ? `/posts/${postId}.json` : `/posts/${postId}/cooked`)
     .then((result) => {
       if (
-        invalidatedPosts.has(Number(job.postId)) ||
-        generation !== generations.get(Number(job.postId))
+        invalidatedPosts.has(postId) ||
+        generation !== generations.get(postId)
       ) {
-        job.resolve("");
+        job.resolve(isPoll ? null : "");
+      } else if (isPoll) {
+        pollCache.set(job.key, { value: result, at: Date.now() });
+        if (pollCache.size > 100) {
+          pollCache.delete(pollCache.keys().next().value);
+        }
+        job.resolve(result);
       } else {
-        cache.set(job.postId, result.cooked);
+        cache.set(postId, result.cooked);
+        if (cache.size > 50) {
+          cache.delete(cache.keys().next().value);
+        }
         job.resolve(result.cooked);
       }
     })
     .catch(job.reject)
     .finally(() => {
+      if (!isPoll && pendingRequests.get(postId)?.promise === job.promise) {
+        pendingRequests.delete(postId);
+      }
       activeRequests -= 1;
       runQueue();
     });
 }
 
 export function loadCookedPost(postId) {
-  if (invalidatedPosts.has(Number(postId))) {
+  postId = Number(postId);
+  if (invalidatedPosts.has(postId)) {
     return Promise.resolve("");
   }
   if (cache.has(postId)) {
-    return Promise.resolve(cache.get(postId));
+    const cooked = cache.get(postId);
+    cache.delete(postId);
+    cache.set(postId, cooked);
+    return Promise.resolve(cooked);
   }
-
-  return new Promise((resolve, reject) => {
-    queue.push({ postId, reject, resolve });
-    runQueue();
+  const generation = generations.get(postId);
+  const pending = pendingRequests.get(postId);
+  if (pending && pending.generation === generation) {
+    return pending.promise;
+  }
+  const job = { generation, postId };
+  job.promise = new Promise((resolve, reject) => {
+    Object.assign(job, { reject, resolve });
   });
+  pendingRequests.set(postId, job);
+  queue.push(job);
+  runQueue();
+  return job.promise;
+}
+
+export function loadPostPolls(postId, userId, { refresh = false } = {}) {
+  const id = Number(postId);
+  if (!Number.isSafeInteger(id) || id <= 0 || invalidatedPosts.has(id)) {
+    return Promise.resolve(null);
+  }
+  const key = `${userId || "guest"}:${id}`;
+  if (pendingPolls.has(key)) {
+    return pendingPolls.get(key);
+  }
+  const cached = pollCache.get(key);
+  if (!refresh && cached && Date.now() - cached.at < 30000) {
+    return Promise.resolve(cached.value);
+  }
+  pollCache.delete(key);
+  const promise = new Promise((resolve, reject) => {
+    queue.push({
+      kind: "polls",
+      key,
+      postId: id,
+      reject,
+      resolve,
+      generation: generations.get(id),
+    });
+    runQueue();
+  }).finally(() => {
+    if (pendingPolls.get(key) === promise) {
+      pendingPolls.delete(key);
+    }
+  });
+  pendingPolls.set(key, promise);
+  return promise;
 }
 
 export function invalidateCookedPost(postId, hidden = true) {
   const id = Number(postId);
   generations.set(id, (generations.get(id) || 0) + 1);
   if (hidden) {
-    invalidatedPosts.add(Number(postId));
+    invalidatedPosts.add(id);
   } else {
-    invalidatedPosts.delete(Number(postId));
+    invalidatedPosts.delete(id);
   }
-  cache.delete(postId);
-  cache.delete(Number(postId));
+  cache.delete(id);
+  for (const key of pollCache.keys()) {
+    if (key.endsWith(`:${id}`)) {
+      pollCache.delete(key);
+    }
+  }
+  for (const key of pendingPolls.keys()) {
+    if (key.endsWith(`:${id}`)) {
+      pendingPolls.delete(key);
+    }
+  }
 }
 
 const countCache = new Map();

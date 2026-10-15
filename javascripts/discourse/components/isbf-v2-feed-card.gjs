@@ -20,6 +20,7 @@ import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
 import { recordVisibleView } from "../lib/feed-view-tracker";
 import { isOfficialCalendarPath } from "../lib/official-calendar";
 import { isPinningContext, pinningMeta, saveHomePin } from "../lib/pinning";
+import { extractFeedPolls } from "../lib/poll-preview";
 import {
   compactNumber,
   openQuotedRepost,
@@ -31,6 +32,7 @@ import ISBFHomePinDialog from "./isbf-home-pin-dialog";
 import { ISBFMarketplacePrice } from "./isbf-marketplace-card";
 import ISBFOfficialActivitySummary from "./isbf-official-activity-summary";
 import ISBFOfficialCalendarItems from "./isbf-official-calendar-items";
+import ISBFPollPreviews from "./isbf-poll-previews";
 
 export default class ISBFV2FeedCard extends Component {
   @service appEvents;
@@ -61,6 +63,8 @@ export default class ISBFV2FeedCard extends Component {
 
   #bodyRequest = 0;
   #observer;
+  #pollBody;
+  #pollContent;
   #rootElement;
   #viewInFlight = false;
   #viewObserver;
@@ -100,12 +104,16 @@ export default class ISBFV2FeedCard extends Component {
       return null;
     }
     if (this.body) {
-      return trustHTML(this.body);
+      return trustHTML(this.pollContent.html);
     }
     if (this.args.topic.excerpt) {
       return trustHTML(`<p>${this.args.topic.excerpt}</p>`);
     }
     return null;
+  }
+
+  get pollContent() {
+    return this.#pollContentFor(this.hidden ? "" : this.body || "");
   }
 
   get contentReady() {
@@ -201,7 +209,7 @@ export default class ISBFV2FeedCard extends Component {
   get showExpand() {
     return (
       !this.hidden &&
-      plainText(this.body || this.args.topic.excerpt).length > 900
+      plainText(this.pollContent.html || this.args.topic.excerpt).length > 900
     );
   }
 
@@ -569,6 +577,14 @@ export default class ISBFV2FeedCard extends Component {
     }
   }
 
+  #pollContentFor(body) {
+    if (body !== this.#pollBody) {
+      this.#pollBody = body;
+      this.#pollContent = extractFeedPolls(body);
+    }
+    return this.#pollContent;
+  }
+
   async #recordView() {
     if (this.#viewInFlight || this.viewCount !== null) {
       return;
@@ -761,6 +777,14 @@ export default class ISBFV2FeedCard extends Component {
                 (if this.expanded "isbf_v2.show_less" "isbf_v2.show_more")
               )
             }}</button>{{/if}}
+        {{#if this.pollContent.polls.length}}
+          <ISBFPollPreviews
+            @cooked={{this.body}}
+            @measureOnly={{@measureOnly}}
+            @postId={{@topic.first_post_id}}
+            @topicUrl={{this.topicUrl}}
+          />
+        {{/if}}
         {{#unless this.hidden}}
           {{#if this.officialLayout}}
             <ISBFOfficialActivitySummary
