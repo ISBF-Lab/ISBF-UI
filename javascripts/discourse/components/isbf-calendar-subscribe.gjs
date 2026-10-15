@@ -156,6 +156,8 @@ export default class ISBFCalendarSubscribe extends Component {
         @ariaLabel={{i18n (themePrefix "isbf_v2.calendar_subscribe")}}
         @contentClass="isbf-calendar-subscription-menu"
         @identifier="isbf-calendar-subscription"
+        @matchTriggerWidth={{true}}
+        @maxWidth="none"
         @modalForMobile={{false}}
         @onPositioned={{this.positioned}}
         @onRegisterApi={{this.registerMenu}}

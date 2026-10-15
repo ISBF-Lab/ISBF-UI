@@ -482,6 +482,8 @@ assert.doesNotMatch(source, /localStorage|sessionStorage|console\./);
 assert.doesNotMatch(trigger, /localStorage|sessionStorage|console\./);
 assert.match(trigger, /@modalForMobile=\{\{false\}\}/);
 assert.match(trigger, /@placement="bottom-end"/);
+assert.match(trigger, /@matchTriggerWidth=\{\{true\}\}/);
+assert.match(trigger, /@maxWidth="none"/);
 assert.match(trigger, /@visibilityOptimizer="autoPlacement"/);
 assert.match(trigger, /@onRegisterApi=\{\{this\.registerMenu\}\}/);
 assert.match(trigger, /@onPositioned=\{\{this\.positioned\}\}/);
@@ -532,6 +534,14 @@ assert.match(
   /\.isbf-v2-calendar__legend\s*\{[\s\S]*?justify-content: flex-start;/
 );
 assert.match(style, /min-height: 44px/);
+assert.match(
+  style,
+  /\.fk-d-menu__inner-content\s*\{[^}]*?border: 0;[^}]*?background: transparent;[^}]*?box-shadow: none;/
+);
+assert.match(
+  style,
+  /\.fk-d-menu__inner-content\s*\{[^}]*?width: 100%;[^}]*?min-width: 0;/
+);
 assert.match(
   style,
   /\.dropdown-menu\s*\{[^}]*?width: 100%;[^}]*?min-width: 0;/
