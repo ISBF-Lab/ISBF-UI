@@ -12,6 +12,7 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import {
   appleCalendarURL,
+  calendarSubscriptionURL,
   PERSONAL_CALENDAR_FEED,
 } from "../lib/calendar-subscription";
 
@@ -31,6 +32,11 @@ export default class ISBFCalendarSubscription extends Component {
 
   constructor() {
     super(...arguments);
+    this.url = calendarSubscriptionURL(
+      this.args.model.initialUrl,
+      window.location.origin,
+      getURL("/isbf/api/calendar.ics")
+    );
     void this.load();
   }
 
@@ -40,12 +46,59 @@ export default class ISBFCalendarSubscription extends Component {
     this.url = null;
   }
 
+  get provider() {
+    const provider = this.args.model.provider;
+    return ["apple", "google", "outlook", "link"].includes(provider)
+      ? provider
+      : "apple";
+  }
+
+  get isApple() {
+    return this.provider === "apple";
+  }
+
+  get isGoogle() {
+    return this.provider === "google";
+  }
+
+  get isOutlook() {
+    return this.provider === "outlook";
+  }
+
+  get title() {
+    return i18n(
+      themePrefix(`isbf_v2.calendar_subscription_${this.provider}_title`)
+    );
+  }
+
+  get guide() {
+    return i18n(
+      themePrefix(`isbf_v2.calendar_subscription_${this.provider}_guide`)
+    );
+  }
+
+  get subscriptionURL() {
+    if (
+      !this.ready ||
+      !this.hasSubscription ||
+      this.unavailable ||
+      !this.#isCurrent()
+    ) {
+      return null;
+    }
+    return calendarSubscriptionURL(
+      this.url,
+      window.location.origin,
+      getURL("/isbf/api/calendar.ics")
+    );
+  }
+
   get webcalURL() {
-    if (!this.#isCurrent()) {
+    if (!this.isApple) {
       return null;
     }
     return appleCalendarURL(
-      this.url,
+      this.subscriptionURL,
       window.location.origin,
       getURL("/isbf/api/calendar.ics")
     );
@@ -53,14 +106,26 @@ export default class ISBFCalendarSubscription extends Component {
 
   @action
   async load() {
+    if ((this.loading && this.#generation > 0) || !this.#isCurrent()) {
+      return;
+    }
     const generation = ++this.#generation;
     this.loading = true;
     this.error = false;
+    this.ready = false;
     try {
       const status = await ajax("/calendar-subscriptions.json");
       if (this.#isCurrent(generation)) {
         this.hasSubscription = status.has_subscription;
         this.unavailable = !status.feeds?.includes(PERSONAL_CALENDAR_FEED);
+        if (
+          !this.hasSubscription ||
+          this.unavailable ||
+          !status.generated_feeds?.includes(PERSONAL_CALENDAR_FEED)
+        ) {
+          this.url = null;
+          this.args.model.onURLChange?.(null);
+        }
         this.ready = true;
       }
     } catch {
@@ -99,10 +164,15 @@ export default class ISBFCalendarSubscription extends Component {
         type: "POST",
       });
       if (this.#isCurrent(generation)) {
-        this.url = result.urls?.[PERSONAL_CALENDAR_FEED] ?? null;
+        this.url = calendarSubscriptionURL(
+          result.urls?.[PERSONAL_CALENDAR_FEED],
+          window.location.origin,
+          getURL("/isbf/api/calendar.ics")
+        );
         this.hasSubscription = true;
         this.copied = false;
-        this.error = !this.webcalURL;
+        this.error = !this.subscriptionURL;
+        this.args.model.onURLChange?.(this.subscriptionURL);
       }
     } catch {
       if (this.#isCurrent(generation)) {
@@ -117,12 +187,15 @@ export default class ISBFCalendarSubscription extends Component {
 
   @action
   async copy() {
-    if (!this.webcalURL || !this.#isCurrent()) {
+    const url = this.subscriptionURL;
+    if (!url || this.loading || !this.#isCurrent()) {
       return;
     }
     const generation = this.#generation;
+    this.copied = false;
+    this.error = false;
     try {
-      await clipboardCopy(this.url);
+      await clipboardCopy(url);
       if (this.#isCurrent(generation)) {
         this.copied = true;
       }
@@ -155,6 +228,7 @@ export default class ISBFCalendarSubscription extends Component {
       await ajax("/calendar-subscriptions.json", { type: "DELETE" });
       if (this.#isCurrent(generation)) {
         this.url = null;
+        this.args.model.onURLChange?.(null);
         this.hasSubscription = false;
         this.copied = false;
       }
@@ -173,6 +247,7 @@ export default class ISBFCalendarSubscription extends Component {
     return (
       !this.isDestroying &&
       generation === this.#generation &&
+      (this.args.model.isOwnerCurrent?.() ?? true) &&
       this.currentUser?.id === this.args.model.userId
     );
   }
@@ -181,7 +256,7 @@ export default class ISBFCalendarSubscription extends Component {
     <DModal
       class="isbf-calendar-subscription"
       @closeModal={{@closeModal}}
-      @title={{i18n (themePrefix "isbf_v2.calendar_subscribe_apple")}}
+      @title={{this.title}}
     >
       <:body>
         <p>{{i18n
@@ -190,6 +265,35 @@ export default class ISBFCalendarSubscription extends Component {
         <p class="isbf-calendar-subscription__note">{{i18n
             (themePrefix "isbf_v2.calendar_subscription_refresh")
           }}</p>
+        <p class="isbf-calendar-subscription__guide">{{this.guide}}</p>
+        {{#if this.isGoogle}}
+          <a
+            href="https://calendar.google.com/calendar/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >{{i18n
+              (themePrefix "isbf_v2.calendar_subscription_open_google")
+            }}</a>
+        {{else if this.isOutlook}}
+          <div class="isbf-calendar-subscription__actions">
+            <a
+              href="https://outlook.live.com/calendar/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >{{i18n
+                (themePrefix
+                  "isbf_v2.calendar_subscription_open_outlook_personal"
+                )
+              }}</a>
+            <a
+              href="https://outlook.office.com/calendar/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >{{i18n
+                (themePrefix "isbf_v2.calendar_subscription_open_outlook_work")
+              }}</a>
+          </div>
+        {{/if}}
         {{#if this.loading}}
           <p aria-live="polite" role="status">{{i18n
               (themePrefix "isbf_v2.calendar_subscription_loading")
@@ -200,18 +304,30 @@ export default class ISBFCalendarSubscription extends Component {
               (themePrefix "isbf_v2.calendar_subscription_unavailable")
             }}</p>
         {{else if this.ready}}
-          {{#if this.webcalURL}}
+          {{#if this.subscriptionURL}}
             <p>{{i18n
                 (themePrefix "isbf_v2.calendar_subscription_private")
               }}</p>
+            <label for="isbf-calendar-subscription-url">{{i18n
+                (themePrefix "isbf_v2.calendar_subscription_url_label")
+              }}</label>
+            <input
+              class="isbf-calendar-subscription__url"
+              id="isbf-calendar-subscription-url"
+              readonly
+              type="text"
+              value={{this.subscriptionURL}}
+            />
             <div class="isbf-calendar-subscription__actions">
-              <a
-                class="btn btn-primary"
-                href={{this.webcalURL}}
-                rel="noreferrer"
-              >{{dIcon "calendar-days"}}{{i18n
-                  (themePrefix "isbf_v2.calendar_subscribe_apple")
-                }}</a>
+              {{#if this.isApple}}
+                <a
+                  class="btn btn-primary"
+                  href={{this.webcalURL}}
+                  rel="noreferrer"
+                >{{dIcon "calendar-days"}}{{i18n
+                    (themePrefix "isbf_v2.calendar_subscribe_apple")
+                  }}</a>
+              {{/if}}
               <DButton
                 @action={{this.copy}}
                 @disabled={{this.loading}}

@@ -233,6 +233,76 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
   min-width: 0;
 }
 
+.isbf-v2-calendar__heading-actions {
+  flex-wrap: nowrap;
+  width: auto;
+}
+
+.isbf-calendar-subscribe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  .d-icon {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.isbf-calendar-subscription-menu {
+  box-sizing: border-box;
+  width: 190px;
+  max-width: calc(
+    100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)
+  );
+  padding: 4px;
+  border: 1px solid var(--isbf-v2-border);
+  border-radius: var(--isbf-v2-radius-sm);
+  background: var(--isbf-v2-surface);
+  color: var(--isbf-v2-text);
+  box-shadow: var(--isbf-v2-shadow-menu);
+
+  .dropdown-menu {
+    margin: 0;
+    padding: 0;
+  }
+
+  .isbf-calendar-subscription-menu__item {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 12px;
+    border-radius: var(--isbf-v2-radius-sm);
+    color: var(--isbf-v2-text);
+    text-align: start;
+
+    > span {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--isbf-v2-hover);
+    }
+  }
+}
+
+.isbf-calendar-provider-icon {
+  display: block;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+
 .isbf-v2-calendar__heading-actions .btn,
 .isbf-v2-calendar__heading-actions .isbf-v2-calendar__primary,
 .isbf-calendar-subscription .btn {
@@ -243,6 +313,18 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
 .isbf-calendar-subscription__actions {
   justify-content: flex-start;
   margin-block: 16px;
+
+  a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.isbf-calendar-subscription__url {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .isbf-calendar-subscription__note {
@@ -259,17 +341,45 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
 }
 
 @media (width <= 600px) {
-  .isbf-v2-calendar__heading {
-    flex-wrap: wrap;
+  .isbf-v2-feature .isbf-v2-calendar__heading {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+
+    > div:first-child {
+      flex: 1;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 28px;
+    }
   }
 
   .isbf-v2-calendar__heading-actions {
-    justify-content: flex-start;
-    width: 100%;
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    gap: 8px;
+    width: auto;
   }
 
-  .isbf-v2-calendar__heading-actions .isbf-v2-calendar__primary {
+  .isbf-v2-calendar__heading .isbf-calendar-subscribe,
+  .isbf-v2-calendar__heading .isbf-v2-calendar__primary {
+    box-sizing: border-box;
+    gap: 6px;
     width: auto;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 13px;
+    white-space: nowrap;
+
+    .d-icon {
+      width: 16px;
+      height: 16px;
+    }
   }
 
   .isbf-calendar-subscription .d-modal__body {
