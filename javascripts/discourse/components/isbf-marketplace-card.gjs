@@ -8,6 +8,7 @@ import {
 } from "../lib/marketplace";
 import { plainText } from "../lib/post-card-helpers";
 import contentImages from "../modifiers/content-images";
+import ISBFWorkbenchListingCard from "./isbf-workbench-listing-card";
 
 export class ISBFMarketplacePrice extends Component {
   get post() {
@@ -36,7 +37,7 @@ export class ISBFMarketplacePrice extends Component {
     const body = document.createElement("div");
     body.innerHTML = this.post.cooked || "";
     const sources = [...body.querySelectorAll("img[src]")].map((image) =>
-      image.getAttribute("src"),
+      image.getAttribute("src")
     );
     return marketplaceDetailImages(this.metadata, sources);
   }
@@ -71,40 +72,24 @@ export default class ISBFMarketplaceCard extends Component {
 
   get imageUrl() {
     return marketplaceImageUrl(
-      this.args.topic.isbf_marketplace?.images?.[0]?.url,
+      this.args.topic.isbf_marketplace?.images?.[0]?.url
     );
   }
 
   get description() {
     return plainText(
-      this.args.topic.isbf_marketplace?.description ?? this.args.topic.excerpt,
+      this.args.topic.isbf_marketplace?.description ?? this.args.topic.excerpt
     );
   }
 
   <template>
-    <article class="isbf-marketplace-card" {{contentImages}}>
-      {{#if this.imageUrl}}
-        <a
-          aria-label={{i18n (themePrefix "isbf_v2.preview_image")}}
-          class="lightbox isbf-marketplace-card__image"
-          href={{this.imageUrl}}
-        ><img alt={{@topic.title}} loading="lazy" src={{this.image}} /></a>
-      {{else}}
-        <span aria-hidden="true" class="isbf-marketplace-card__image">
-          {{#if this.image}}<img
-              alt=""
-              loading="lazy"
-              src={{this.image}}
-            />{{/if}}
-        </span>
-      {{/if}}
-      <a class="isbf-marketplace-card__content" href={{@topic.url}}>
-        <strong class="isbf-marketplace-card__title">{{@topic.title}}</strong>
-        <span
-          class="isbf-marketplace-card__description"
-        >{{this.description}}</span>
-        <ISBFMarketplacePrice @metadata={{@topic.isbf_marketplace}} />
-      </a>
-    </article>
+    <ISBFWorkbenchListingCard
+      @description={{this.description}}
+      @image={{this.image}}
+      @imageUrl={{this.imageUrl}}
+      @topic={{@topic}}
+    >
+      <ISBFMarketplacePrice @metadata={{@topic.isbf_marketplace}} />
+    </ISBFWorkbenchListingCard>
   </template>
 }

@@ -18,6 +18,7 @@ import { notificationsEnabled } from "../lib/notification-groups";
 import { officialConfig } from "../lib/official-filters";
 import { isFeedStyleTopic } from "../lib/topic-card-scope";
 import ISBFAlumni from "./isbf-alumni";
+import ISBFCareers from "./isbf-careers";
 import ISBFExplore from "./isbf-explore";
 import ISBFLearning from "./isbf-learning";
 import ISBFLibrary from "./isbf-library";
@@ -50,7 +51,7 @@ export default class ISBFV2Shell extends Component {
       this.path
         .split("#")[0]
         .match(
-          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/,
+          /^\/(about|faq|guidelines|tos|privacy|rules|conduct)\/?$/
         )?.[1] ?? null
     );
   }
@@ -78,6 +79,9 @@ export default class ISBFV2Shell extends Component {
     }
     if (path === "/isbf/alumni") {
       return "alumni";
+    }
+    if (path === "/isbf/careers") {
+      return "careers";
     }
     if (path === "/isbf/marketplace") {
       return "marketplace";
@@ -131,8 +135,8 @@ export default class ISBFV2Shell extends Component {
   get composePrompt() {
     return i18n(
       themePrefix(
-        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt",
-      ),
+        this.isFeedback ? "isbf_v2.feedback_prompt" : "isbf_v2.compose_prompt"
+      )
     );
   }
 
@@ -140,7 +144,7 @@ export default class ISBFV2Shell extends Component {
     return Boolean(
       this.currentUser?.admin ||
       (this.currentUser?.moderator &&
-        this.siteSettings.moderators_manage_categories),
+        this.siteSettings.moderators_manage_categories)
     );
   }
 
@@ -174,12 +178,17 @@ export default class ISBFV2Shell extends Component {
       "library",
       "alumni",
       "marketplace",
+      "careers",
       "teamup",
     ].includes(this.pageKind);
   }
 
   get isAlumni() {
     return this.pageKind === "alumni";
+  }
+
+  get isCareers() {
+    return this.pageKind === "careers";
   }
 
   get isMarketplace() {
@@ -208,6 +217,7 @@ export default class ISBFV2Shell extends Component {
         "learning",
         "library",
         "marketplace",
+        "careers",
         "notifications",
         "teamup",
         "workbench",
@@ -247,7 +257,7 @@ export default class ISBFV2Shell extends Component {
       return i18n(
         this.informationPage === "about"
           ? "about.simple_title"
-          : this.informationPage,
+          : this.informationPage
       );
     }
 
@@ -294,7 +304,7 @@ export default class ISBFV2Shell extends Component {
     }
     return Boolean(
       this.currentUser?.academy_official_member &&
-      this.officialCategory?.canCreateTopic,
+      this.officialCategory?.canCreateTopic
     );
   }
 
@@ -303,7 +313,7 @@ export default class ISBFV2Shell extends Component {
       this.officialConfig?.category_id ??
       Number(settings.official_path.split("/")[3]);
     return this.site.categories?.find(
-      (item) => Number(item.id) === Number(categoryId),
+      (item) => Number(item.id) === Number(categoryId)
     );
   }
 
@@ -551,6 +561,7 @@ export default class ISBFV2Shell extends Component {
         {{#if this.isAnonymousPosts}}<ISBFV2AnonymousPosts />{{/if}}
         {{#if this.isCalendar}}<ISBFV2Calendar />{{/if}}
         {{#if this.isAlumni}}<ISBFAlumni />
+        {{else if this.isCareers}}<ISBFCareers />
         {{else if this.isMarketplace}}<ISBFMarketplace />
         {{else if this.isTeamup}}<ISBFTeamup />
         {{else if this.isLibrary}}<ISBFLibrary />

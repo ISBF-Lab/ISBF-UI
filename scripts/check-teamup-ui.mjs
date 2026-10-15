@@ -16,7 +16,7 @@ const synthetic = (values) =>
         this.setExport(key, value);
       }
     },
-    { context },
+    { context }
   );
 async function load(path, dependencies = {}) {
   const source = read(path)
@@ -37,11 +37,13 @@ const lib = "javascripts/discourse/lib/";
 const invalidations = [];
 const teamup = await load(`${lib}teamup.js`);
 const marketplace = await load(`${lib}marketplace.js`);
+const careers = await load(`${lib}careers.js`);
 const optional = await load(`${lib}optional-topic-title.js`);
 const quick = await load(`${lib}quick-post-scope.js`, {
   "virtual:theme": { settings: { calendar_category_id: 9 } },
   "./marketplace": marketplace,
   "./teamup": teamup,
+  "./careers": careers,
 });
 const anonymous = await load(`${lib}anonymous-post-scope.js`, {
   "discourse/models/category": {
@@ -49,6 +51,7 @@ const anonymous = await load(`${lib}anonymous-post-scope.js`, {
   },
   "./marketplace": marketplace,
   "./teamup": teamup,
+  "./careers": careers,
 });
 const {
   teamupConfig,
@@ -86,7 +89,7 @@ for (const invalid of [
 }
 assert.equal(
   teamupConfig({ isbf_teamup: { category_id: 42, version: 1 } }).category_id,
-  42,
+  42
 );
 assert.equal(teamup.namespace.teamupQuery().q, "isbf-teamup:all order:created");
 const fresh = model({ isbf_anonymous: true });
@@ -118,7 +121,7 @@ restoreTeamup(overridden, { post: overridden.post });
 assert.equal(
   teamupPayload(overridden),
   false,
-  "Explicit false wins over stored true",
+  "Explicit false wins over stored true"
 );
 for (const excluded of [
   model({ categoryId: 43 }),
@@ -154,10 +157,58 @@ for (const action of ["createTopic", "reply"]) {
     });
     assert.equal(
       anonymous.namespace.canPublishAnonymously(current, user, {}),
-      categoryId === 43,
+      categoryId === 43
     );
   }
 }
+const careersSite = {
+  isbf_careers: { category_id: 44, enabled: true, version: 1 },
+};
+assert.equal(
+  quick.namespace.isQuickPost(model({ categoryId: 44, site: careersSite })),
+  false
+);
+assert.equal(
+  quick.namespace.isQuickPost(model({ categoryId: 43, site: careersSite })),
+  true
+);
+for (const topic of [{ category_id: 44 }, { category: { id: 44 } }]) {
+  const careersReply = model({
+    site: careersSite,
+    action: "reply",
+    creatingTopic: false,
+    categoryId: 43,
+    topic,
+  });
+  assert.equal(
+    anonymous.namespace.canPublishAnonymously(careersReply, user, {}),
+    false,
+    "Careers reply uses its topic category even with a stale Composer category"
+  );
+}
+assert.equal(
+  anonymous.namespace.canPublishAnonymously(
+    model({ site: careersSite, categoryId: 44 }),
+    user,
+    {}
+  ),
+  false
+);
+assert.equal(
+  anonymous.namespace.canPublishAnonymously(
+    model({
+      site: careersSite,
+      action: "reply",
+      creatingTopic: false,
+      categoryId: 44,
+      topic: { category_id: 43 },
+    }),
+    user,
+    {}
+  ),
+  true,
+  "Other topic reply must not inherit a stale Careers category"
+);
 assert.equal(quick.namespace.isQuickPost(model()), false);
 assert.equal(quick.namespace.isQuickPost(model({ categoryId: 43 })), true);
 
@@ -226,7 +277,7 @@ extensions.namespace.extendComposerMethod(
   function (next, ...args) {
     this.otherExtensionRan = true;
     return next(...args);
-  },
+  }
 );
 class Component {
   constructor(args = {}) {
@@ -242,7 +293,7 @@ const component = await load(
     "discourse-i18n": { i18n: (key) => key },
     "../lib/teamup": teamup,
     "./isbf-home-display-option": { default: class {} },
-  },
+  }
 );
 await load("javascripts/discourse/api-initializers/isbf-teamup.gjs", {
   "virtual:theme": { themePrefix: (key) => key },
@@ -268,7 +319,7 @@ registrations.events.get("composer:edited-post")();
 assert.deepEqual(
   invalidations,
   [[91, false]],
-  "Group first-post edits invalidate the cooked body cache",
+  "Group first-post edits invalidate the cooked body cache"
 );
 for (const excluded of [
   model({
@@ -290,23 +341,23 @@ assert.equal(invalidations.length, 1);
 for (const kind of ["create", "update"]) {
   assert.equal(
     registrations[kind].get(TEAMUP_HOME_FIELD),
-    "isbfTeamupHomePayload",
+    "isbfTeamupHomePayload"
   );
 }
 assert.equal(registrations.draft.get(TEAMUP_HOME_FIELD), TEAMUP_HOME_FIELD);
 assert.equal(registrations.outlets[0][0], "after-title-and-category");
 const native = Object.assign(
   new Composer(),
-  model({ alerts: [], dialog: { alert: (message) => message } }),
+  model({ alerts: [], dialog: { alert: (message) => message } })
 );
 assert.equal(
   await native.open({ isbf_anonymous: true, isbf_teamup_home: false }),
-  "opened",
+  "opened"
 );
 assert.equal(native.isbf_anonymous, false);
 assert.equal(
   registrations.getters.get("isbfTeamupHomePayload").call(native),
-  false,
+  false
 );
 assert.equal(await native.save("native-argument"), "saved");
 assert.equal(native.otherExtensionRan, true);
@@ -325,7 +376,7 @@ for (const [title, body] of [
   assert.equal(
     native.nativeSaveArgs,
     null,
-    "Required title and body prevent native save",
+    "Required title and body prevent native save"
   );
 }
 native.categoryId = 43;
@@ -352,12 +403,12 @@ assert.equal(
     topic: { category_id: 42 },
     isbf_anonymous: true,
   }),
-  "opened",
+  "opened"
 );
 assert.equal(native.isbf_anonymous, false);
 assert.equal(
   registrations.getters.get("isbfTeamupHomePayload").call(native),
-  undefined,
+  undefined
 );
 assert.equal(native.clearState("clear-argument"), "cleared");
 assert.deepEqual(native.nativeClearArgs, ["clear-argument"]);
@@ -371,11 +422,11 @@ for (const checked of [true, false]) {
   assert.equal(fresh.isbf_teamup_home, checked);
 }
 const label = read(
-  "javascripts/discourse/components/isbf-home-display-option.gjs",
+  "javascripts/discourse/components/isbf-home-display-option.gjs"
 );
 assert.match(
   label,
-  /<label\b[\s\S]*<input\b[\s\S]*<span>\{\{@label\}\}<\/span>[\s\S]*<\/label>/,
+  /<label\b[\s\S]*<input\b[\s\S]*<span>\{\{@label\}\}<\/span>[\s\S]*<\/label>/
 );
 assert.match(label, /checked=\{\{this\.checked\}\}/);
 assert.match(label, /\{\{on "change" @onChange\}\}/);
@@ -394,7 +445,7 @@ const HomeDisplay = (
 for (const value of [true, false, null, undefined, "false"]) {
   assert.equal(
     new HomeDisplay(null, { checked: value }).checked,
-    value === true,
+    value === true
   );
 }
 
@@ -406,6 +457,7 @@ const recent = await load(`${lib}recent-discussions.js`, {
   },
   "./marketplace": marketplace,
   "./teamup": teamup,
+  "./careers": careers,
 });
 const now = Date.parse("2026-10-12T12:00:00Z");
 const topic = (id, extra = {}) => ({
@@ -457,7 +509,7 @@ const result = await recent.namespace.loadRecentDiscussions({
 });
 assert.deepEqual(
   Array.from(result, (item) => item.id),
-  [3, 5, 6, 7],
+  [3, 5, 6, 7]
 );
 assert.equal(result[0], legacy, "Keep legacy Teamup topics with no flag");
 assert.equal(result[1], visible, "Keep native topic identity");
@@ -465,12 +517,12 @@ assert.equal(calls.length, 2);
 assert.equal(calls[0].url, "/filter.json");
 assert.equal(calls[1].options.data.page, 1);
 const initializer = read(
-  "javascripts/discourse/api-initializers/isbf-teamup.gjs",
+  "javascripts/discourse/api-initializers/isbf-teamup.gjs"
 );
 const feed = read("javascripts/discourse/components/isbf-teamup.gjs");
 assert.doesNotMatch(
   initializer + feed,
-  /TeamupUpload|UploadPreProcessor|UploadMarkdownResolver|isbf-teamup-card|ajax\(/,
+  /TeamupUpload|UploadPreProcessor|UploadMarkdownResolver|isbf-teamup-card|ajax\(/
 );
 assert.match(feed, /<ISBFV2FeedCard/);
 assert.match(feed, /this\.store\.findFiltered\("topicList"/);
@@ -480,55 +532,55 @@ const mobileComposer = read("stylesheets/workbench-composer.scss");
 const teamupStyles = read("stylesheets/teamup.scss");
 assert.match(
   sharedStyles,
-  /\.isbf-home-display-option\s*\{[^}]*gap:\s*8px;[^}]*min-height:\s*44px;/,
+  /\.isbf-home-display-option\s*\{[^}]*gap:\s*8px;[^}]*min-height:\s*44px;/
 );
 assert.match(sharedStyles, /&:focus-within/);
 assert.match(mobileComposer, /^@media \(width <= 600px\)\s*\{/);
 assert.match(mobileComposer, /body:has\(\.isbf-v2-shell\)/);
 assert.match(
   mobileComposer,
-  /#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\)\s*\)/,
+  /#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\),\s*:has\(\.isbf-careers-composer\)\s*\)/
 );
 assert.match(mobileComposer, /\.title-input\s*\{[^}]*grid-row:\s*1;/);
 assert.match(
   mobileComposer,
-  /\.d-editor-textarea-wrapper\s*\{[^}]*grid-row:\s*2;/,
+  /\.d-editor-textarea-wrapper\s*\{[^}]*grid-row:\s*2;/
 );
 assert.match(mobileComposer, /container:\s*isbf-workbench-composer \/ size;/);
 assert.match(mobileComposer, /var\(--composer-vh, 1dvh\)/);
 assert.match(
   mobileComposer,
-  /padding-bottom:\s*calc\(56px \+ env\(safe-area-inset-bottom\)\);/,
+  /padding-bottom:\s*calc\(56px \+ env\(safe-area-inset-bottom\)\);/
 );
 const [desktopStyles, mobileStyles] = teamupStyles.split(
-  "@media (width <= 600px)",
+  "@media (width <= 600px)"
 );
 assert.match(
   desktopStyles,
-  /body:has\(\.isbf-v2-shell\)\s*#reply-control\.open:has\(\.isbf-teamup-composer\)/,
+  /body:has\(\.isbf-v2-shell\)\s*#reply-control\.open:has\(\.isbf-teamup-composer\)/
 );
 assert.match(desktopStyles, /\.title-input\s*\{[^}]*grid-row:\s*1;/);
 assert.match(
   desktopStyles,
-  /\.category-input,\s*\.tags-input,\s*\.isbf-teamup-composer\s*\{[^}]*grid-row:\s*2;/,
+  /\.category-input,\s*\.tags-input,\s*\.isbf-teamup-composer\s*\{[^}]*grid-row:\s*2;/
 );
 assert.match(
   mobileStyles,
-  /\.category-input,\s*\.tags-input\s*\{[^}]*grid-row:\s*3;/,
+  /\.category-input,\s*\.tags-input\s*\{[^}]*grid-row:\s*3;/
 );
 assert.match(mobileStyles, /\.isbf-teamup-composer\s*\{[^}]*grid-row:\s*4;/);
 assert.match(
   mobileStyles,
-  /grid-template-rows:\s*auto minmax\(0, 1fr\) auto auto;/,
+  /grid-template-rows:\s*auto minmax\(0, 1fr\) auto auto;/
 );
 assert.match(
   mobileStyles,
-  /grid-template-rows:\s*auto minmax\(44px, 1fr\) auto auto;/,
+  /grid-template-rows:\s*auto minmax\(44px, 1fr\) auto auto;/
 );
 assert.doesNotMatch(
   teamupStyles,
-  /aspect-ratio|88px|isbf-marketplace-card|isbf-teamup-card/,
+  /aspect-ratio|88px|isbf-marketplace-card|isbf-teamup-card/
 );
 console.log(
-  "Teamup composer, scope, native feed, recent discussion and layout checks passed",
+  "Teamup composer, scope, native feed, recent discussion and layout checks passed"
 );

@@ -3,7 +3,8 @@
     body:has(.isbf-v2-shell)
     #reply-control.open:has(.isbf-v2-composer):is(
       :has(.isbf-marketplace-composer),
-      :has(.isbf-teamup-composer)
+      :has(.isbf-teamup-composer),
+      :has(.isbf-careers-composer)
     ) {
     height: calc(var(--composer-vh, 1dvh) * 100);
     max-height: calc(var(--composer-vh, 1dvh) * 100);
@@ -114,7 +115,8 @@
       overflow-y: auto;
     }
 
-    .isbf-marketplace-composer {
+    .isbf-marketplace-composer,
+    .isbf-careers-composer {
       grid-column: 1 / -1;
       grid-row: 3;
 
@@ -131,7 +133,8 @@
       max-width: 100%;
     }
 
-    .isbf-marketplace-composer-options {
+    .isbf-marketplace-composer-options,
+    .isbf-careers-composer-options {
       grid-column: 1 / -1;
       grid-row: 5;
       justify-self: start;
@@ -163,7 +166,8 @@
     body:has(.isbf-v2-shell)
     #reply-control.open:has(.isbf-v2-composer):is(
       :has(.isbf-marketplace-composer),
-      :has(.isbf-teamup-composer)
+      :has(.isbf-teamup-composer),
+      :has(.isbf-careers-composer)
     ) {
     .wmd-controls {
       padding-bottom: 56px;
@@ -175,7 +179,8 @@
       body:has(.isbf-v2-shell)
       #reply-control.open:has(.isbf-v2-composer):is(
         :has(.isbf-marketplace-composer),
-        :has(.isbf-teamup-composer)
+        :has(.isbf-teamup-composer),
+        :has(.isbf-careers-composer)
       )
       .d-editor-textarea-column {
       grid-template-rows: auto minmax(44px, 1fr) auto auto auto;
