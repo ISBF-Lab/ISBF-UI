@@ -14,6 +14,7 @@ import {
   officialTimeLabel,
 } from "../lib/official-calendar";
 import ISBFCalendarNoteEditor from "./isbf-calendar-note-editor";
+import ISBFCalendarSubscribe from "./isbf-calendar-subscribe";
 import ISBFCalendarUpdateDialog from "./isbf-calendar-update-dialog";
 
 const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -583,14 +584,17 @@ export default class ISBFV2Calendar extends Component {
         <div>
           <h1>{{i18n (themePrefix "isbf_v2.calendar")}}</h1>
         </div>
-        {{#if this.currentUser}}<button
-            class="isbf-v2-calendar__primary"
-            type="button"
-            {{on "click" this.newEntry}}
-          >{{dIcon "plus"}}
-            {{i18n
-              (themePrefix "isbf_v2.calendar_add_personal")
-            }}</button>{{/if}}
+        <div class="isbf-v2-calendar__heading-actions">
+          <ISBFCalendarSubscribe />
+          {{#if this.currentUser}}<button
+              class="isbf-v2-calendar__primary"
+              type="button"
+              {{on "click" this.newEntry}}
+            >{{dIcon "plus"}}
+              {{i18n
+                (themePrefix "isbf_v2.calendar_add_personal")
+              }}</button>{{/if}}
+        </div>
       </div>
 
       <div
