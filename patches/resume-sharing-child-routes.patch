@@ -1,0 +1,13 @@
+--- a/javascripts/discourse/components/isbf-v2-shell.gjs
++++ b/javascripts/discourse/components/isbf-v2-shell.gjs
+@@ -83,7 +83,9 @@
+       return "calendar";
+     }
+     if (
+-      path === "/isbf/workbench/resume" &&
++      /^\/isbf\/workbench\/resume(?:\/(?:generate|shares(?:\/(?:new|mine|review|\d+))?))?\/?$/.test(
++        path
++      ) &&
+       this.siteSettings.isbf_resume_enabled
+     ) {
+       return "resume";
