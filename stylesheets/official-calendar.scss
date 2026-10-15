@@ -303,6 +303,12 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
   color: var(--isbf-v2-text);
   box-shadow: var(--isbf-v2-shadow-menu);
 
+  .fk-d-menu__inner-content {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+  }
+
   .dropdown-menu {
     box-sizing: border-box;
     width: 100%;

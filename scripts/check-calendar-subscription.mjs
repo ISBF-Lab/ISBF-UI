@@ -534,6 +534,10 @@ assert.match(
 assert.match(style, /min-height: 44px/);
 assert.match(
   style,
+  /\.fk-d-menu__inner-content\s*\{[^}]*?width: 100%;[^}]*?min-width: 0;/
+);
+assert.match(
+  style,
   /\.dropdown-menu\s*\{[^}]*?width: 100%;[^}]*?min-width: 0;/
 );
 assert.match(style, /safe-area-inset-bottom/);
