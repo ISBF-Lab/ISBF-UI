@@ -62,7 +62,7 @@ function checkDirectory(dir) {
     const source = readFileSync(path, "utf8");
     const stack = [];
     for (const match of source.matchAll(
-      /\{\{([#/])(if|unless|each|let|component)(?:\s[^}]*)?\}\}/g,
+      /\{\{([#/])(if|unless|each|let|component)(?:\s[^}]*)?\}\}/g
     )) {
       if (match[1] === "#") {
         stack.push(match[2]);
@@ -75,9 +75,14 @@ function checkDirectory(dir) {
     }
 
     const js = source
+      .replace(
+        /export default <template>[\s\S]*?<\/template>/g,
+        "export default null;"
+      )
+      .replace(/=\s*<template>[\s\S]*?<\/template>/g, "= null")
       .replace(/<template>[\s\S]*?<\/template>/g, "")
       .replace(/@(service|tracked|cached|action|bind)\s+/g, "")
-      .replace(/@(computed|alias)\([^)]*\)\s*/g, "");
+      .replace(/@(service|computed|alias)\([^)]*\)\s*/g, "");
     const module = new vm.SourceTextModule(js, { identifier: path });
     assert.equal(module.status, "unlinked");
   }
@@ -85,5 +90,5 @@ function checkDirectory(dir) {
 
 checkDirectory(fileURLToPath(new URL("javascripts/discourse", root)));
 process.stdout.write(
-  "Theme metadata, localization, template blocks and JavaScript syntax OK\n",
+  "Theme metadata, localization, template blocks and JavaScript syntax OK\n"
 );

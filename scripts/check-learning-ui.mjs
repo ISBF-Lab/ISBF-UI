@@ -21,11 +21,11 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 const context = vm.createContext({});
 const composer = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-composer.js"),
-  { context },
+  { context }
 );
 const resources = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-resources.js"),
-  { context },
+  { context }
 );
 await composer.link(() => {});
 await resources.link(() => {});
@@ -33,7 +33,7 @@ await composer.evaluate();
 await resources.evaluate();
 const contentImages = new vm.SourceTextModule(
   read("javascripts/discourse/lib/content-images.js"),
-  { context },
+  { context }
 );
 await contentImages.link((specifier) => {
   assert.equal(specifier, "discourse/lib/lightbox");
@@ -43,7 +43,7 @@ await contentImages.link((specifier) => {
       this.setExport("default", async () => {});
       this.setExport("sortLightboxItems", (items) => items);
     },
-    { context },
+    { context }
   );
 });
 await contentImages.evaluate();
@@ -78,7 +78,7 @@ assert.equal(learningConfig({ isbf_learning: config }), config);
 assert.equal(learningConfig({}), null);
 assert.equal(
   learningConfig({ isbf_learning: { ...config, category_id: 0 } }),
-  null,
+  null
 );
 assert.equal(isLearningComposer(model()), true);
 assert.equal(
@@ -87,9 +87,9 @@ assert.equal(
       creatingTopic: false,
       editingPost: true,
       post: { post_number: 1 },
-    }),
+    })
   ),
-  true,
+  true
 );
 for (const excluded of [
   model({ site: {} }),
@@ -106,7 +106,7 @@ for (const excluded of [
   assert.equal(
     isLearningComposer(excluded),
     false,
-    "Replies must not inherit learning metadata",
+    "Replies must not inherit learning metadata"
   );
   assert.equal(learningPayload(excluded, "isbf_learning_course_id"), undefined);
   assert.equal(learningPayload(excluded, "isbf_learning_files"), undefined);
@@ -129,7 +129,7 @@ assert.equal(fresh.isbf_anonymous, false);
 assert.equal(learningPayload(fresh, "isbf_learning_course_id"), courseId);
 assert.equal(
   learningPayload(fresh, "isbf_learning_files"),
-  JSON.stringify([fileId]),
+  JSON.stringify([fileId])
 );
 const draft = model({
   isbf_learning_course_id: courseId,
@@ -145,7 +145,7 @@ restoreLearning(draft, {
 assert.equal(
   draft.isbf_learning_course_id,
   "",
-  "Explicit empty selections must replace drafts",
+  "Explicit empty selections must replace drafts"
 );
 assert.equal(draft.isbf_learning_files, "[]");
 const edited = model({
@@ -168,7 +168,7 @@ assert.deepEqual(plain(learningFileIds([fileId, fileId, "bad", null])), [
 ]);
 const manyIds = Array.from(
   { length: 25 },
-  (_, index) => `${String(index).padStart(8, "0")}-1111-4111-8111-111111111111`,
+  (_, index) => `${String(index).padStart(8, "0")}-1111-4111-8111-111111111111`
 );
 assert.equal(learningFileIds(manyIds).length, 20);
 assert.deepEqual(plain(learningResourceQuery(courseId, " campus ", 2)), {
@@ -224,28 +224,28 @@ const getUrl = new vm.SyntheticModule(
   function () {
     this.setExport("default", (path) => `/forum${path}`);
   },
-  { context },
+  { context }
 );
 const uploadBase = new vm.SyntheticModule(
   ["UploadPreProcessorPlugin"],
   function () {
     this.setExport("UploadPreProcessorPlugin", UploadPreProcessorPlugin);
   },
-  { context },
+  { context }
 );
 const upload = new vm.SourceTextModule(
   read("javascripts/discourse/lib/learning-upload.js"),
-  { context },
+  { context }
 );
 const marketplace = new vm.SourceTextModule(
   read("javascripts/discourse/lib/marketplace.js"),
-  { context },
+  { context }
 );
 await marketplace.link(() => {});
 await marketplace.evaluate();
 const endpoint = new vm.SourceTextModule(
   read("javascripts/discourse/lib/private-upload-endpoint.js"),
-  { context },
+  { context }
 );
 await endpoint.link((specifier) => {
   if (specifier === "discourse/lib/get-url") {
@@ -305,7 +305,7 @@ preprocessor.process(["native-file"]);
 assert.equal(
   uploader.opts.endpoint,
   nativeEndpoint,
-  "Leaving learning must restore native uploads",
+  "Leaving learning must restore native uploads"
 );
 uploadModel.categoryId = config.category_id;
 preprocessor.process(["second-learning-file"]);
@@ -316,7 +316,7 @@ preprocessor.process(["reply-file"]);
 assert.equal(
   uploader.opts.endpoint,
   nativeEndpoint,
-  "Reply attachments must use native transport",
+  "Reply attachments must use native transport"
 );
 uploadModel.creatingTopic = true;
 uploadModel.isbf_learning_course_id = "";
@@ -349,7 +349,7 @@ preprocessor.process(["ordinary-image"]);
 assert.equal(uploader.opts.endpoint, nativeEndpoint);
 
 const initializer = read(
-  "javascripts/discourse/api-initializers/isbf-learning.gjs",
+  "javascripts/discourse/api-initializers/isbf-learning.gjs"
 );
 for (const hook of [
   "serializeOnCreate",
@@ -359,7 +359,7 @@ for (const hook of [
 ]) {
   assert.ok(
     initializer.includes(hook),
-    `Learning initializer must register ${hook}`,
+    `Learning initializer must register ${hook}`
   );
 }
 function componentClass(path, globals = {}) {
@@ -368,7 +368,7 @@ function componentClass(path, globals = {}) {
   const body = source
     .slice(
       source.indexOf("export default class"),
-      source.indexOf("  <template>"),
+      source.indexOf("  <template>")
     )
     .replace("export default class", "class")
     .replace(/@service (\w+);/g, "$1 = services.$1;")
@@ -392,16 +392,17 @@ function componentClass(path, globals = {}) {
 }
 
 const workbenchSource = read(
-  "javascripts/discourse/components/isbf-v2-workbench.gjs",
+  "javascripts/discourse/components/isbf-v2-workbench.gjs"
 );
 const workbenchCards = vm.runInNewContext(
-  workbenchSource.match(/const CARDS = (\[[\s\S]*?\n\]);/)[1],
+  workbenchSource.match(/const CARDS = (\[[\s\S]*?\n\]);/)[1]
 );
 const Workbench = componentClass("isbf-v2-workbench", {
   CARDS: workbenchCards,
   ...resources.namespace,
   alumniConfig: () => true,
   marketplaceConfig: () => true,
+  careersConfig: () => false,
   teamupConfig: () => true,
   services: { site: { isbf_learning: config } },
 });
@@ -422,7 +423,7 @@ assert.equal(cards[0].href, "/isbf/learning");
 assert.equal(
   cards[1].href,
   null,
-  "the library retains its current availability",
+  "the library retains its current availability"
 );
 assert.equal(cards[8].href, "/isbf/marketplace");
 assert.equal(cards[9].href, "/isbf/teamup");
@@ -494,13 +495,13 @@ form.description += "😀";
 assert.equal(
   form.saveDisabled,
   true,
-  "301 Unicode code points exceed the limit",
+  "301 Unicode code points exceed the limit"
 );
 form.site.isbf_learning.resource_description = false;
 assert.equal(
   form.saveDisabled,
   false,
-  "Old backend does not validate hidden fields",
+  "Old backend does not validate hidden fields"
 );
 form.site.isbf_learning.resource_description = true;
 form.description = "Useful notes\nSecond line";
@@ -510,7 +511,7 @@ await form.save(submitEvent);
 assert.equal(
   submissions.length,
   1,
-  "Repeated submit must not send a second POST",
+  "Repeated submit must not send a second POST"
 );
 assert.deepEqual(plain(submissions[0]), {
   url: "/isbf/learning/resources",
@@ -560,7 +561,7 @@ assert.equal(contributorForm.contributorValue, "😀".repeat(20));
 assert.equal(
   contributorForm.saveDisabled,
   false,
-  "Default display names are not constrained",
+  "Default display names are not constrained"
 );
 assert.equal(contributorForm.shareLabel, "isbf_v2.learning_apply_share");
 assert.equal(contributorForm.submitLabel, "isbf_v2.learning_submit_request");
@@ -568,7 +569,7 @@ contributorForm.currentUser.moderator = true;
 assert.equal(
   contributorForm.shareLabel,
   "isbf_v2.learning_apply_share",
-  "Moderators also apply",
+  "Moderators also apply"
 );
 contributorForm.currentUser.admin = true;
 assert.equal(contributorForm.shareLabel, "isbf_v2.learning_share");
@@ -582,7 +583,7 @@ contributorForm.site.isbf_learning.resource_contributor = false;
 assert.equal(
   contributorForm.saveDisabled,
   false,
-  "Unsupported fields cannot block submit",
+  "Unsupported fields cannot block submit"
 );
 contributorForm.site.isbf_learning.resource_contributor = true;
 contributorForm.changeContributor({ target: { value: "  Contributor  " } });
@@ -596,7 +597,7 @@ saving = contributorForm.save(submitEvent);
 assert.equal(
   submissions.at(-1).data.contributor,
   "",
-  "Blank uses backend display name fallback",
+  "Blank uses backend display name fallback"
 );
 completeSubmission({ success: true, pending: true });
 await saving;
@@ -609,7 +610,7 @@ saving = defaultContributorForm.save(submitEvent);
 assert.equal(
   submissions.at(-1).data.contributor,
   "",
-  "Unedited defaults are resolved by backend",
+  "Unedited defaults are resolved by backend"
 );
 completeSubmission({ success: true, pending: false });
 await saving;
@@ -661,7 +662,7 @@ for (const change of [
 ]) {
   assert.equal(
     learningEditableResource({ ...editableResource, ...change }),
-    false,
+    false
   );
 }
 assert.equal(learningEditDetails(editTopic, editPost, courseId).postId, 90);
@@ -682,7 +683,7 @@ for (const change of [
 ]) {
   assert.equal(
     learningEditDetails(editTopic, { ...editPost, ...change }, courseId),
-    null,
+    null
   );
 }
 assert.equal(learningEditDetails(editTopic, editPost, "another-course"), null);
@@ -690,26 +691,26 @@ assert.equal(
   learningEditDetails(
     { ...editTopic, post_stream: { posts: [] } },
     editPost,
-    courseId,
+    courseId
   ),
-  null,
+  null
 );
 assert.equal(
   learningEditDetails(
     editTopic,
     { ...editPost, isbf_learning_contributor: null },
-    courseId,
+    courseId
   ).contributor,
-  "Original author",
+  "Original author"
 );
 const escapedBody = learningLinkBody(
   "[Title] <script>",
   "https://example.edu/a",
-  "<img> **text**\r\nSecond line",
+  "<img> **text**\r\nSecond line"
 );
 assert.ok(!escapedBody.includes("<script>") && !escapedBody.includes("<img>"));
 assert.ok(
-  escapedBody.includes("&lt;script&gt;") && escapedBody.includes("&lt;img&gt;"),
+  escapedBody.includes("&lt;script&gt;") && escapedBody.includes("&lt;img&gt;")
 );
 assert.ok(escapedBody.includes("\nSecond line"));
 
@@ -749,7 +750,7 @@ async function loadEdit(dialog, post = editPost) {
   assert.equal(
     dialog.saveDisabled,
     true,
-    "Loading cannot submit incomplete fields",
+    "Loading cannot submit incomplete fields"
   );
   topicRequest.resolve(editTopic);
   await flushEdit();
@@ -778,7 +779,7 @@ await editForm.save(submitEvent);
 assert.equal(
   editRequests.length,
   requestsBeforeDuplicate,
-  "Repeated edit submit sends one PUT",
+  "Repeated edit submit sends one PUT"
 );
 assert.deepEqual(
   plain({ url: firstEdit.url, type: firstEdit.type, data: firstEdit.data }),
@@ -791,14 +792,14 @@ assert.deepEqual(
         raw: learningLinkBody(
           editForm.title,
           editForm.link,
-          editForm.description,
+          editForm.description
         ),
         isbf_learning_link: editForm.link,
         isbf_learning_description: editForm.description,
         isbf_learning_contributor: editForm.contributor,
       },
     },
-  },
+  }
 );
 assert.deepEqual(Object.keys(firstEdit.data).sort(), ["post", "title"]);
 assert.deepEqual(
@@ -809,7 +810,7 @@ assert.deepEqual(
     "isbf_learning_link",
     "raw",
   ],
-  "Edit cannot mutate author, created time, course or files",
+  "Edit cannot mutate author, created time, course or files"
 );
 firstEdit.reject({ jqXHR: { responseJSON: { errors: ["Edit denied"] } } });
 await saving;
@@ -832,7 +833,7 @@ await editForm.save(submitEvent);
 assert.equal(
   editRequests.length,
   requestsAfterSuccess,
-  "Completed edit cannot resubmit",
+  "Completed edit cannot resubmit"
 );
 
 const unchangedEdit = makeEditDialog();
@@ -841,7 +842,7 @@ saving = unchangedEdit.save(submitEvent);
 assert.equal(
   editRequests.at(-1).data.post.raw,
   editPost.raw,
-  "Unchanged edit retains existing raw body",
+  "Unchanged edit retains existing raw body"
 );
 unchangedEdit.close();
 editRequests.at(-1).resolve({ post: { id: 90, topic_id: 42 } });
@@ -864,7 +865,7 @@ for (const abandon of ["close", "willDestroy"]) {
   assert.equal(
     editRequests.length,
     beforeClose,
-    "Abandoned topic load cannot fetch a post",
+    "Abandoned topic load cannot fetch a post"
   );
   assert.equal(abandoned.editReady, false);
   const abandonedPost = makeEditDialog();
@@ -877,7 +878,7 @@ for (const abandon of ["close", "willDestroy"]) {
   assert.equal(
     abandonedPost.title,
     "",
-    "Abandoned post load cannot hydrate a form",
+    "Abandoned post load cannot hydrate a form"
   );
   assert.equal(abandonedPost.editReady, false);
 }
@@ -892,7 +893,7 @@ await retryEdit.retryLoad();
 assert.equal(
   editRequests.length,
   requestsDuringLoad,
-  "Repeated retry sends one fresh GET",
+  "Repeated retry sends one fresh GET"
 );
 await loadEdit(retryEdit);
 assert.equal(retryEdit.editReady, true);
@@ -902,7 +903,7 @@ await retryEdit.save(submitEvent);
 assert.equal(
   editRequests.length,
   requestsDuringLoad + 1,
-  "Admin permission is rechecked at save",
+  "Admin permission is rechecked at save"
 );
 for (const user of [{}, { moderator: true }]) {
   editServices.currentUser = user;
@@ -913,7 +914,7 @@ for (const user of [{}, { moderator: true }]) {
   assert.equal(
     editRequests.length,
     deniedBefore,
-    "Ordinary users and moderators cannot edit",
+    "Ordinary users and moderators cannot edit"
   );
 }
 editServices.currentUser = { admin: true };
@@ -937,7 +938,7 @@ await flushEdit();
 assert.equal(
   revokedLoad.editReady,
   false,
-  "Load completion rechecks administrator permission",
+  "Load completion rechecks administrator permission"
 );
 const longCredit = makeEditDialog();
 await loadEdit(longCredit, {
@@ -947,7 +948,7 @@ await loadEdit(longCredit, {
 assert.equal(
   longCredit.saveDisabled,
   false,
-  "Original legacy contributor remains valid",
+  "Original legacy contributor remains valid"
 );
 longCredit.changeContributor({
   target: { value: "New contributor beyond fifteen characters" },
@@ -970,14 +971,14 @@ assert.equal(
   learningLinkBody(
     hiddenEditFields.title,
     editPost.isbf_learning_link,
-    editPost.isbf_learning_description,
+    editPost.isbf_learning_description
   ),
-  "Hidden description survives the rebuilt raw body",
+  "Hidden description survives the rebuilt raw body"
 );
 assert.deepEqual(
   Object.keys(hiddenPut.data.post).sort(),
   ["isbf_learning_link", "raw"],
-  "Unsupported custom fields remain untouched",
+  "Unsupported custom fields remain untouched"
 );
 hiddenPut.reject(new Error("Retry edit"));
 await saving;
@@ -1018,13 +1019,13 @@ card.args.resource.link_only = true;
 assert.equal(
   card.additionalLinks.length,
   0,
-  "New cards must not repeat their title link",
+  "New cards must not repeat their title link"
 );
 assert.equal(card.files.length, 1, "Legacy attachments must remain accessible");
 assert.equal(
   card.files[0].isImage,
   false,
-  "non-image downloads retain their existing entry",
+  "non-image downloads retain their existing entry"
 );
 const attachmentCard = new ResourceCard({
   resource: {
@@ -1052,7 +1053,7 @@ assert.deepEqual(
       url,
       isImage,
       sizeLabel,
-    })),
+    }))
   ),
   [
     {
@@ -1080,14 +1081,14 @@ assert.deepEqual(
       sizeLabel: resources.namespace.learningFileSize(1024),
     },
   ],
-  "image previews preserve safe download URLs and file sizes; unsafe URLs never render",
+  "image previews preserve safe download URLs and file sizes; unsafe URLs never render"
 );
 
 card.args.resource.links = [];
 assert.equal(
   card.titleUrl,
   undefined,
-  "File-only cards must not navigate to a topic",
+  "File-only cards must not navigate to a topic"
 );
 assert.equal(card.contributor, "isbf_v2.learning_unknown_contributor");
 card.args.resource.author = { username: "legacy", name: "Legacy Author" };
@@ -1143,7 +1144,7 @@ assert.equal(deleteCard.deleting, false);
 assert.equal(
   deleteCard.args.resource.id,
   "resource-id",
-  "Failures retain card for retry",
+  "Failures retain card for retry"
 );
 assert.equal(deletedCards, 0, "Failures never remove cards optimistically");
 deleting = deleteCard.deleteResource();
@@ -1172,7 +1173,7 @@ await deleting;
 assert.equal(
   deletions.length,
   3,
-  "Permissions are rechecked after confirmation",
+  "Permissions are rechecked after confirmation"
 );
 const staleConfirmation = makeDeleteCard();
 let confirmLater;
@@ -1187,7 +1188,7 @@ await deleting;
 assert.equal(
   deletions.length,
   3,
-  "Navigation during confirmation cancels the request",
+  "Navigation during confirmation cancels the request"
 );
 const staleDelete = makeDeleteCard();
 deleting = staleDelete.deleteResource();
@@ -1231,7 +1232,7 @@ assert.deepEqual(menuEvents, ["closing", "closed", "confirm"]);
 assert.equal(
   deletions.length,
   requestsBeforeMenu,
-  "Menu cancellation makes no request",
+  "Menu cancellation makes no request"
 );
 const menuRevoked = makeDeleteCard();
 const revokedMenuEvents = [];
@@ -1248,7 +1249,7 @@ assert.deepEqual(revokedMenuEvents, []);
 assert.equal(
   deletions.length,
   requestsBeforeMenu,
-  "Menu close rechecks current permissions",
+  "Menu close rechecks current permissions"
 );
 await menuRevoked.deleteFromMenu({
   close: async () => {
@@ -1273,12 +1274,12 @@ for (const change of [
   assert.equal(
     editCard.canEdit,
     false,
-    "Legacy attachments and unconfirmed link resources cannot edit",
+    "Legacy attachments and unconfirmed link resources cannot edit"
   );
   assert.equal(
     editCard.canDelete,
     true,
-    "Legacy resource deletion is preserved",
+    "Legacy resource deletion is preserved"
   );
 }
 editCard.args.resource = { ...editableResource, can_delete: true };
@@ -1294,7 +1295,7 @@ Object.defineProperty(delegatedDeleteCard, "canDelete", { value: true });
 assert.equal(
   delegatedDeleteCard.canEdit,
   false,
-  "Delegated resource deletion does not grant administrator editing",
+  "Delegated resource deletion does not grant administrator editing"
 );
 await delegatedDeleteCard.editFromMenu({
   close: async () => {
@@ -1319,14 +1320,14 @@ await editCard.deleteFromMenu(editMenu);
 assert.deepEqual(
   editMenuEvents,
   ["closing"],
-  "Menu close locks repeated edit and delete actions",
+  "Menu close locks repeated edit and delete actions"
 );
 closeEditMenu();
 await openingEdit;
 assert.equal(
   editMenuEvents[1],
   editCard.args.resource,
-  "Edit opens only after native menu closes",
+  "Edit opens only after native menu closes"
 );
 assert.equal(editCard.menuPending, false);
 for (const abandon of [
@@ -1344,7 +1345,7 @@ for (const abandon of [
   assert.equal(
     opened,
     false,
-    "Menu close rechecks edit permission and lifecycle",
+    "Menu close rechecks edit permission and lifecycle"
   );
 }
 
@@ -1371,7 +1372,7 @@ await pointerCard.showForMouse({ pointerType: "mouse" });
 assert.equal(
   shows,
   1,
-  "Repeated pointer entries cannot duplicate a pending show",
+  "Repeated pointer entries cannot duplicate a pending show"
 );
 finishShow();
 await mouseOpening;
@@ -1388,7 +1389,7 @@ pointerCard.pinHoveredMenu(mouseClick);
 assert.equal(
   suppressed,
   1,
-  "Next mouse click passes through to the native close trigger",
+  "Next mouse click passes through to the native close trigger"
 );
 nativeMenu.expanded = false;
 const nextHover = pointerCard.showForMouse({ pointerType: "mouse" });
@@ -1411,40 +1412,40 @@ assert.equal(shows, 2, "Destroyed cards cannot reopen a menu");
 assert.notEqual(
   menuCard.menuIdentifier,
   new ResourceCard({ resource: { id: "another-resource" } }).menuIdentifier,
-  "Each card must own a separate native menu",
+  "Each card must own a separate native menu"
 );
 const cardTemplate = read(
-  "javascripts/discourse/components/isbf-learning-resource.gjs",
+  "javascripts/discourse/components/isbf-learning-resource.gjs"
 ).split("  <template>")[1];
 assert.ok(cardTemplate.includes("{{this.contributor}}"));
 const fileTemplate = cardTemplate.match(
-  /\{\{#each this.files as \|file\|\}\}([\s\S]*?)\{\{\/each\}\}/,
+  /\{\{#each this.files as \|file\|\}\}([\s\S]*?)\{\{\/each\}\}/
 )?.[1];
 assert.ok(fileTemplate, "files keep their own attachment list");
 assert.match(
   cardTemplate,
-  /class="isbf-learning-resource__attachments"\s+\{\{contentImages\}\}/,
+  /class="isbf-learning-resource__attachments"\s+\{\{contentImages\}\}/
 );
 assert.match(fileTemplate, /<a href=\{\{file.url\}\}>\{\{file.name\}\}<\/a>/);
 assert.match(
   fileTemplate,
-  /\{\{#if file.isImage\}\}\s*<a[\s\S]*?class="lightbox isbf-content-image-attachment"\s+href=\{\{file.url\}\}/,
+  /\{\{#if file.isImage\}\}\s*<a[\s\S]*?class="lightbox isbf-content-image-attachment"\s+href=\{\{file.url\}\}/
 );
 assert.match(
   fileTemplate,
-  /aria-label=\{\{i18n \(themePrefix "isbf_v2.preview_image"\)\}\}/,
+  /aria-label=\{\{i18n \(themePrefix "isbf_v2.preview_image"\)\}\}/
 );
 assert.doesNotMatch(
   fileTemplate,
   /<img/,
-  "attachment previews do not preload images",
+  "attachment previews do not preload images"
 );
 let fileAnchorDepth = 0;
 for (const tag of fileTemplate.matchAll(/<a\b|<\/a>/g)) {
   fileAnchorDepth += tag[0] === "</a>" ? -1 : 1;
   assert.ok(
     fileAnchorDepth >= 0 && fileAnchorDepth <= 1,
-    "download and preview links stay independent",
+    "download and preview links stay independent"
   );
 }
 assert.equal(fileAnchorDepth, 0);
@@ -1462,31 +1463,31 @@ assert.match(cardTemplate, /\{\{on "pointerenter" this.showForMouse\}\}/);
 assert.match(cardTemplate, /\{\{on "pointerup" this.rememberPointer\}\}/);
 assert.match(
   cardTemplate,
-  /\{\{on "click" this.pinHoveredMenu capture=true\}\}/,
+  /\{\{on "click" this.pinHoveredMenu capture=true\}\}/
 );
 assert.doesNotMatch(
   cardTemplate,
-  /pointerleave|mouseleave|mouseenter|@triggers=.*hover/,
+  /pointerleave|mouseleave|mouseenter|@triggers=.*hover/
 );
 assert.ok(cardTemplate.includes("{{#if this.canEdit}}"));
 assert.ok(
   cardTemplate.indexOf("isbf-learning-resource__edit") <
     cardTemplate.indexOf("isbf-learning-resource__delete"),
-  "Edit precedes delete",
+  "Edit precedes delete"
 );
 assert.ok(
   cardTemplate.includes("@modalForMobile={{false}}"),
-  "Tablet and mobile retain the same anchored native menu",
+  "Tablet and mobile retain the same anchored native menu"
 );
 assert.ok(cardTemplate.indexOf("<h3>") < cardTemplate.indexOf("<time"));
 assert.ok(
   cardTemplate.indexOf("@resource.description") <
     cardTemplate.indexOf("@searching"),
-  "Descriptions must follow the title before search context",
+  "Descriptions must follow the title before search context"
 );
 
 const shareTemplate = read(
-  "javascripts/discourse/components/isbf-learning-share-dialog.gjs",
+  "javascripts/discourse/components/isbf-learning-share-dialog.gjs"
 ).split("  <template>")[1];
 assert.equal((shareTemplate.match(/<input\b/g) || []).length, 3);
 assert.ok(shareTemplate.includes("<DModal"));
@@ -1495,20 +1496,20 @@ assert.ok(shareTemplate.includes("{{#if this.descriptionEnabled}}"));
 assert.ok(shareTemplate.includes("{{#if this.contributorEnabled}}"));
 assert.ok(
   !shareTemplate.includes('maxlength="15"'),
-  "Contributor limit uses Unicode code points",
+  "Contributor limit uses Unicode code points"
 );
 assert.ok(
   shareTemplate.indexOf("this.descriptionEnabled") <
-    shareTemplate.indexOf("this.changeLink"),
+    shareTemplate.indexOf("this.changeLink")
 );
 assert.ok(
   shareTemplate.indexOf("this.changeLink") <
-    shareTemplate.indexOf("this.contributorEnabled"),
+    shareTemplate.indexOf("this.contributorEnabled")
 );
 assert.equal((shareTemplate.match(/<textarea\b/g) || []).length, 1);
 assert.ok(
   !shareTemplate.includes('maxlength="300"'),
-  "UTF-16 maxlength would reject valid emoji",
+  "UTF-16 maxlength would reject valid emoji"
 );
 const oldBackend = makeDialog();
 oldBackend.site.isbf_learning.resource_description = false;
@@ -1554,7 +1555,7 @@ assert.equal(requestForm.grade, 1, "Saving must retain submitted grade");
 assert.equal(
   courseSubmissions.length,
   1,
-  "Duplicate course submits send one POST",
+  "Duplicate course submits send one POST"
 );
 assert.deepEqual(plain(courseSubmissions[0]), {
   url: "/isbf/learning/courses",
@@ -1590,7 +1591,7 @@ await saving;
 assert.equal(
   courseResults.length,
   2,
-  "Destroyed dialog ignores late course success",
+  "Destroyed dialog ignores late course success"
 );
 const failedDestroyedCourse = makeCourseDialog();
 saving = failedDestroyedCourse.save(submitEvent);
@@ -1613,7 +1614,7 @@ assert.deepEqual(
     success: true,
     pending: false,
   },
-  "Staff may create courses against the previous backend",
+  "Staff may create courses against the previous backend"
 );
 const strictRequestForm = makeCourseDialog();
 const resultsBeforeInvalidRequest = courseResults.length;
@@ -1623,13 +1624,13 @@ await saving;
 assert.equal(
   courseResults.length,
   resultsBeforeInvalidRequest,
-  "Ordinary course requests must require the review response contract",
+  "Ordinary course requests must require the review response contract"
 );
 assert.equal(strictRequestForm.saving, false);
 assert.equal(strictRequestForm.name, " Economics ");
 const learningPage = read("javascripts/discourse/components/isbf-learning.gjs");
 assert.ok(
-  !learningPage.includes("Composer") && !learningPage.includes("this.composer"),
+  !learningPage.includes("Composer") && !learningPage.includes("this.composer")
 );
 
 const listRequests = [];
@@ -1652,7 +1653,7 @@ page.currentUser = {};
 assert.equal(
   page.canSubmitCourses,
   false,
-  "Old backends retain staff course creation",
+  "Old backends retain staff course creation"
 );
 page.site.isbf_learning.course_requests = true;
 assert.equal(page.canSubmitCourses, true);
@@ -1665,12 +1666,12 @@ assert.equal(page.grade, 1);
 assert.equal(
   page.courses.length,
   1,
-  "Pending requests create no phantom courses",
+  "Pending requests create no phantom courses"
 );
 assert.equal(
   listRequests.length,
   0,
-  "Pending requests do not reload the directory",
+  "Pending requests do not reload the directory"
 );
 page.currentUser = {
   academy_moderator_permissions: { manage_resources: true },
@@ -1692,7 +1693,7 @@ assert.equal(page.sharePending, true);
 assert.equal(
   listRequests.length,
   0,
-  "Pending resources must not refresh the list",
+  "Pending resources must not refresh the list"
 );
 page.share();
 page.query = "changed search";
@@ -1709,7 +1710,7 @@ page.resourceSubmitted({ success: true, pending: false });
 assert.equal(
   listRequests.length,
   1,
-  "Published resources should refresh the matching list",
+  "Published resources should refresh the matching list"
 );
 await Promise.resolve();
 page.share();
@@ -1720,7 +1721,7 @@ assert.equal(page.shareContext, contextBeforeDestroyedResponse);
 assert.equal(
   listRequests.length,
   1,
-  "Destroyed page must ignore late resource responses",
+  "Destroyed page must ignore late resource responses"
 );
 page.isDestroyed = false;
 page.closeShareDialog();
@@ -1729,7 +1730,7 @@ page.share();
 assert.equal(
   page.shareContext,
   null,
-  "Old backend must not open unsupported sharing",
+  "Old backend must not open unsupported sharing"
 );
 page.site.isbf_learning.link_sharing = true;
 page.site.isbf_learning.resource_admin_management = true;
@@ -1742,7 +1743,7 @@ page.currentUser = {};
 assert.equal(
   page.shareLabel,
   "isbf_v2.learning_share",
-  "Old backend retains its existing label",
+  "Old backend retains its existing label"
 );
 page.query = "search at deletion completion";
 page.loadMore();
@@ -1752,12 +1753,12 @@ page.resourceDeleted();
 assert.equal(
   listRequests.at(-1).options.data.page,
   0,
-  "Deletion resets pagination",
+  "Deletion resets pagination"
 );
 assert.equal(
   listRequests.at(-1).options.data.q,
   page.query,
-  "Deletion reloads current search",
+  "Deletion reloads current search"
 );
 await Promise.resolve();
 page.query = "";
@@ -1765,7 +1766,7 @@ page.resourceDeleted();
 assert.equal(
   listRequests.at(-1).options.data.course_id,
   courseId,
-  "Deletion reloads current course",
+  "Deletion reloads current course"
 );
 const requestsBeforeDestroy = listRequests.length;
 page.site.isbf_learning.resource_admin_management = true;
@@ -1780,19 +1781,19 @@ page.editResource(searchResource);
 assert.equal(
   page.shareContext.course,
   searchResource.course,
-  "Search edits use the resource's real course",
+  "Search edits use the resource's real course"
 );
 assert.equal(page.shareContext.resource, searchResource);
 assert.equal(
   page.selectedCourseId,
   courseId,
-  "Editing does not change the current directory filter",
+  "Editing does not change the current directory filter"
 );
 page.resourceSubmitted({ success: true, pending: false, edited: true });
 assert.equal(
   listRequests.at(-1).options.data.q,
   "cross course search",
-  "Edit refreshes the current search across courses",
+  "Edit refreshes the current search across courses"
 );
 assert.equal(listRequests.at(-1).options.data.page, 0);
 await Promise.resolve();
@@ -1802,7 +1803,7 @@ page.resourceSubmitted({ success: true, pending: false, edited: true });
 assert.equal(
   listRequests.at(-1).options.data.course_id,
   courseId,
-  "Edit refreshes the current course filter",
+  "Edit refreshes the current course filter"
 );
 await Promise.resolve();
 page.editResource(searchResource);
@@ -1812,7 +1813,7 @@ page.resourceSubmitted({ success: true, pending: false, edited: true });
 assert.equal(
   listRequests.length,
   beforeChangedEdit,
-  "Late edit cannot overwrite a changed search",
+  "Late edit cannot overwrite a changed search"
 );
 page.editResource(searchResource);
 page.closeShareDialog();
@@ -1820,7 +1821,7 @@ page.resourceSubmitted({ success: true, pending: false, edited: true });
 assert.equal(
   listRequests.length,
   beforeChangedEdit,
-  "Cancelled edit ignores a late parent callback",
+  "Cancelled edit ignores a late parent callback"
 );
 page.currentUser = { moderator: true };
 page.editResource(searchResource);
@@ -1828,8 +1829,8 @@ assert.equal(page.shareContext, null);
 assert.ok(learningPage.includes("@resource={{this.shareContext.resource}}"));
 assert.ok(
   read("javascripts/discourse/components/isbf-resource-list.gjs").includes(
-    "@onEdit={{@page.editResource}}",
-  ),
+    "@onEdit={{@page.editResource}}"
+  )
 );
 const requestsBeforeEditDestroy = listRequests.length;
 page.isDestroying = true;
@@ -1837,7 +1838,7 @@ page.resourceDeleted();
 assert.equal(listRequests.length, requestsBeforeEditDestroy);
 assert.ok(requestsBeforeEditDestroy > requestsBeforeDestroy);
 const gradePicker = read(
-  "javascripts/discourse/components/isbf-learning-grade-picker.gjs",
+  "javascripts/discourse/components/isbf-learning-grade-picker.gjs"
 );
 assert.ok(gradePicker.includes('@placement="bottom-start"'));
 assert.ok(gradePicker.includes('@visibilityOptimizer="none"'));
@@ -1882,18 +1883,18 @@ for (const width of [390, 430, 1024, 1440]) {
   const styles = widthStyles(read("common/common.scss"), width);
   const grids = [
     ...styles.matchAll(
-      /\.isbf-v2-workbench__grid\s*\{[^}]*grid-template-columns: repeat\((\d+), minmax\(0, 1fr\)\);/g,
+      /\.isbf-v2-workbench__grid\s*\{[^}]*grid-template-columns: repeat\((\d+), minmax\(0, 1fr\)\);/g
     ),
   ];
   assert.equal(
     Number(grids.at(-1)[1]),
     width === 1024 ? 3 : 4,
-    `${width}px preserves the existing shared workbench grid`,
+    `${width}px preserves the existing shared workbench grid`
   );
   assert.doesNotMatch(
     styles,
     /\.isbf-v2-workbench__card[^}]*\border\s*:/,
-    `${width}px visual order follows the shared card order`,
+    `${width}px visual order follows the shared card order`
   );
 }
 for (const width of [390, 430, 768, 820, 1024, 1440]) {
@@ -1901,66 +1902,66 @@ for (const width of [390, 430, 768, 820, 1024, 1440]) {
   assert.match(
     styles,
     /\.isbf-learning-resource__header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/,
-    `${width}px title column can shrink`,
+    `${width}px title column can shrink`
   );
   assert.match(
     styles,
     /\.isbf-learning-resource__more\.btn\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/,
-    `${width}px native trigger remains a touch target`,
+    `${width}px native trigger remains a touch target`
   );
   assert.match(
     styles,
     /\.isbf-learning-resource__edit\.btn,\s*\.isbf-learning-resource__delete\.btn\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/,
-    `${width}px menu actions remain touch targets`,
+    `${width}px menu actions remain touch targets`
   );
   assert.match(
     styles,
     /\.isbf-learning-resource-menu \.btn:focus-visible\s*\{[^}]*outline:/,
-    `${width}px menu has keyboard focus`,
+    `${width}px menu has keyboard focus`
   );
 }
 assert.match(
   learningStyles,
-  /\.isbf-learning__grade\s*\{[\s\S]*?justify-content: flex-start;[\s\S]*?order: -1;/,
+  /\.isbf-learning__grade\s*\{[\s\S]*?justify-content: flex-start;[\s\S]*?order: -1;/
 );
 assert.match(
   learningStyles,
-  /\.isbf-learning-resource__description\s*\{[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: pre-wrap;/,
+  /\.isbf-learning-resource__description\s*\{[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: pre-wrap;/
 );
 assert.match(
   learningStyles,
-  /\.isbf-learning-resource__header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;[^}]*align-items: baseline;/,
+  /\.isbf-learning-resource__header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) auto;[^}]*align-items: baseline;/
 );
 assert.match(
   learningStyles,
-  /\.isbf-learning-resource__more\.btn\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/,
+  /\.isbf-learning-resource__more\.btn\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/
 );
 assert.match(
   learningStyles,
-  /\.isbf-learning-resource p\.isbf-learning-resource__credit\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/,
+  /\.isbf-learning-resource p\.isbf-learning-resource__credit\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/
 );
 const reviewSource = read(
-  "javascripts/discourse/components/reviewable-isbf-learning-course.gjs",
+  "javascripts/discourse/components/reviewable-isbf-learning-course.gjs"
 );
 assert.ok(reviewSource.includes("{{@reviewable.payload.course_name}}"));
 assert.ok(!reviewSource.includes("htmlSafe") && !reviewSource.includes("{{{"));
 assert.ok(initializer.includes('"ReviewableIsbfLearningCourse"'));
 assert.ok(
   initializer.includes(
-    'import("../components/reviewable-isbf-learning-course")',
-  ),
+    'import("../components/reviewable-isbf-learning-course")'
+  )
 );
 const ReviewDetail = componentClass("reviewable-isbf-learning-course");
 for (const grade of [1, 2, 3, 4]) {
   assert.equal(
     new ReviewDetail({ reviewable: { payload: { grade } } }).gradeLabel,
-    `isbf_v2.learning_grade_${grade}`,
+    `isbf_v2.learning_grade_${grade}`
   );
 }
 assert.equal(
   new ReviewDetail({ reviewable: { payload: { grade: 9 } } }).gradeLabel,
-  "",
+  ""
 );
 console.log(
-  "Learning sharing/editing, admin lifecycle, native pointer menus, responsive source constraints, course reviews, Unicode limits and safe links OK",
+  "Learning sharing/editing, admin lifecycle, native pointer menus, responsive source constraints, course reviews, Unicode limits and safe links OK"
 );

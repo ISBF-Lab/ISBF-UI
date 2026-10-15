@@ -7,7 +7,7 @@ const read = (path) => readFileSync(new URL(path, root), "utf8");
 const context = vm.createContext({});
 const module = new vm.SourceTextModule(
   read("javascripts/discourse/lib/marketplace.js"),
-  { context },
+  { context }
 );
 await module.link(() => {});
 await module.evaluate();
@@ -68,7 +68,7 @@ assert.equal(marketplacePrice(-1), null);
 assert.equal(marketplacePrice("1234"), null);
 assert.equal(
   JSON.stringify(marketplaceImageIds(JSON.stringify([id, id, "invalid"]))),
-  JSON.stringify([id]),
+  JSON.stringify([id])
 );
 assert.equal(JSON.stringify(marketplaceImageIds("{broken")), "[]");
 const fresh = model({ isbf_anonymous: true });
@@ -86,7 +86,7 @@ assert.equal(marketplacePayload(draft, "isbf_marketplace_price"), "12.30");
 assert.equal(marketplacePayload(draft, "isbf_marketplace_home"), false);
 assert.equal(
   marketplacePayload(draft, "isbf_marketplace_images"),
-  JSON.stringify([id]),
+  JSON.stringify([id])
 );
 const edit = model({
   creatingTopic: false,
@@ -124,9 +124,9 @@ for (const excluded of [
   assert.equal(
     marketplaceUploadMarkdown(
       { id, url: `/isbf/marketplace/images/${id}` },
-      excluded,
+      excluded
     ),
-    undefined,
+    undefined
   );
 }
 const upload = {
@@ -136,16 +136,16 @@ const upload = {
 };
 assert.equal(
   marketplaceUploadMarkdown(upload, fresh),
-  `![photo.jpg](${upload.url})`,
+  `![photo.jpg](${upload.url})`
 );
 marketplaceUploadMarkdown(upload, fresh);
 assert.equal(fresh.isbf_marketplace_images, JSON.stringify([id]));
 assert.equal(
   marketplaceUploadMarkdown(
     { ...upload, url: "https://evil.example/image" },
-    fresh,
+    fresh
   ),
-  undefined,
+  undefined
 );
 const registrations = {
   create: new Map(),
@@ -217,17 +217,17 @@ const synthetic = (values) =>
         this.setExport(key, value);
       }
     },
-    { context },
+    { context }
   );
 const extensions = new vm.SourceTextModule(
   read("javascripts/discourse/lib/composer-model-extensions.js"),
-  { context },
+  { context }
 );
 await extensions.link(() => synthetic({ default: Composer }));
 await extensions.evaluate();
 const initializerModule = new vm.SourceTextModule(
   read("javascripts/discourse/api-initializers/isbf-marketplace.gjs"),
-  { context },
+  { context }
 );
 class ComposerOutlet {}
 class HomeOutlet {}
@@ -265,7 +265,7 @@ await initializerModule.evaluate();
 for (const field of module.namespace.MARKETPLACE_FIELDS) {
   assert.equal(
     registrations.create.get(field),
-    registrations.update.get(field),
+    registrations.update.get(field)
   );
   assert.equal(registrations.draft.get(field), field);
   assert.ok(registrations.getters.has(registrations.create.get(field)));
@@ -295,7 +295,7 @@ const createPayload = Object.fromEntries(
   [...registrations.create].map(([field, property]) => [
     field,
     registrations.getters.get(property).call(nativeModel),
-  ]),
+  ])
 );
 assert.deepEqual(createPayload, {
   isbf_marketplace_price: "5.20",
@@ -304,7 +304,7 @@ assert.deepEqual(createPayload, {
 });
 assert.equal(
   await registrations.methods.get("save").call(nativeModel),
-  "saved",
+  "saved"
 );
 assert.equal(nativeModel.saved, true);
 nativeModel.saved = false;
@@ -316,14 +316,14 @@ assert.equal(
   registrations.getters
     .get(registrations.create.get("isbf_marketplace_price"))
     .call(nativeModel),
-  undefined,
+  undefined
 );
 assert.equal(
   await registrations.methods.get("save").call(nativeModel),
-  "saved",
+  "saved"
 );
 const initializer = read(
-  "javascripts/discourse/api-initializers/isbf-marketplace.gjs",
+  "javascripts/discourse/api-initializers/isbf-marketplace.gjs"
 );
 for (const method of [
   "serializeOnCreate",
@@ -336,11 +336,11 @@ assert.ok(initializer.includes('extendComposerMethod(api, "save"'));
 assert.ok(!initializer.includes("modifyClass"));
 assert.ok(
   initializer.includes(
-    'api.renderAfterWrapperOutlet("post-metadata", ISBFMarketplacePrice)',
-  ),
+    'api.renderAfterWrapperOutlet("post-metadata", ISBFMarketplacePrice)'
+  )
 );
 assert.ok(
-  registrations.outlets.some(([name]) => name === "post-metadata__after"),
+  registrations.outlets.some(([name]) => name === "post-metadata__after")
 );
 assert.ok(!registrations.outlets.some(([name]) => name === "post-metadata"));
 const feed = read("javascripts/discourse/components/isbf-marketplace.gjs");
@@ -357,49 +357,61 @@ assert.ok(!processor.includes("setOptions"));
 const card = read("javascripts/discourse/components/isbf-marketplace-card.gjs");
 assert.ok(card.includes("plainText("));
 assert.ok(card.includes("post.post_number !== 1"));
-assert.ok(card.includes("href={{@topic.url}}"));
+const sharedCard = read(
+  "javascripts/discourse/components/isbf-workbench-listing-card.gjs"
+);
+assert.ok(sharedCard.includes("href={{@topic.url}}"));
 assert.match(
   card,
-  /import contentImages from "\.\.\/modifiers\/content-images";/,
+  /<ISBFWorkbenchListingCard\s+@description=\{\{this.description\}\}\s+@image=\{\{this.image\}\}\s+@imageUrl=\{\{this.imageUrl\}\}\s+@topic=\{\{@topic\}\}/
 );
 assert.match(
   card,
-  /<article class="isbf-marketplace-card" \{\{contentImages\}\}>/,
+  /<ISBFMarketplacePrice @metadata=\{\{@topic.isbf_marketplace\}\} \/>/
+);
+assert.match(sharedCard, /\{\{yield\}\}/);
+assert.match(
+  card,
+  /import contentImages from "\.\.\/modifiers\/content-images";/
+);
+assert.match(
+  sharedCard,
+  /<article class="isbf-marketplace-card" \.\.\.attributes \{\{contentImages\}\}>/
+);
+assert.match(
+  sharedCard,
+  /class="lightbox isbf-marketplace-card__image"\s+href=\{\{@imageUrl\}\}/
+);
+assert.match(
+  sharedCard,
+  /<a class="isbf-marketplace-card__content" href=\{\{@topic.url\}\}>/
 );
 assert.match(
   card,
-  /class="lightbox isbf-marketplace-card__image"\s+href=\{\{this.imageUrl\}\}/,
-);
-assert.match(
-  card,
-  /<a class="isbf-marketplace-card__content" href=\{\{@topic.url\}\}>/,
-);
-assert.match(
-  card,
-  /class="isbf-marketplace-detail-images" \{\{contentImages\}\}/,
+  /class="isbf-marketplace-detail-images" \{\{contentImages\}\}/
 );
 assert.match(card, /class="lightbox"\s+href=\{\{image.url\}\}/);
 assert.match(card, /src=\{\{image.thumbnail\}\}/);
 assert.match(
   card,
-  /aria-label=\{\{i18n \(themePrefix "isbf_v2.preview_image"\)\}\}/,
+  /aria-label=\{\{i18n \(themePrefix "isbf_v2.preview_image"\)\}\}/
 );
 assert.doesNotMatch(
-  card,
-  /href=\{\{(?:this.image|image.thumbnail)\}\}|onclick=|stopPropagation|preventDefault/,
+  `${card}\n${sharedCard}`,
+  /href=\{\{(?:this.image|image.thumbnail)\}\}|onclick=|stopPropagation|preventDefault/
 );
 let anchorDepth = 0;
-for (const anchorTag of card.matchAll(/<a\b|<\/a>/g)) {
+for (const anchorTag of `${card}\n${sharedCard}`.matchAll(/<a\b|<\/a>/g)) {
   anchorDepth += anchorTag[0] === "</a>" ? -1 : 1;
   assert.ok(
     anchorDepth >= 0 && anchorDepth <= 1,
-    "preview and topic links must not nest",
+    "preview and topic links must not nest"
   );
 }
 assert.equal(anchorDepth, 0);
 const cardComponentModule = new vm.SourceTextModule(
   card.replace(/<template>[\s\S]*?<\/template>/g, ""),
-  { context },
+  { context }
 );
 await cardComponentModule.link((specifier) => {
   if (specifier === "../lib/marketplace") {
@@ -432,12 +444,12 @@ const coverCard = new MarketplaceCard({
 assert.equal(
   coverCard.imageUrl,
   coverUrl,
-  "preview targets the original image",
+  "preview targets the original image"
 );
 assert.equal(
   coverCard.image,
   `${coverUrl}/thumbnail`,
-  "cover displays the thumbnail",
+  "cover displays the thumbnail"
 );
 assert.equal(coverCard.args.topic.url, "/t/used-book/123");
 assert.equal(coverCard.description, "Book description");
@@ -446,7 +458,7 @@ coverCard.args.topic.isbf_marketplace.images[0].thumbnail_url =
 assert.equal(
   coverCard.image,
   coverUrl,
-  "unsafe thumbnails fall back to the safe original",
+  "unsafe thumbnails fall back to the safe original"
 );
 coverCard.args.topic.isbf_marketplace.images[0].url = "javascript:alert(1)";
 assert.equal(coverCard.imageUrl, null);
@@ -476,7 +488,7 @@ assert.ok(styles.includes("env(safe-area-inset-bottom)"));
 
 assert.equal(
   marketplaceImageUrl(`/isbf/marketplace/images/${id}/thumbnail`),
-  `/isbf/marketplace/images/${id}/thumbnail`,
+  `/isbf/marketplace/images/${id}/thumbnail`
 );
 assert.equal(marketplaceImageUrl("https://evil.example/image"), null);
 const imageMetadata = {
@@ -493,59 +505,57 @@ assert.equal(
   marketplaceDetailImages(imageMetadata, [
     `https://forum.example/isbf/marketplace/images/${id}`,
   ]).length,
-  0,
+  0
 );
 assert.equal(
   marketplaceDetailImages(imageMetadata, [
     `/isbf/marketplace/images/${id}/thumbnail`,
   ]).length,
-  0,
+  0
 );
 assert.equal(
   marketplaceDetailImages({
     images: [{ id, url: "https://evil.example/image" }],
   }).length,
-  0,
+  0
 );
 assert.ok(read("settings.yml").includes('default: "bag-shopping"'));
 assert.ok(
   registrations.outlets.some(
     ([name, component]) =>
-      name === "after-title-and-category" && component === ComposerOutlet,
-  ),
+      name === "after-title-and-category" && component === ComposerOutlet
+  )
 );
 assert.ok(
-  !registrations.outlets.some(([name]) => name === "before-composer-fields"),
+  !registrations.outlets.some(([name]) => name === "before-composer-fields")
 );
 assert.ok(
-  !registrations.outlets.some(
-    ([name]) => name === "after-composer-title-input",
-  ),
+  !registrations.outlets.some(([name]) => name === "after-composer-title-input")
 );
 assert.equal(
   registrations.text.titlePlaceholder(model()),
-  "isbf_v2.marketplace_name",
+  "isbf_v2.marketplace_name"
 );
 assert.equal(
   registrations.text.titlePlaceholder(model({ categoryId: 43 })),
-  null,
+  null
 );
 const placeholder = registrations.transformers.get(
-  "composer-editor-reply-placeholder",
+  "composer-editor-reply-placeholder"
 );
 assert.equal(
   placeholder({ value: "native", context: { model: { model: model() } } }),
-  "isbf_v2.marketplace_description",
+  "isbf_v2.marketplace_description"
 );
 assert.equal(
   placeholder({
     value: "native",
     context: { model: { model: model({ categoryId: 43 }) } },
   }),
-  "native",
+  "native"
 );
 const composerSource = read(
-  "javascripts/discourse/components/isbf-marketplace-composer.gjs",
+  "javascripts/discourse/components/isbf-marketplace-composer.gjs"
 );
 assert.ok(composerSource.includes("this.args.outletArgs?.composer"));
 assert.ok(composerSource.includes("this.args.outletArgs?.model"));
@@ -554,14 +564,14 @@ assert.ok(!composerSource.includes("isbf_anonymous"));
 assert.ok(
   registrations.outlets.some(
     ([name, component]) =>
-      name === "after-title-and-category" && component === HomeOutlet,
-  ),
+      name === "after-title-and-category" && component === HomeOutlet
+  )
 );
 const composerModule = new vm.SourceTextModule(
   composerSource
     .replace(/<template>[\s\S]*?<\/template>/g, "")
     .replace(/@action\s+/g, ""),
-  { context },
+  { context }
 );
 await composerModule.link((specifier) => {
   if (specifier === "./isbf-home-display-option") {
@@ -620,7 +630,7 @@ for (const outletArgument of ["model", "composer"]) {
     restoreMarketplace(restoredDraft, {
       isbf_marketplace_home: marketplacePayload(
         composerModel,
-        "isbf_marketplace_home",
+        "isbf_marketplace_home"
       ),
     });
     assert.equal(restoredDraft.isbf_marketplace_home, checked);
@@ -631,11 +641,20 @@ for (const outletArgument of ["model", "composer"]) {
 }
 // Exercise the cancellation component with the real scope helpers, without rendering.
 context.document = { querySelector: () => ({}) };
+const careersModule = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/careers.js"),
+  { context }
+);
+await careersModule.link(() => {});
+await careersModule.evaluate();
 const quickPostModule = new vm.SourceTextModule(
   read("javascripts/discourse/lib/quick-post-scope.js"),
-  { context },
+  { context }
 );
 await quickPostModule.link((specifier) => {
+  if (specifier === "./careers") {
+    return careersModule;
+  }
   if (specifier === "./teamup") {
     return synthetic({ isTeamupCategory: () => false });
   }
@@ -650,21 +669,24 @@ await quickPostModule.link((specifier) => {
 await quickPostModule.evaluate();
 const teamupModule = new vm.SourceTextModule(
   read("javascripts/discourse/lib/teamup.js"),
-  { context },
+  { context }
 );
 await teamupModule.link(() => {});
 await teamupModule.evaluate();
 const cancelSource = read(
-  "javascripts/discourse/components/isbf-v2-composer-cancel.gjs",
+  "javascripts/discourse/components/isbf-v2-composer-cancel.gjs"
 );
 const cancelModule = new vm.SourceTextModule(
   cancelSource
     .replace(/<template>[\s\S]*?<\/template>/g, "")
     .replace(/@action\s+/g, "")
     .replace(/@service\s+/g, ""),
-  { context },
+  { context }
 );
 await cancelModule.link((specifier) => {
+  if (specifier === "../lib/careers") {
+    return careersModule;
+  }
   if (specifier === "../lib/teamup") {
     return teamupModule;
   }
@@ -745,7 +767,7 @@ for (const [name, composerModel, expected] of [
   assert.equal(
     isMarketplaceComposer(composerModel),
     name.startsWith("marketplace") && !name.includes("reply"),
-    name,
+    name
   );
   const cancel = new Cancel(undefined, {
     outletArgs: { model: composerModel },
@@ -768,23 +790,23 @@ cancel.close(closeEvent);
 assert.equal(
   saveAndCloseCalls,
   1,
-  "Cancel must retain native draft save-and-close",
+  "Cancel must retain native draft save-and-close"
 );
 const homeSource = composerSource.slice(
-  composerSource.indexOf("export class ISBFMarketplaceHome"),
+  composerSource.indexOf("export class ISBFMarketplaceHome")
 );
 assert.match(
   homeSource,
-  /<ISBFHomeDisplayOption\s+class="isbf-marketplace-composer__home"/,
+  /<ISBFHomeDisplayOption\s+class="isbf-marketplace-composer__home"/
 );
 assert.match(homeSource, /@checked=\{\{this\.model\.isbf_marketplace_home\}\}/);
 assert.match(homeSource, /@onChange=\{\{this\.changeHome\}\}/);
 assert.match(
   homeSource,
-  /@label=\{\{i18n \(themePrefix "isbf_v2\.marketplace_home"\)\}\}/,
+  /@label=\{\{i18n \(themePrefix "isbf_v2\.marketplace_home"\)\}\}/
 );
 const sharedHomeSource = read(
-  "javascripts/discourse/components/isbf-home-display-option.gjs",
+  "javascripts/discourse/components/isbf-home-display-option.gjs"
 );
 assert.match(sharedHomeSource, /<label class="isbf-home-display-option"/);
 assert.match(sharedHomeSource, /type="checkbox"/);
@@ -813,56 +835,56 @@ const composerScope =
 const desktopComposerStyles = styleRule(styles, composerScope);
 assert.match(
   styleRule(desktopComposerStyles, /\.title-and-category\s*\{/),
-  /display:\s*grid\s*;/,
+  /display:\s*grid\s*;/
 );
 assert.match(
   styleRule(
     desktopComposerStyles,
-    /\.category-input,\s*\.tags-input,\s*\.isbf-marketplace-composer-options\s*\{/,
+    /\.category-input,\s*\.tags-input,\s*\.isbf-marketplace-composer-options\s*\{/
   ),
-  /grid-row:\s*3\s*;/,
+  /grid-row:\s*3\s*;/
 );
 const homeStyles = styleRule(
   desktopComposerStyles,
-  /\.isbf-marketplace-composer__home\s*\{/,
+  /\.isbf-marketplace-composer__home\s*\{/
 );
 assert.match(homeStyles, /min-height:\s*44px\s*;/);
 assert.match(homeStyles, /gap:\s*8px\s*;/);
 const mobileStyles = sharedMobileStyles;
 const mobileComposerScope =
-  /html\.composer-open\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\)\s*\)\s*\{/;
+  /html\.composer-open\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\),\s*:has\(\.isbf-careers-composer\)\s*\)\s*\{/;
 const mobileComposerStyles = styleRule(mobileStyles, mobileComposerScope);
 assert.match(
   styleRule(mobileComposerStyles, /\.d-editor-textarea-column\s*\{/),
-  /display:\s*grid\s*;/,
+  /display:\s*grid\s*;/
 );
 // The native viewport variable follows the keyboard; all overrides stay mobile
 // and require the marketplace fields rendered for creates or first-post edits.
 assert.match(
   mobileComposerStyles,
-  /height:\s*calc\(var\(--composer-vh,\s*1dvh\)\s*\*\s*100\)\s*;/,
+  /height:\s*calc\(var\(--composer-vh,\s*1dvh\)\s*\*\s*100\)\s*;/
 );
 const mobileHeader = styleRule(mobileComposerStyles, /\.reply-to\s*\{/);
 const mobileActions = styleRule(mobileComposerStyles, /\.save-or-cancel\s*\{/);
 for (const rule of [mobileHeader, mobileActions]) {
   assert.match(
     rule,
-    /height:\s*calc\(48px\s*\+\s*env\(safe-area-inset-top\)\)\s*;/,
+    /height:\s*calc\(48px\s*\+\s*env\(safe-area-inset-top\)\)\s*;/
   );
   assert.match(rule, /min-height:\s*0\s*;/);
 }
 assert.match(
   styleRule(mobileComposerStyles, /\.reply-area\s*\{/),
-  /padding:\s*calc\(48px\s*\+\s*env\(safe-area-inset-top\)\)\s+0\s+0\s*;/,
+  /padding:\s*calc\(48px\s*\+\s*env\(safe-area-inset-top\)\)\s+0\s+0\s*;/
 );
 const duplicateControls = styleRule(
   mobileComposerStyles,
-  /\.reply-to \.action-title,\s*\.reply-to \.composer-action-title,\s*\.reply-to \.composer-controls\s*\{/,
+  /\.reply-to \.action-title,\s*\.reply-to \.composer-action-title,\s*\.reply-to \.composer-controls\s*\{/
 );
 assert.match(duplicateControls, /display:\s*none\s*;/);
 const discard = styleRule(
   mobileComposerStyles,
-  /(?:^|\})\s*\.save-or-cancel \.discard-button\s*\{/,
+  /(?:^|\})\s*\.save-or-cancel \.discard-button\s*\{/
 );
 assert.match(discard, /position:\s*static\s*;/);
 assert.match(discard, /min-width:\s*44px\s*;/);
@@ -870,41 +892,41 @@ assert.doesNotMatch(discard, /display:\s*none\s*;/);
 assert.match(
   styleRule(
     mobileComposerStyles,
-    /\.save-or-cancel \.btn-primary,\s*\.save-or-cancel \.discard-button\s*\{/,
+    /\.save-or-cancel \.btn-primary,\s*\.save-or-cancel \.discard-button\s*\{/
   ),
-  /min-height:\s*44px\s*;/,
+  /min-height:\s*44px\s*;/
 );
 assert.match(
   mobileComposerStyles,
-  /container:\s*isbf-workbench-composer\s*\/\s*size\s*;/,
+  /container:\s*isbf-workbench-composer\s*\/\s*size\s*;/
 );
 const shortViewport = styleRule(
   mobileStyles,
-  /@container isbf-workbench-composer\s*\(height\s*<\s*360px\)\s*\{/,
+  /@container isbf-workbench-composer\s*\(height\s*<\s*360px\)\s*\{/
 );
 assert.match(shortViewport, /:has\(\.isbf-marketplace-composer\)/);
 assert.match(
   shortViewport,
-  /grid-template-rows:\s*auto\s+minmax\(44px,\s*1fr\)/,
+  /grid-template-rows:\s*auto\s+minmax\(44px,\s*1fr\)/
 );
 const mobileGrid = styleRule(
   mobileComposerStyles,
-  /\.d-editor-textarea-column\s*\{/,
+  /\.d-editor-textarea-column\s*\{/
 );
 assert.match(mobileGrid, /grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\)/);
 assert.match(mobileGrid, /min-height:\s*0\s*;/);
 assert.match(
   mobileGrid,
   /overflow-y:\s*auto\s*;/,
-  "Very short viewports must allow fields to scroll",
+  "Very short viewports must allow fields to scroll"
 );
 assert.doesNotMatch(
   mobileComposerStyles,
-  /(?:min-height:\s*160px|minmax\(160px)/,
+  /(?:min-height:\s*160px|minmax\(160px)/
 );
 const mobileDescription = styleRule(
   mobileComposerStyles,
-  /\.d-editor-textarea-wrapper\s*\{/,
+  /\.d-editor-textarea-wrapper\s*\{/
 );
 assert.match(mobileDescription, /min-height:\s*0\s*;/);
 assert.match(mobileDescription, /align-self:\s*stretch\s*;/);
@@ -914,37 +936,40 @@ assert.match(mobileInput, /height:\s*100%\s*;/);
 assert.match(
   mobileInput,
   /overflow-y:\s*auto\s*;/,
-  "Long descriptions must scroll internally",
+  "Long descriptions must scroll internally"
 );
 const toolbarSpace = styleRule(mobileComposerStyles, /\.wmd-controls\s*\{/);
 assert.match(
   toolbarSpace,
-  /padding-bottom:\s*calc\(56px\s*\+\s*env\(safe-area-inset-bottom\)\)\s*;/,
+  /padding-bottom:\s*calc\(56px\s*\+\s*env\(safe-area-inset-bottom\)\)\s*;/
 );
 const keyboardComposerStyles = styleRule(
   mobileStyles,
-  /html\.keyboard-visible\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\)\s*\)\s*\{/,
+  /html\.keyboard-visible\s+body:has\(\.isbf-v2-shell\)\s+#reply-control\.open:has\(\.isbf-v2-composer\):is\(\s*:has\(\.isbf-marketplace-composer\),\s*:has\(\.isbf-teamup-composer\),\s*:has\(\.isbf-careers-composer\)\s*\)\s*\{/
 );
 assert.match(
   styleRule(keyboardComposerStyles, /\.wmd-controls\s*\{/),
-  /padding-bottom:\s*56px\s*;/,
+  /padding-bottom:\s*56px\s*;/
 );
 const mobileFields = styleRule(
   mobileComposerStyles,
-  /\.composer-fields,\s*\.title-and-category\s*\{/,
+  /\.composer-fields,\s*\.title-and-category\s*\{/
 );
 assert.match(mobileFields, /display:\s*contents\s*;/);
 assert.match(mobileFields, /position:\s*static\s*;/);
 for (const [selector, row] of [
   [/\.title-input\s*\{/, 1],
   [/\.d-editor-textarea-wrapper\s*\{/, 2],
-  [/\.isbf-marketplace-composer\s*\{/, 3],
+  [/\.isbf-marketplace-composer,\s*\.isbf-careers-composer\s*\{/, 3],
   [/\.category-input,\s*\.tags-input\s*\{/, 4],
-  [/\.isbf-marketplace-composer-options\s*\{/, 5],
+  [
+    /\.isbf-marketplace-composer-options,\s*\.isbf-careers-composer-options\s*\{/,
+    5,
+  ],
 ]) {
   assert.match(
     styleRule(mobileComposerStyles, selector),
-    new RegExp(`grid-row:\\s*${row}\\s*;`),
+    new RegExp(`grid-row:\\s*${row}\\s*;`)
   );
 }
 for (const selector of [
@@ -959,11 +984,11 @@ for (const selector of [
 assert.ok(feed.includes("this.config?.publishing_enabled !== false"));
 const capabilityGetter = feed.slice(
   feed.indexOf("  get canCreate()"),
-  feed.indexOf("  @action", feed.indexOf("  get canCreate()")),
+  feed.indexOf("  @action", feed.indexOf("  get canCreate()"))
 );
 const Capability = vm.runInContext(
   `(class Capability { ${capabilityGetter} })`,
-  context,
+  context
 );
 const capability = new Capability();
 capability.config = config;

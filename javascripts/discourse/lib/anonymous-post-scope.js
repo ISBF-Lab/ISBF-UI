@@ -1,4 +1,5 @@
 import Category from "discourse/models/category";
+import { isCareersCategory } from "./careers";
 import { marketplaceConfig } from "./marketplace";
 import { isTeamupCategory } from "./teamup";
 
@@ -8,6 +9,7 @@ export function canPublishAnonymously(model, currentUser, siteSettings) {
     !currentUser?.can_post_anonymously ||
     currentUser.is_anonymous ||
     isTeamupCategory(model) ||
+    isCareersCategory(model) ||
     !["createTopic", "reply"].includes(model.action) ||
     model.archetypeId === "private_message" ||
     [true, "true"].includes(model.academy_official)

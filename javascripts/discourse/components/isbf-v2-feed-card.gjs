@@ -28,6 +28,7 @@ import {
   postCardTitle,
 } from "../lib/post-card-helpers";
 import { isReportedHidden, openPostReport } from "../lib/report-post";
+import { ISBFCareersSalary } from "./isbf-careers-card";
 import ISBFHomePinDialog from "./isbf-home-pin-dialog";
 import { ISBFMarketplacePrice } from "./isbf-marketplace-card";
 import ISBFOfficialActivitySummary from "./isbf-official-activity-summary";
@@ -801,7 +802,7 @@ export default class ISBFV2FeedCard extends Component {
         {{/unless}}
         {{#unless this.hidden}}<ISBFMarketplacePrice
             @metadata={{@topic.isbf_marketplace}}
-          />{{/unless}}
+          /><ISBFCareersSalary @metadata={{@topic.isbf_careers}} />{{/unless}}
         <footer class="isbf-feed-card__actions">
           <button
             aria-label={{i18n (themePrefix "isbf_v2.reply")}}

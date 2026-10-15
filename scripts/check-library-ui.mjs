@@ -6,7 +6,7 @@ const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const resources = new vm.SourceTextModule(
-  read("javascripts/discourse/lib/learning-resources.js"),
+  read("javascripts/discourse/lib/learning-resources.js")
 );
 await resources.link(() => {});
 await resources.evaluate();
@@ -22,11 +22,11 @@ const config = {
 assert.equal(libraryConfig({ isbf_library: config }), config);
 assert.equal(
   libraryConfig({ isbf_library: config, isbf_learning: { category_id: 20 } }),
-  null,
+  null
 );
 assert.equal(
   libraryConfig({ isbf_library: { ...config, category_id: "20" } }),
-  null,
+  null
 );
 assert.equal(libraryConfig({}), null);
 function componentClass(path, globals = {}) {
@@ -35,7 +35,7 @@ function componentClass(path, globals = {}) {
   const body = source
     .slice(
       source.indexOf("export default class"),
-      source.indexOf("  <template>"),
+      source.indexOf("  <template>")
     )
     .replace("export default class", "class")
     .replace(/@service (\w+);/g, "$1 = services.$1;")
@@ -66,7 +66,7 @@ const Page = componentClass("isbf-resource-page", {
   document: { activeElement: { focus() {} } },
   ajax: (url, options) =>
     new Promise((resolve, reject) =>
-      requests.push({ url, options, resolve, reject }),
+      requests.push({ url, options, resolve, reject })
     ),
 });
 const page = new Page({ library: true });
@@ -138,7 +138,7 @@ assert.equal(learningEditDetails(topic, post, "group"), null);
 assert.equal(learningEditDetails(topic, post, "wrong", "isbf_library"), null);
 assert.equal(
   learningEditDetails(topic, post, "group", "isbf_library").description,
-  "intro",
+  "intro"
 );
 const submissions = [];
 const results = [];
@@ -201,8 +201,8 @@ assert.equal(update.data.post.isbf_library_description, "intro");
 assert.ok(!("isbf_learning_link" in update.data.post));
 assert.ok(
   read("javascripts/discourse/components/isbf-library.gjs").includes(
-    "<ISBFResourcePage",
-  ),
+    "<ISBFResourcePage"
+  )
 );
 for (const [old, shared] of [
   ["isbf-learning", "isbf-resource-page"],
@@ -213,19 +213,19 @@ for (const [old, shared] of [
 ]) {
   assert.ok(
     read(`javascripts/discourse/components/${old}.gjs`).includes(
-      `export { default } from "./${shared}"`,
-    ),
+      `export { default } from "./${shared}"`
+    )
   );
 }
 assert.ok(
   read("javascripts/discourse/api-initializers/isbf-library.js").includes(
-    '"ReviewableIsbfLibraryDirectory"',
-  ),
+    '"ReviewableIsbfLibraryDirectory"'
+  )
 );
 assert.ok(
   read(
-    "javascripts/discourse/components/reviewable-isbf-library-directory.gjs",
-  ).includes("{{@reviewable.payload.name}}"),
+    "javascripts/discourse/components/reviewable-isbf-library-directory.gjs"
+  ).includes("{{@reviewable.payload.name}}")
 );
 
 const Directory = componentClass("isbf-resource-directory-dialog", {
@@ -252,25 +252,26 @@ for (const kind of ["category", "group"]) {
   const submission = submissions.at(-1);
   assert.equal(
     submission.url,
-    `/isbf/library/${kind === "category" ? "categories" : "groups"}`,
+    `/isbf/library/${kind === "category" ? "categories" : "groups"}`
   );
   assert.deepEqual(
     plain(submission.data),
     kind === "category"
       ? { name: "New name" }
-      : { name: "New name", category_id: "parent" },
+      : { name: "New name", category_id: "parent" }
   );
 }
 const workbenchSource = read(
-  "javascripts/discourse/components/isbf-v2-workbench.gjs",
+  "javascripts/discourse/components/isbf-v2-workbench.gjs"
 );
 const Workbench = componentClass("isbf-v2-workbench", {
   ...resources.namespace,
   CARDS: vm.runInNewContext(
-    workbenchSource.match(/const CARDS = (\[[\s\S]*?\n\]);/)[1],
+    workbenchSource.match(/const CARDS = (\[[\s\S]*?\n\]);/)[1]
   ),
   alumniConfig: () => false,
   marketplaceConfig: () => false,
+  careersConfig: () => false,
   teamupConfig: () => false,
 });
 const workbench = new Workbench();
@@ -339,7 +340,7 @@ for (const library of [false, true]) {
   assert.equal(permissionPage.shareDisabled, !library);
   assert.equal(
     permissionPage.shareLabel,
-    library ? "isbf_v2.learning_apply_share" : "isbf_v2.learning_share",
+    library ? "isbf_v2.learning_apply_share" : "isbf_v2.learning_share"
   );
   permissionPage.site.categories[0].canCreateTopic = true;
   assert.equal(permissionPage.canSubmitResources, true);
@@ -367,26 +368,26 @@ for (const library of [false, true]) {
   permissionDialog.currentUser = academyUser;
   assert.equal(
     permissionDialog.shareLabel,
-    library ? "isbf_v2.learning_apply_share" : "isbf_v2.learning_share",
+    library ? "isbf_v2.learning_apply_share" : "isbf_v2.learning_share"
   );
   assert.equal(
     permissionDialog.submitLabel,
-    library ? "isbf_v2.learning_submit_request" : "isbf_v2.learning_share",
+    library ? "isbf_v2.learning_submit_request" : "isbf_v2.learning_share"
   );
   permissionDialog.args.resource = { id: 101, link_only: true, files: [] };
   assert.equal(permissionDialog.editAllowed, false);
 }
 const pageSource = read(
-  "javascripts/discourse/components/isbf-resource-page.gjs",
+  "javascripts/discourse/components/isbf-resource-page.gjs"
 );
 assert.match(
   pageSource,
-  /this.isLibrary\s*\? this.currentUser\?\.moderator\s*:/,
+  /this.isLibrary\s*\? this.currentUser\?\.moderator\s*:/
 );
 assert.match(pageSource, /this.currentUser &&\s*this.canSubmitResources &&/);
 assert.match(
   pageSource,
-  /!this.selectedCourse \|\|\s*!this.canSubmitResources \|\|/,
+  /!this.selectedCourse \|\|\s*!this.canSubmitResources \|\|/
 );
 for (const name of [
   "isbf-resource-page",
@@ -396,10 +397,10 @@ for (const name of [
   const permissionSource = read(`javascripts/discourse/components/${name}.gjs`);
   assert.match(
     permissionSource,
-    /!this\.(?:args\.library|isLibrary) &&\s*this.currentUser\?\.academy_moderator_permissions\?\.manage_resources/,
+    /!this\.(?:args\.library|isLibrary) &&\s*this.currentUser\?\.academy_moderator_permissions\?\.manage_resources/
   );
 }
-// eslint-disable-next-line no-console
+
 console.log(
-  "Library catalog, independent filters, stale requests, sharing, native edit/delete contracts and shared wrappers OK",
+  "Library catalog, independent filters, stale requests, sharing, native edit/delete contracts and shared wrappers OK"
 );

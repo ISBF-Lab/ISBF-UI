@@ -13,7 +13,7 @@ const synthetic = (values) =>
         this.setExport(key, value);
       }
     },
-    { context },
+    { context }
   );
 async function sourceModule(path, dependencies = {}) {
   const source = read(path)
@@ -45,9 +45,10 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 const marketplace = await sourceModule(
-  "javascripts/discourse/lib/marketplace.js",
+  "javascripts/discourse/lib/marketplace.js"
 );
 const teamup = await sourceModule("javascripts/discourse/lib/teamup.js");
+const careers = await sourceModule("javascripts/discourse/lib/careers.js");
 const recent = await sourceModule(
   "javascripts/discourse/lib/recent-discussions.js",
   {
@@ -58,7 +59,8 @@ const recent = await sourceModule(
     },
     "./marketplace": marketplace,
     "./teamup": teamup,
-  },
+    "./careers": careers,
+  }
 );
 const { loadRecentDiscussions } = recent.namespace;
 const now = Date.parse("2026-10-11T12:00:00Z");
@@ -91,7 +93,7 @@ const first = [
   topic(31, { created_at: undefined }),
   topic(90, { posts_count: 8 }),
   ...Array.from({ length: 30 }, (_, index) =>
-    topic(100 + index, { category_id: 8 }),
+    topic(100 + index, { category_id: 8 })
   ),
 ];
 const eligible = topic(7, {
@@ -108,7 +110,7 @@ const pages = [
       topic(6, { posts_count: 1 }),
       topic(9),
     ],
-    "/filter.json?page=2",
+    "/filter.json?page=2"
   ),
 ];
 const selected = await loadRecentDiscussions({
@@ -122,7 +124,7 @@ const selected = await loadRecentDiscussions({
 });
 assert.deepEqual(
   Array.from(selected, (item) => item.id),
-  [90, 7, 10, 6],
+  [90, 7, 10, 6]
 );
 assert.equal(selected[0], first[7], "Keep native topic data and order");
 assert.equal(selected[1], eligible);
@@ -134,15 +136,15 @@ assert.equal(calls[1].url, "/filter.json");
 assert.equal(calls[1].options.data.page, 1);
 assert.equal(
   await loadRecentDiscussions({ now, request: async () => page([]) }).then(
-    (result) => result.length,
+    (result) => result.length
   ),
-  0,
+  0
 );
 assert.equal(
   await loadRecentDiscussions({ now, request: async () => ({}) }).then(
-    (result) => result.length,
+    (result) => result.length
   ),
-  0,
+  0
 );
 const noConfig = await loadRecentDiscussions({
   now,
@@ -154,7 +156,64 @@ const noConfig = await loadRecentDiscussions({
 });
 assert.deepEqual(
   Array.from(noConfig, (item) => item.id),
-  [2],
+  [2]
+);
+const careersSite = {
+  isbf_careers: { category_id: 12, enabled: true, version: 1 },
+};
+const careersOptIn = topic(302, {
+  category_id: 12,
+  isbf_careers: { show_on_home: true },
+});
+const careersLegacy = topic(303, {
+  category_id: 12,
+  isbf_careers: { show_on_home: true },
+});
+const careersPages = [
+  page(
+    Array.from({ length: 30 }, (_, index) =>
+      topic(400 + index, {
+        category_id: 12,
+        isbf_careers: { show_on_home: false },
+      })
+    ),
+    "/filter.json?page=1"
+  ),
+  page(
+    [
+      topic(301, { isbf_careers: { show_on_home: false } }),
+      careersOptIn,
+      careersLegacy,
+      topic(304),
+    ],
+    "/filter.json?page=2"
+  ),
+  page([careersOptIn, topic(305), topic(306)]),
+];
+let careersCalls = 0;
+const careersSelected = await loadRecentDiscussions({
+  site: careersSite,
+  now,
+  request: async (_url, options) => {
+    assert.equal(options.data.page, careersCalls++);
+    assert.ok(careersPages.length, "Stop after filling four eligible topics");
+    return careersPages.shift();
+  },
+});
+assert.deepEqual(
+  Array.from(careersSelected, (item) => item.id),
+  [302, 303, 304, 305]
+);
+assert.equal(
+  careersCalls,
+  3,
+  "Default false Careers listings must not starve the four item rail"
+);
+assert.equal(careersSelected[0], careersOptIn);
+assert.equal(
+  careersSelected[1],
+  careersLegacy,
+  "Serialized legacy visible listings remain eligible"
 );
 let duplicateCalls = 0;
 const duplicateOnly = await loadRecentDiscussions({
@@ -167,7 +226,7 @@ const duplicateOnly = await loadRecentDiscussions({
 });
 assert.deepEqual(
   Array.from(duplicateOnly, (item) => item.id),
-  [20],
+  [20]
 );
 assert.equal(duplicateCalls, 2);
 await assert.rejects(
@@ -177,7 +236,7 @@ await assert.rejects(
       throw new Error("offline");
     },
   }),
-  /offline/,
+  /offline/
 );
 let stale = false;
 const inFlight = deferred();
@@ -201,15 +260,15 @@ assert.equal(
       },
     })
   ).length,
-  0,
+  0
 );
 assert.equal(staleCalls, 0);
 console.log(
-  "Recent discussions: rolling 72h, server order, marketplace eligibility, pagination, dedup, errors and stale requests OK",
+  "Recent discussions: rolling 72h, server order, marketplace eligibility, pagination, dedup, errors and stale requests OK"
 );
 
 const optionalTitle = await sourceModule(
-  "javascripts/discourse/lib/optional-topic-title.js",
+  "javascripts/discourse/lib/optional-topic-title.js"
 );
 const observers = [];
 class Observer {
@@ -304,7 +363,7 @@ titled.observe({});
 assert.equal(
   observers.length,
   0,
-  "Real rail titles need no cooked-post request",
+  "Real rail titles need no cooked-post request"
 );
 for (const [excerpt, text] of [
   ["body", "正文摘要 😀"],
@@ -337,7 +396,7 @@ firstObserver.intersect();
 assert.equal(
   bodyRequests.length,
   1,
-  "Repeated observer callbacks make one request",
+  "Repeated observer callbacks make one request"
 );
 loading.args = { ...loading.args, postId: 12, excerpt: "image" };
 loading.observe({});
@@ -348,7 +407,7 @@ await flush();
 assert.equal(
   loading.text,
   "图片",
-  "Older response cannot replace the new topic excerpt",
+  "Older response cannot replace the new topic excerpt"
 );
 bodyRequests[1].resolve("mixed");
 await flush();
@@ -362,7 +421,7 @@ await flush();
 assert.equal(
   failed.text,
   "正文摘要 😀",
-  "Failed cooked request preserves excerpt",
+  "Failed cooked request preserves excerpt"
 );
 const destroyed = rail({ excerpt: "image" });
 destroyed.observe({});
@@ -373,7 +432,7 @@ await flush();
 assert.equal(
   destroyed.text,
   "图片",
-  "Destroyed observer rejects late response",
+  "Destroyed observer rejects late response"
 );
 const destroying = rail({ excerpt: "image" });
 destroying.observe({});
@@ -387,7 +446,7 @@ rail({ disabled: true }).observe({});
 rail({ postId: 0 }).observe({});
 assert.equal(observers.length, priorObservers);
 console.log(
-  "Post preview: title/body/image/empty fallbacks, no rail images, activity retention, failure and observer lifecycle OK",
+  "Post preview: title/body/image/empty fallbacks, no rail images, activity retention, failure and observer lifecycle OK"
 );
 
 const railRequests = [];
@@ -409,7 +468,7 @@ const RightRail = (
         },
       },
       "./isbf-post-preview": { default: Preview },
-    },
+    }
   )
 ).namespace.default;
 const populatedRail = new RightRail();
@@ -443,7 +502,7 @@ railRequests.at(-1).resolve([nativeRailTopic]);
 await flush();
 assert.equal(destroyingRail.topics.length, 0);
 console.log(
-  "Right rail: native topic mapping, marketplace site dependency, offline and destruction guards OK",
+  "Right rail: native topic mapping, marketplace site dependency, offline and destruction guards OK"
 );
 
 const cookedRequests = [];
@@ -457,14 +516,14 @@ const loader = await sourceModule(
         return request.promise;
       },
     },
-  },
+  }
 );
 const { loadCookedPost, invalidateCookedPost } = loader.namespace;
 const jobs = Array.from({ length: 6 }, (_, index) => loadCookedPost(index + 1));
 assert.equal(
   cookedRequests.length,
   4,
-  "Cooked loader caps parallel requests at four",
+  "Cooked loader caps parallel requests at four"
 );
 cookedRequests[0].resolve({ cooked: "cached body" });
 await flush();
@@ -492,7 +551,7 @@ const restored = loadCookedPost(77);
 cookedRequests.at(-1).resolve({ cooked: "restored body" });
 assert.equal(await restored, "restored body");
 console.log(
-  "Native cooked loader: cache, concurrency, rejection recovery and invalidation OK",
+  "Native cooked loader: cache, concurrency, rejection recovery and invalidation OK"
 );
 
 const parser = read("javascripts/discourse/lib/post-preview.js");
@@ -501,16 +560,16 @@ assert.match(parser, /script, style, iframe, aside\.quote, aside\.onebox/);
 assert.match(parser, /img:not\(\.emoji\)/);
 assert.match(
   parser,
-  /replaceWith\(document\.createTextNode\(image\.getAttribute\("alt"\)/,
+  /replaceWith\(document\.createTextNode\(image\.getAttribute\("alt"\)/
 );
 assert.match(parser, /body\.textContent\.replace\(/);
 const previewSource = read(
-  "javascripts/discourse/components/isbf-post-preview.gjs",
+  "javascripts/discourse/components/isbf-post-preview.gjs"
 );
 assert.match(previewSource, /href=\{\{@href\}\}/);
 assert.match(previewSource, /dReplaceEmoji this\.text/);
 const railSource = read(
-  "javascripts/discourse/components/isbf-v2-right-rail.gjs",
+  "javascripts/discourse/components/isbf-v2-right-rail.gjs"
 );
 assert.match(railSource, /loadRecentDiscussions/);
 assert.match(railSource, /@variant="rail"/);
@@ -518,7 +577,7 @@ assert.match(railSource, /@postId=\{\{topic\.postId\}\}/);
 assert.match(railSource, /href="\/latest"/);
 const css = read("common/common.scss");
 const hiddenRail = css.match(
-  /@media \(width <= (1279)px\)[\s\S]*?\.isbf-v2-rail\s*\{\s*display: none;/,
+  /@media \(width <= (1279)px\)[\s\S]*?\.isbf-v2-rail\s*\{\s*display: none;/
 );
 assert.ok(hiddenRail);
 const railBreakpoint = Number(hiddenRail[1]);
@@ -526,18 +585,18 @@ for (const width of [390, 430, 1024, 1440]) {
   assert.equal(
     width <= railBreakpoint,
     width !== 1440,
-    `Rail source breakpoint at ${width}px`,
+    `Rail source breakpoint at ${width}px`
   );
 }
 const railStyles = css.slice(
-  css.lastIndexOf(".isbf-v2-rail__panel .isbf-post-preview.--rail"),
+  css.lastIndexOf(".isbf-v2-rail__panel .isbf-post-preview.--rail")
 );
 assert.match(
   railStyles,
-  /^\.isbf-v2-rail__panel \.isbf-post-preview\.--rail\s*\{\s*display: flex;/,
+  /^\.isbf-v2-rail__panel \.isbf-post-preview\.--rail\s*\{\s*display: flex;/
 );
 const textStyles = railStyles.match(
-  /\.isbf-post-preview__text\s*\{([^}]+)\}/,
+  /\.isbf-post-preview__text\s*\{([^}]+)\}/
 )?.[1];
 assert.ok(textStyles);
 for (const declaration of [
@@ -550,10 +609,10 @@ for (const declaration of [
 ]) {
   assert.ok(
     textStyles.includes(declaration),
-    `Rail text requires ${declaration}`,
+    `Rail text requires ${declaration}`
   );
 }
 assert.match(railStyles, /> \.d-icon\s*\{\s*flex: none;/);
 console.log(
-  "Preview parser and native-link wiring checked; 390/430/1024 rail hiding and 1440 desktop source breakpoint checked (no browser rendering)",
+  "Preview parser and native-link wiring checked; 390/430/1024 rail hiding and 1440 desktop source breakpoint checked (no browser rendering)"
 );

@@ -4,6 +4,7 @@ import { themePrefix } from "virtual:theme";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { alumniConfig } from "../lib/alumni";
+import { careersConfig } from "../lib/careers";
 import { learningConfig, libraryConfig } from "../lib/learning-resources";
 import { marketplaceConfig } from "../lib/marketplace";
 import { teamupConfig } from "../lib/teamup";
@@ -27,7 +28,7 @@ export default class ISBFV2Workbench extends Component {
 
   get cards() {
     return CARDS.filter(
-      (card) => card.key !== "alumni" || alumniConfig(this.site),
+      (card) => card.key !== "alumni" || alumniConfig(this.site)
     ).map((card) => ({
       ...card,
       label: i18n(themePrefix(`isbf_v2.workbench_${card.key}`)),
@@ -36,13 +37,15 @@ export default class ISBFV2Workbench extends Component {
           ? "/isbf/learning"
           : card.key === "library" && libraryConfig(this.site)
             ? "/isbf/library"
-            : card.key === "marketplace" && marketplaceConfig(this.site)
-              ? "/isbf/marketplace"
-              : card.key === "teamup" && teamupConfig(this.site)
-                ? "/isbf/teamup"
-                : card.key === "alumni"
-                  ? "/isbf/alumni"
-                  : null,
+            : card.key === "careers" && careersConfig(this.site)
+              ? "/isbf/careers"
+              : card.key === "marketplace" && marketplaceConfig(this.site)
+                ? "/isbf/marketplace"
+                : card.key === "teamup" && teamupConfig(this.site)
+                  ? "/isbf/teamup"
+                  : card.key === "alumni"
+                    ? "/isbf/alumni"
+                    : null,
     }));
   }
 
