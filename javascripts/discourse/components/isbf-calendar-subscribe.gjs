@@ -1,10 +1,12 @@
 import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
 import { fn } from "@ember/helper";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import DMenu from "discourse/float-kit/components/d-menu";
 import getURL from "discourse/lib/get-url";
+import { headerOffset } from "discourse/lib/offset-calculator";
 import DButton from "discourse/ui-kit/d-button";
 import DDropdownMenu from "discourse/ui-kit/d-dropdown-menu";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
@@ -21,7 +23,7 @@ export default class ISBFCalendarSubscribe extends Component {
   @service modal;
   @service site;
 
-  fallbackPlacements = ["bottom-start", "top-end", "top-start"];
+  @tracked opensUp = false;
 
   #cachedURL = null;
   #dialogModel = null;
@@ -54,6 +56,42 @@ export default class ISBFCalendarSubscribe extends Component {
       id,
       label: i18n(themePrefix(`isbf_v2.calendar_subscription_${id}`)),
     }));
+  }
+
+  @action
+  registerMenu(menu) {
+    // DMenu's argument allowlist omits this native positioning option.
+    menu.options.allowedPlacements = ["top-end", "bottom-end"];
+    Object.defineProperty(menu.options, "padding", {
+      configurable: true,
+      get: () => {
+        const viewport = window.visualViewport;
+        const viewportBottom = viewport
+          ? viewport.offsetTop + viewport.height
+          : window.innerHeight;
+        const navigation = document
+          .querySelector(".isbf-v2-mobile-nav")
+          ?.getBoundingClientRect();
+        return {
+          top: Math.max(12, headerOffset()),
+          right: 12,
+          bottom: Math.max(
+            12,
+            navigation?.width > 0 && navigation.height > 0
+              ? viewportBottom - navigation.top + 12
+              : 12
+          ),
+          left: 12,
+        };
+      },
+    });
+  }
+
+  @action
+  positioned(content) {
+    if (!this.isDestroying) {
+      this.opensUp = content.dataset.placement.startsWith("top");
+    }
   }
 
   @action
@@ -117,16 +155,24 @@ export default class ISBFCalendarSubscribe extends Component {
       <DMenu
         @ariaLabel={{i18n (themePrefix "isbf_v2.calendar_subscribe")}}
         @contentClass="isbf-calendar-subscription-menu"
-        @fallbackPlacements={{this.fallbackPlacements}}
         @identifier="isbf-calendar-subscription"
         @modalForMobile={{false}}
+        @onPositioned={{this.positioned}}
+        @onRegisterApi={{this.registerMenu}}
         @placement="bottom-end"
         @triggerClass="btn-default isbf-calendar-subscribe"
+        @visibilityOptimizer="autoPlacement"
       >
         <:trigger as |menu|>
           {{dIcon "calendar-days"}}
           <span>{{i18n (themePrefix "isbf_v2.calendar_subscribe")}}</span>
-          {{dIcon (if menu.expanded "chevron-up" "chevron-down")}}
+          {{dIcon
+            (if
+              menu.expanded
+              (if this.opensUp "chevron-up" "chevron-down")
+              "chevron-down"
+            )
+          }}
         </:trigger>
         <:content as |menu|>
           <DDropdownMenu as |dropdown|>
