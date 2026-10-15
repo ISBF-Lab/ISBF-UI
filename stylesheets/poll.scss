@@ -180,6 +180,7 @@ body:has(.isbf-v2-shell):not(.admin-interface) {
 
     &__link {
       display: inline-flex;
+      margin-inline-start: auto;
       align-items: center;
       justify-content: center;
       min-height: 44px;
@@ -395,6 +396,38 @@ body:has(.isbf-v2-shell):not(.admin-interface) {
         .vote-recorded .d-icon {
           color: var(--isbf-v2-accent);
         }
+      }
+    }
+
+    .poll-voters-list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--isbf-v2-space-1);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+
+      > li {
+        display: flex;
+        padding: 0;
+        font-size: inherit;
+      }
+
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+      }
+
+      img.avatar {
+        display: block;
+        width: 24px;
+        max-width: 24px;
+        height: 24px;
+        margin: 0;
       }
     }
 
