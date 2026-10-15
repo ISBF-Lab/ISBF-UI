@@ -222,3 +222,58 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
     }
   }
 }
+
+.isbf-v2-calendar__heading-actions,
+.isbf-calendar-subscription__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.isbf-v2-calendar__heading-actions .btn,
+.isbf-v2-calendar__heading-actions .isbf-v2-calendar__primary,
+.isbf-calendar-subscription .btn {
+  min-height: 44px;
+  white-space: normal;
+}
+
+.isbf-calendar-subscription__actions {
+  justify-content: flex-start;
+  margin-block: 16px;
+}
+
+.isbf-calendar-subscription__note {
+  color: var(--isbf-v2-muted);
+}
+
+.isbf-calendar-subscription__revoke {
+  display: flex;
+  margin-block-start: 12px;
+}
+
+.isbf-calendar-subscription__error {
+  color: var(--danger);
+}
+
+@media (width <= 600px) {
+  .isbf-v2-calendar__heading {
+    flex-wrap: wrap;
+  }
+
+  .isbf-v2-calendar__heading-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .isbf-v2-calendar__heading-actions .isbf-v2-calendar__primary {
+    width: auto;
+  }
+
+  .isbf-calendar-subscription .d-modal__body {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    overflow-wrap: anywhere;
+  }
+}
