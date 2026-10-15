@@ -1,6 +1,6 @@
 export const PERSONAL_CALENDAR_FEED = "isbf_personal";
 
-export function appleCalendarURL(url, origin, path) {
+export function calendarSubscriptionURL(url, origin, path) {
   if (!url) {
     return null;
   }
@@ -17,8 +17,15 @@ export function appleCalendarURL(url, origin, path) {
     ) {
       return null;
     }
-    return parsed.href.replace(/^https:/, "webcal:");
+    return parsed.href;
   } catch {
     return null;
   }
+}
+
+export function appleCalendarURL(url, origin, path) {
+  return (
+    calendarSubscriptionURL(url, origin, path)?.replace(/^https:/, "webcal:") ??
+    null
+  );
 }
