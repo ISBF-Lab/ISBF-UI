@@ -393,6 +393,12 @@ assert.match(styles, /minmax\(0, 1fr\) max-content/);
 assert.match(styles, /min-width: 0/);
 assert.match(styles, /@media \(width <= 600px\)/);
 assert.match(styles, /var\(--isbf-v2-accent\)/);
+assert.match(styles, /&__link \{[\s\S]*?margin-inline-start: auto/);
+assert.match(
+  styles,
+  /\.poll-voters-list \{[\s\S]*?display: flex;[\s\S]*?flex-wrap: wrap/
+);
+assert.match(styles, /img\.avatar \{[\s\S]*?width: 24px;[\s\S]*?margin: 0/);
 assert.doesNotMatch(styles, /position:\s*fixed/);
 assert.match(
   source(".github/workflows/check.yml"),
