@@ -304,6 +304,9 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
   box-shadow: var(--isbf-v2-shadow-menu);
 
   .dropdown-menu {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     margin: 0;
     padding: 0;
   }

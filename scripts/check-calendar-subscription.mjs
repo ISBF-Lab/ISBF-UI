@@ -532,6 +532,10 @@ assert.match(
   /\.isbf-v2-calendar__legend\s*\{[\s\S]*?justify-content: flex-start;/
 );
 assert.match(style, /min-height: 44px/);
+assert.match(
+  style,
+  /\.dropdown-menu\s*\{[^}]*?width: 100%;[^}]*?min-width: 0;/
+);
 assert.match(style, /safe-area-inset-bottom/);
 assert.match(style, /flex-wrap: wrap/);
 assert.match(
