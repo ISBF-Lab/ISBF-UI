@@ -53,16 +53,12 @@ export default class ISBFResourceItem extends Component {
         (!this.args.library &&
           this.currentUser?.academy_moderator_permissions?.manage_resources)) &&
       this.config?.resource_admin_management === true &&
-      this.args.resource.can_delete === true,
+      this.args.resource.can_delete === true
     );
   }
 
   get canEdit() {
-    return (
-      this.currentUser?.admin === true &&
-      this.canDelete &&
-      learningEditableResource(this.args.resource)
-    );
+    return this.canDelete && learningEditableResource(this.args.resource);
   }
 
   get contributor() {
@@ -105,7 +101,7 @@ export default class ISBFResourceItem extends Component {
 
   get gradeLabel() {
     return (this.args.grades || []).find(
-      (grade) => grade.id === this.args.resource.grade,
+      (grade) => grade.id === this.args.resource.grade
     )?.label;
   }
 
@@ -238,8 +234,8 @@ export default class ISBFResourceItem extends Component {
           themePrefix(
             this.args.library
               ? "isbf_v2.library_delete_confirm"
-              : "isbf_v2.learning_delete_confirm",
-          ),
+              : "isbf_v2.learning_delete_confirm"
+          )
         ),
         confirmButtonLabel: themePrefix("isbf_v2.learning_delete"),
       });
@@ -248,7 +244,7 @@ export default class ISBFResourceItem extends Component {
       }
       const response = await ajax(
         `/isbf/${this.args.library ? "library" : "learning"}/resources/${encodeURIComponent(this.args.resource.id)}`,
-        { type: "DELETE" },
+        { type: "DELETE" }
       );
       if (this.#closed || this.isDestroying) {
         return;

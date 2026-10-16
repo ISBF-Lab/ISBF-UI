@@ -62,7 +62,7 @@ export default class ISBFResourceShareDialog extends Component {
 
   get editAllowed() {
     return (
-      this.currentUser?.admin === true &&
+      this.canManageResources &&
       this.config?.resource_admin_management === true &&
       learningEditableResource(this.args.resource)
     );
@@ -81,8 +81,8 @@ export default class ISBFResourceShareDialog extends Component {
       themePrefix(
         this.isEditing
           ? "isbf_v2.learning_edit_contributor_hint"
-          : "isbf_v2.learning_contributor_hint",
-      ),
+          : "isbf_v2.learning_contributor_hint"
+      )
     );
   }
 
@@ -99,7 +99,7 @@ export default class ISBFResourceShareDialog extends Component {
     return Boolean(
       this.currentUser?.admin ||
       (!this.args.library &&
-        this.currentUser?.academy_moderator_permissions?.manage_resources),
+        this.currentUser?.academy_moderator_permissions?.manage_resources)
     );
   }
 
@@ -112,8 +112,8 @@ export default class ISBFResourceShareDialog extends Component {
         this.config?.resource_admin_management === true &&
           !this.canManageResources
           ? "isbf_v2.learning_apply_share"
-          : "isbf_v2.learning_share",
-      ),
+          : "isbf_v2.learning_share"
+      )
     );
   }
 
@@ -229,7 +229,7 @@ export default class ISBFResourceShareDialog extends Component {
         return;
       }
       const firstPost = topic?.post_stream?.posts?.find(
-        (post) => post.post_number === 1,
+        (post) => post.post_number === 1
       );
       if (topic?.id !== topicId || !Number.isSafeInteger(firstPost?.id)) {
         throw new Error("Unexpected learning topic response");
@@ -246,7 +246,7 @@ export default class ISBFResourceShareDialog extends Component {
         topic,
         post,
         this.args.course?.id,
-        this.fieldPrefix,
+        this.fieldPrefix
       );
       if (!this.editAllowed || !details) {
         this.loadError = i18n(themePrefix("isbf_v2.learning_edit_unavailable"));
@@ -304,7 +304,7 @@ export default class ISBFResourceShareDialog extends Component {
                   ? { contributor: this.contributor?.trim() || "" }
                   : {}),
               },
-            },
+            }
           );
       if (this.#closed || this.isDestroying) {
         return;
@@ -322,8 +322,8 @@ export default class ISBFResourceShareDialog extends Component {
             themePrefix(
               this.isEditing
                 ? "isbf_v2.learning_edit_error"
-                : "isbf_v2.learning_share_error",
-            ),
+                : "isbf_v2.learning_share_error"
+            )
           );
       }
     } finally {
