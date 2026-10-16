@@ -91,24 +91,24 @@ export default class ISBFResourcePage extends Component {
       themePrefix(
         this.isLibrary
           ? "isbf_v2.workbench_library"
-          : "isbf_v2.workbench_learning_resources",
-      ),
+          : "isbf_v2.workbench_learning_resources"
+      )
     );
   }
 
   get parentLabel() {
     return i18n(
       themePrefix(
-        this.isLibrary ? "isbf_v2.library_category" : "isbf_v2.learning_grade",
-      ),
+        this.isLibrary ? "isbf_v2.library_category" : "isbf_v2.learning_grade"
+      )
     );
   }
 
   get directoryLabel() {
     return i18n(
       themePrefix(
-        this.isLibrary ? "isbf_v2.library_groups" : "isbf_v2.workbench_courses",
-      ),
+        this.isLibrary ? "isbf_v2.library_groups" : "isbf_v2.workbench_courses"
+      )
     );
   }
 
@@ -121,16 +121,16 @@ export default class ISBFResourcePage extends Component {
       themePrefix(
         this.canManageCourses
           ? "isbf_v2.library_add_category"
-          : "isbf_v2.library_request_category",
-      ),
+          : "isbf_v2.library_request_category"
+      )
     );
   }
 
   get searchLabel() {
     return i18n(
       themePrefix(
-        this.isLibrary ? "isbf_v2.library_search" : "isbf_v2.learning_search",
-      ),
+        this.isLibrary ? "isbf_v2.library_search" : "isbf_v2.learning_search"
+      )
     );
   }
 
@@ -139,7 +139,7 @@ export default class ISBFResourcePage extends Component {
       this.currentUser?.admin ||
       (this.isLibrary
         ? this.currentUser?.moderator
-        : this.currentUser?.academy_moderator_permissions?.manage_resources),
+        : this.currentUser?.academy_moderator_permissions?.manage_resources)
     );
   }
 
@@ -147,7 +147,7 @@ export default class ISBFResourcePage extends Component {
     return Boolean(
       this.currentUser?.admin ||
       (!this.isLibrary &&
-        this.currentUser?.academy_moderator_permissions?.manage_resources),
+        this.currentUser?.academy_moderator_permissions?.manage_resources)
     );
   }
 
@@ -161,8 +161,8 @@ export default class ISBFResourcePage extends Component {
     }
     return Boolean(
       this.site.categories?.find(
-        (category) => category.id === this.config?.category_id,
-      )?.canCreateTopic,
+        (category) => category.id === this.config?.category_id
+      )?.canCreateTopic
     );
   }
 
@@ -173,7 +173,7 @@ export default class ISBFResourcePage extends Component {
       (this.canManageCourses ||
         (this.isLibrary
           ? this.config?.catalog_requests
-          : this.config?.course_requests) === true),
+          : this.config?.course_requests) === true)
     );
   }
 
@@ -186,8 +186,8 @@ export default class ISBFResourcePage extends Component {
             : "isbf_v2.library_request_group"
           : this.canManageCourses
             ? "isbf_v2.learning_add_course"
-            : "isbf_v2.learning_request_course",
-      ),
+            : "isbf_v2.learning_request_course"
+      )
     );
   }
 
@@ -195,7 +195,7 @@ export default class ISBFResourcePage extends Component {
     return this.courses
       .filter(
         (course) =>
-          (this.isLibrary ? course.category_id : course.grade) === this.grade,
+          (this.isLibrary ? course.category_id : course.grade) === this.grade
       )
       .map((course) => ({
         ...course,
@@ -213,8 +213,8 @@ export default class ISBFResourcePage extends Component {
         this.config?.resource_admin_management === true &&
           !this.canManageResources
           ? "isbf_v2.learning_apply_share"
-          : "isbf_v2.learning_share",
-      ),
+          : "isbf_v2.learning_share"
+      )
     );
   }
 
@@ -238,8 +238,8 @@ export default class ISBFResourcePage extends Component {
             themePrefix(
               this.isLibrary
                 ? "isbf_v2.library_select_group"
-                : "isbf_v2.learning_select_course",
-            ),
+                : "isbf_v2.learning_select_course"
+            )
           );
   }
 
@@ -387,7 +387,7 @@ export default class ISBFResourcePage extends Component {
   editResource(resource) {
     if (
       this.isDestroying ||
-      !this.currentUser?.admin ||
+      !this.canManageResources ||
       this.config?.resource_admin_management !== true ||
       this.shareContext ||
       resource?.can_delete !== true ||

@@ -359,7 +359,7 @@ for (const library of [false, true]) {
   permissionItem.site = permissionPage.site;
   permissionItem.currentUser = academyUser;
   assert.equal(permissionItem.canDelete, !library);
-  assert.equal(permissionItem.canEdit, false);
+  assert.equal(permissionItem.canEdit, !library);
   permissionItem.args.resource.can_delete = false;
   assert.equal(permissionItem.canDelete, false);
 
@@ -375,7 +375,17 @@ for (const library of [false, true]) {
     library ? "isbf_v2.learning_submit_request" : "isbf_v2.learning_share"
   );
   permissionDialog.args.resource = { id: 101, link_only: true, files: [] };
-  assert.equal(permissionDialog.editAllowed, false);
+  assert.equal(permissionDialog.editAllowed, !library);
+  permissionPage.currentUser = academyUser;
+  permissionPage.editResource({
+    id: 101,
+    can_delete: true,
+    link_only: true,
+    files: [],
+    course: { id: "group" },
+    group: { id: "group" },
+  });
+  assert.equal(Boolean(permissionPage.shareContext), !library);
 }
 const pageSource = read(
   "javascripts/discourse/components/isbf-resource-page.gjs"

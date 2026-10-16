@@ -716,6 +716,22 @@ assert.ok(escapedBody.includes("\nSecond line"));
 
 const editRequests = [];
 const editResults = [];
+const resourceManager = {
+  moderator: true,
+  academy_moderator_permissions: {
+    manage_resources: true,
+    review_resources: false,
+    edit_others: false,
+  },
+};
+const usersWithoutResourceManagement = [
+  null,
+  {},
+  { moderator: true },
+  { academy_moderator_permissions: { manage_resources: false } },
+  { academy_moderator_permissions: { review_resources: true } },
+  { academy_moderator_permissions: { edit_others: true } },
+];
 const editServices = {
   currentUser: { admin: true, name: "Current administrator" },
   site: {
@@ -905,7 +921,7 @@ assert.equal(
   requestsDuringLoad + 1,
   "Admin permission is rechecked at save"
 );
-for (const user of [{}, { moderator: true }]) {
+for (const user of usersWithoutResourceManagement) {
   editServices.currentUser = user;
   const deniedBefore = editRequests.length;
   const deniedEdit = makeEditDialog();
@@ -914,7 +930,7 @@ for (const user of [{}, { moderator: true }]) {
   assert.equal(
     editRequests.length,
     deniedBefore,
-    "Ordinary users and moderators cannot edit"
+    "Editing requires the resource management grant"
   );
 }
 editServices.currentUser = { admin: true };
@@ -983,6 +999,45 @@ assert.deepEqual(
 hiddenPut.reject(new Error("Retry edit"));
 await saving;
 assert.equal(hiddenEditFields.saving, false);
+
+editServices.currentUser = resourceManager;
+const delegatedEdit = makeEditDialog();
+await loadEdit(delegatedEdit);
+assert.equal(delegatedEdit.editAllowed, true);
+assert.equal(delegatedEdit.editReady, true);
+assert.equal(delegatedEdit.title, editTopic.title);
+assert.equal(delegatedEdit.description, editPost.isbf_learning_description);
+delegatedEdit.title = "Resource manager updated title";
+saving = delegatedEdit.save(submitEvent);
+assert.equal(editRequests.at(-1).type, "PUT");
+assert.equal(editRequests.at(-1).url, "/posts/90.json");
+editRequests.at(-1).reject({
+  jqXHR: { responseJSON: { errors: ["Resource edit failed"] } },
+});
+await saving;
+assert.equal(delegatedEdit.title, "Resource manager updated title");
+assert.equal(delegatedEdit.error, "Resource edit failed");
+saving = delegatedEdit.save(submitEvent);
+editRequests.at(-1).resolve({ post: { id: 90, topic_id: 42 } });
+await saving;
+assert.equal(editResults.at(-1).edited, true);
+
+const revokedManagerEdit = makeEditDialog();
+await loadEdit(revokedManagerEdit);
+revokedManagerEdit.currentUser = { moderator: true };
+const beforeRevokedSave = editRequests.length;
+await revokedManagerEdit.save(submitEvent);
+assert.equal(editRequests.length, beforeRevokedSave);
+assert.equal(revokedManagerEdit.saveDisabled, true);
+
+const revokedManagerLoad = makeEditDialog();
+editRequests.at(-1).resolve(editTopic);
+await flushEdit();
+revokedManagerLoad.currentUser = { moderator: true };
+editRequests.at(-1).resolve(editPost);
+await flushEdit();
+assert.equal(revokedManagerLoad.editReady, false);
+editServices.currentUser = { admin: true };
 
 const deletions = [];
 let completeDeletion;
@@ -1283,25 +1338,41 @@ for (const change of [
   );
 }
 editCard.args.resource = { ...editableResource, can_delete: true };
-for (const currentUser of [{}, { moderator: true }]) {
+for (const currentUser of usersWithoutResourceManagement) {
   editCard.currentUser = currentUser;
   assert.equal(editCard.canEdit, false);
 }
-const delegatedDeleteCard = makeEditCard();
-delegatedDeleteCard.currentUser = {
-  academy_moderator_permissions: { manage_resources: true },
-};
-Object.defineProperty(delegatedDeleteCard, "canDelete", { value: true });
+const delegatedEditCard = makeEditCard();
+delegatedEditCard.currentUser = resourceManager;
 assert.equal(
-  delegatedDeleteCard.canEdit,
-  false,
-  "Delegated resource deletion does not grant administrator editing"
+  delegatedEditCard.canEdit,
+  true,
+  "Resource management includes editing link resources"
 );
-await delegatedDeleteCard.editFromMenu({
+let delegatedOpened = false;
+delegatedEditCard.args.onEdit = () => {
+  delegatedOpened = true;
+};
+await delegatedEditCard.editFromMenu({ close: async () => {} });
+assert.equal(delegatedOpened, true);
+delegatedOpened = false;
+await delegatedEditCard.editFromMenu({
   close: async () => {
-    throw new Error("Delegated deletion cannot open the edit dialog");
+    delegatedEditCard.currentUser = { moderator: true };
   },
 });
+assert.equal(
+  delegatedOpened,
+  false,
+  "Menu completion rechecks resource permission"
+);
+delegatedEditCard.currentUser = resourceManager;
+delegatedEditCard.args.resource.can_delete = false;
+assert.equal(
+  delegatedEditCard.canEdit,
+  false,
+  "Native resource visibility still applies"
+);
 editCard.currentUser = { admin: true };
 const editMenuEvents = [];
 let closeEditMenu;
@@ -1826,6 +1897,15 @@ assert.equal(
 page.currentUser = { moderator: true };
 page.editResource(searchResource);
 assert.equal(page.shareContext, null);
+page.currentUser = resourceManager;
+page.editResource(searchResource);
+assert.equal(page.shareContext.resource, searchResource);
+page.closeShareDialog();
+for (const user of usersWithoutResourceManagement) {
+  page.currentUser = user;
+  page.editResource(searchResource);
+  assert.equal(page.shareContext, null);
+}
 assert.ok(learningPage.includes("@resource={{this.shareContext.resource}}"));
 assert.ok(
   read("javascripts/discourse/components/isbf-resource-list.gjs").includes(
