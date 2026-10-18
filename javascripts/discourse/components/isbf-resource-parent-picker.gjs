@@ -20,16 +20,6 @@ export default class ISBFResourceParentPicker extends Component {
   }
 
   @action
-  configureMenu(menu) {
-    menu.options = {
-      ...menu.options,
-      constrainHeightToViewport: true,
-      crossAxisShift: false,
-      strategy: "fixed",
-    };
-  }
-
-  @action
   async select(menu, id) {
     this.args.onChange(id);
     await menu.close();
@@ -38,13 +28,15 @@ export default class ISBFResourceParentPicker extends Component {
   <template>
     <DMenu
       @ariaLabel={{this.ariaLabel}}
+      @constrainHeightToViewport={{true}}
       @contentClass="isbf-learning-grade-menu"
+      @crossAxisShift={{false}}
       @icon="chevron-down"
       @label={{this.label}}
       @matchTriggerMinWidth={{true}}
       @modalForMobile={{false}}
-      @onRegisterApi={{this.configureMenu}}
       @placement="bottom-start"
+      @strategy="fixed"
       @title={{this.label}}
       @triggerClass="btn-flat isbf-learning__grade"
       @visibilityOptimizer="none"

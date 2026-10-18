@@ -15,6 +15,8 @@ import {
   learningResourceQuery,
   libraryConfig,
 } from "../lib/learning-resources";
+import ISBFLearningDirectoryEditor from "./isbf-learning-directory-editor";
+import ISBFLearningManagementDialog from "./isbf-learning-management-dialog";
 import ISBFResourceCatalog from "./isbf-resource-catalog";
 import ISBFResourceDirectoryDialog from "./isbf-resource-directory-dialog";
 import ISBFResourceList from "./isbf-resource-list";
@@ -23,6 +25,7 @@ import ISBFResourceShareDialog from "./isbf-resource-share-dialog";
 export default class ISBFResourcePage extends Component {
   @service appEvents;
   @service currentUser;
+  @service isbfBackNavigation;
   @service site;
 
   @tracked coursePending = false;
@@ -41,6 +44,9 @@ export default class ISBFResourcePage extends Component {
   @tracked hasMore = false;
   @tracked shareContext = null;
   @tracked sharePending = false;
+  @tracked myContributions = false;
+  @tracked grades = [];
+  @tracked editingDirectory = null;
 
   #coursesRequest = 0;
   #courseTrigger;
@@ -83,7 +89,9 @@ export default class ISBFResourcePage extends Component {
           ...category,
           label: category.name,
         }))
-      : this.config.grades;
+      : this.grades.length
+        ? this.grades
+        : this.config.grades;
   }
 
   get pageTitle() {
@@ -219,6 +227,9 @@ export default class ISBFResourcePage extends Component {
   }
 
   get shareDisabled() {
+    if (!this.isLibrary && !this.canManageResources) {
+      return false;
+    }
     return (
       !this.selectedCourse ||
       !this.canSubmitResources ||
@@ -231,6 +242,9 @@ export default class ISBFResourcePage extends Component {
   }
 
   get contentTitle() {
+    if (this.myContributions) {
+      return i18n(themePrefix("isbf_v2.learning_my_contributions"));
+    }
     return this.searching
       ? i18n(themePrefix("isbf_v2.learning_search_results"))
       : this.selectedCourse?.name ||
@@ -241,6 +255,15 @@ export default class ISBFResourcePage extends Component {
                 : "isbf_v2.learning_select_course"
             )
           );
+  }
+
+  get backHref() {
+    return this.isbfBackNavigation.href("/isbf/workbench");
+  }
+
+  @action
+  goBack(event) {
+    this.isbfBackNavigation.back(event);
   }
 
   @action
@@ -276,6 +299,9 @@ export default class ISBFResourcePage extends Component {
       this.courses = this.isLibrary
         ? groups.groups || []
         : response.courses || [];
+      if (!this.isLibrary) {
+        this.grades = response.grades || this.config.grades;
+      }
       this.#restoreCourse();
       this.#loadResources();
     } catch {
@@ -291,6 +317,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   changeGrade(id) {
+    this.myContributions = false;
     this.grade = id;
     this.#restoreCourse();
     if (!this.searching) {
@@ -300,6 +327,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   selectCourse(id) {
+    this.myContributions = false;
     this.selectedCourseId = id;
     if (!this.searching) {
       this.#loadResources();
@@ -308,6 +336,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   changeQuery(event) {
+    this.myContributions = false;
     this.query = event.target.value;
     clearTimeout(this.#searchTimer);
     this.#resourcesRequest++;
@@ -333,6 +362,46 @@ export default class ISBFResourcePage extends Component {
   @action
   loadMore() {
     this.#loadResources(true);
+  }
+
+  @action
+  toggleContributions() {
+    clearTimeout(this.#searchTimer);
+    this.myContributions = !this.myContributions;
+    this.query = "";
+    this.#loadResources();
+  }
+
+  @action
+  editCourse(course) {
+    if (!this.isLibrary && this.canManageResources) {
+      this.#courseTrigger = document.activeElement;
+      this.editingDirectory = { kind: "course", entry: course };
+    }
+  }
+
+  @action
+  editGrade() {
+    if (!this.isLibrary && this.canManageResources) {
+      this.#courseTrigger = document.activeElement;
+      this.editingDirectory = {
+        kind: "grade",
+        entry: this.parents.find((parent) => parent.id === this.grade),
+      };
+    }
+  }
+
+  @action
+  closeDirectoryEditor() {
+    this.editingDirectory = null;
+    this.#courseTrigger?.focus();
+  }
+
+  @action
+  directorySaved(response, grade) {
+    this.closeDirectoryEditor();
+    this.grade = grade;
+    this.loadCourses();
   }
 
   @action
@@ -380,6 +449,7 @@ export default class ISBFResourcePage extends Component {
       selectedCourseId: this.selectedCourseId,
       query: this.query.trim(),
       coursesRequest: this.#coursesRequest,
+      myContributions: this.myContributions,
     };
   }
 
@@ -391,7 +461,7 @@ export default class ISBFResourcePage extends Component {
       this.config?.resource_admin_management !== true ||
       this.shareContext ||
       resource?.can_delete !== true ||
-      !learningEditableResource(resource) ||
+      (this.isLibrary && !learningEditableResource(resource)) ||
       !(this.isLibrary ? resource.group?.id : resource.course?.id)
     ) {
       return;
@@ -404,6 +474,7 @@ export default class ISBFResourcePage extends Component {
       selectedCourseId: this.selectedCourseId,
       query: this.query.trim(),
       coursesRequest: this.#coursesRequest,
+      myContributions: this.myContributions,
     };
   }
 
@@ -425,6 +496,7 @@ export default class ISBFResourcePage extends Component {
     this.sharePending = response.pending === true;
     if (
       !this.sharePending &&
+      context.myContributions === this.myContributions &&
       (context.selectedCourseId ?? context.course.id) ===
         this.selectedCourseId &&
       context.query === this.query.trim() &&
@@ -461,18 +533,22 @@ export default class ISBFResourcePage extends Component {
       this.resources = [];
       this.hasMore = false;
     }
-    if (!this.searching && !this.selectedCourseId) {
+    if (!this.myContributions && !this.searching && !this.selectedCourseId) {
       this.resourcesLoading = false;
       return;
     }
     this.resourcesLoading = true;
     try {
-      const response = await ajax(`${this.endpoint}/resources`, {
-        data:
-          this.isLibrary && !this.searching
-            ? { group_id: this.selectedCourseId, page }
-            : learningResourceQuery(this.selectedCourseId, this.query, page),
-      });
+      const response = await ajax(
+        `${this.endpoint}/${this.myContributions ? "contributions" : "resources"}`,
+        {
+          data: this.myContributions
+            ? { page }
+            : this.isLibrary && !this.searching
+              ? { group_id: this.selectedCourseId, page }
+              : learningResourceQuery(this.selectedCourseId, this.query, page),
+        }
+      );
       if (request !== this.#resourcesRequest) {
         return;
       }
@@ -495,9 +571,10 @@ export default class ISBFResourcePage extends Component {
     <main class="isbf-learning">
       <header class="isbf-learning__header">
         <a
-          aria-label={{i18n (themePrefix "isbf_v2.learning_back")}}
+          aria-label={{i18n "back_button"}}
           class="isbf-learning__back"
-          href="/isbf/workbench"
+          href={{this.backHref}}
+          {{on "click" this.goBack}}
         >
           {{dIcon "arrow-left"}}
           <h1>{{this.pageTitle}}</h1>
@@ -535,12 +612,28 @@ export default class ISBFResourcePage extends Component {
             )
           }}</p>
       {{else if this.currentUser}}
-        {{#if this.shareContext}}<ISBFResourceShareDialog
-            @course={{this.shareContext.course}}
-            @library={{this.isLibrary}}
-            @onClose={{this.closeShareDialog}}
-            @onSubmitted={{this.resourceSubmitted}}
-            @resource={{this.shareContext.resource}}
+        {{#if this.shareContext}}
+          {{#if this.isLibrary}}<ISBFResourceShareDialog
+              @course={{this.shareContext.course}}
+              @library={{this.isLibrary}}
+              @onClose={{this.closeShareDialog}}
+              @onSubmitted={{this.resourceSubmitted}}
+              @resource={{this.shareContext.resource}}
+            />{{else}}<ISBFLearningManagementDialog
+              @course={{this.shareContext.course}}
+              @courses={{this.courses}}
+              @grades={{this.parents}}
+              @onClose={{this.closeShareDialog}}
+              @onSubmitted={{this.resourceSubmitted}}
+              @resource={{this.shareContext.resource}}
+            />{{/if}}
+        {{/if}}
+        {{#if this.editingDirectory}}<ISBFLearningDirectoryEditor
+            @entry={{this.editingDirectory.entry}}
+            @grades={{this.parents}}
+            @kind={{this.editingDirectory.kind}}
+            @onClose={{this.closeDirectoryEditor}}
+            @onSaved={{this.directorySaved}}
           />{{/if}}
         {{#if this.showCourseDialog}}<ISBFResourceDirectoryDialog
             @grade={{this.grade}}

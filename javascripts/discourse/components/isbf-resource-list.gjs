@@ -1,9 +1,10 @@
+import { fn } from "@ember/helper";
 import { themePrefix } from "virtual:theme";
 import DButton from "discourse/ui-kit/d-button";
 import { i18n } from "discourse-i18n";
 import ISBFResourceItem from "./isbf-resource-item";
 
-<template>
+export default <template>
   <section
     aria-busy={{@page.resourcesLoading}}
     aria-label={{@page.contentTitle}}
@@ -11,6 +12,32 @@ import ISBFResourceItem from "./isbf-resource-item";
   >
     <div class="isbf-learning__content-header">
       <h2>{{@page.contentTitle}}</h2>
+      {{#unless @page.isLibrary}}{{#if @page.canManageResources}}{{#unless
+            @page.myContributions
+          }}{{#unless @page.searching}}{{#if @page.selectedCourse}}
+                <DButton
+                  class="btn-flat isbf-learning__edit-course"
+                  @action={{fn @page.editCourse @page.selectedCourse}}
+                  @icon="pencil"
+                  @translatedLabel={{i18n
+                    (themePrefix "isbf_v2.learning_edit_course")
+                  }}
+                />
+              {{/if}}{{/unless}}{{/unless}}{{/if}}{{/unless}}
+      {{#unless @page.isLibrary}}<DButton
+          class="btn-flat isbf-learning__contributions"
+          @action={{@page.toggleContributions}}
+          @ariaPressed={{@page.myContributions}}
+          @translatedLabel={{i18n
+            (themePrefix
+              (if
+                @page.myContributions
+                "isbf_v2.learning_all_resources"
+                "isbf_v2.learning_my_contributions"
+              )
+            )
+          }}
+        />{{/unless}}
       <DButton
         class="btn-primary isbf-learning__share"
         @action={{@page.share}}
@@ -38,6 +65,7 @@ import ISBFResourceItem from "./isbf-resource-item";
           )
         }}</p>{{/if}}
     {{#each @page.resources key="id" as |resource|}}<ISBFResourceItem
+        @contributions={{@page.myContributions}}
         @grades={{@page.parents}}
         @library={{@page.isLibrary}}
         @onDeleted={{@page.resourceDeleted}}
@@ -63,6 +91,9 @@ import ISBFResourceItem from "./isbf-resource-item";
           @action={{@page.loadMore}}
           @translatedLabel={{i18n (themePrefix "isbf_v2.load_more")}}
         />{{/if}}
+    {{else if @page.myContributions}}<p class="isbf-learning__notice">{{i18n
+          (themePrefix "isbf_v2.learning_contributions_empty")
+        }}</p>
     {{else}}<p class="isbf-learning__notice">{{i18n
           (themePrefix
             (if

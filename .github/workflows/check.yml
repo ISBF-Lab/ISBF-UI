@@ -31,6 +31,7 @@ jobs:
       - run: node scripts/check-official-publish-entry.mjs
       - run: node --experimental-vm-modules scripts/check-learning-ui.mjs
       - run: node --experimental-vm-modules scripts/check-library-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-learning-contributions.mjs
       - run: node --experimental-vm-modules scripts/check-alumni-ui.mjs
       - run: node --experimental-vm-modules scripts/check-account-menu-ui.mjs
       - run: node --experimental-vm-modules scripts/check-marketplace-ui.mjs

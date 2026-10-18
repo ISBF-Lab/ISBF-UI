@@ -354,7 +354,13 @@ for (const library of [false, true]) {
 
   const permissionItem = new Item({
     library,
-    resource: { id: 101, can_delete: true, link_only: true, files: [] },
+    resource: {
+      id: 101,
+      can_delete: true,
+      can_edit: true,
+      link_only: true,
+      files: [],
+    },
   });
   permissionItem.site = permissionPage.site;
   permissionItem.currentUser = academyUser;
@@ -380,6 +386,7 @@ for (const library of [false, true]) {
   permissionPage.editResource({
     id: 101,
     can_delete: true,
+    can_edit: true,
     link_only: true,
     files: [],
     course: { id: "group" },
@@ -411,6 +418,6 @@ for (const name of [
   );
 }
 
-console.log(
-  "Library catalog, independent filters, stale requests, sharing, native edit/delete contracts and shared wrappers OK"
+process.stdout.write(
+  "Library catalog, independent filters, stale requests, sharing, native edit/delete contracts and shared wrappers OK\n"
 );
