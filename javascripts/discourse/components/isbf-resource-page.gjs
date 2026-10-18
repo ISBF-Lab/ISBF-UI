@@ -15,6 +15,7 @@ import {
   learningResourceQuery,
   libraryConfig,
 } from "../lib/learning-resources";
+import ISBFLearningDirectoryDeletion from "./isbf-learning-directory-deletion";
 import ISBFLearningDirectoryEditor from "./isbf-learning-directory-editor";
 import ISBFLearningManagementDialog from "./isbf-learning-management-dialog";
 import ISBFResourceCatalog from "./isbf-resource-catalog";
@@ -47,6 +48,7 @@ export default class ISBFResourcePage extends Component {
   @tracked myContributions = false;
   @tracked grades = [];
   @tracked editingDirectory = null;
+  @tracked deletingDirectory = null;
 
   #coursesRequest = 0;
   #courseTrigger;
@@ -89,9 +91,7 @@ export default class ISBFResourcePage extends Component {
           ...category,
           label: category.name,
         }))
-      : this.grades.length
-        ? this.grades
-        : this.config.grades;
+      : this.grades;
   }
 
   get pageTitle() {
@@ -301,6 +301,9 @@ export default class ISBFResourcePage extends Component {
         : response.courses || [];
       if (!this.isLibrary) {
         this.grades = response.grades || this.config.grades;
+        if (!this.grades.some((grade) => grade.id === this.grade)) {
+          this.grade = this.grades[0]?.id || null;
+        }
       }
       this.#restoreCourse();
       this.#loadResources();
@@ -395,6 +398,27 @@ export default class ISBFResourcePage extends Component {
   closeDirectoryEditor() {
     this.editingDirectory = null;
     this.#courseTrigger?.focus();
+  }
+
+  @action
+  deleteDirectory() {
+    if (!this.isLibrary && this.canManageResources && this.editingDirectory) {
+      this.deletingDirectory = this.editingDirectory;
+      this.editingDirectory = null;
+    }
+  }
+
+  @action
+  closeDirectoryDeletion() {
+    this.deletingDirectory = null;
+    this.#courseTrigger?.focus();
+  }
+
+  @action
+  directoryDeleted() {
+    this.closeDirectoryDeletion();
+    this.resources = [];
+    this.loadCourses();
   }
 
   @action
@@ -633,7 +657,14 @@ export default class ISBFResourcePage extends Component {
             @grades={{this.parents}}
             @kind={{this.editingDirectory.kind}}
             @onClose={{this.closeDirectoryEditor}}
+            @onDelete={{this.deleteDirectory}}
             @onSaved={{this.directorySaved}}
+          />{{/if}}
+        {{#if this.deletingDirectory}}<ISBFLearningDirectoryDeletion
+            @entry={{this.deletingDirectory.entry}}
+            @kind={{this.deletingDirectory.kind}}
+            @onClose={{this.closeDirectoryDeletion}}
+            @onDeleted={{this.directoryDeleted}}
           />{{/if}}
         {{#if this.showCourseDialog}}<ISBFResourceDirectoryDialog
             @grade={{this.grade}}

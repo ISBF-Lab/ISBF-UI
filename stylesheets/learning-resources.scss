@@ -378,6 +378,17 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   overflow-wrap: anywhere;
 }
 
+.isbf-learning-share-dialog__contributor-user {
+  display: flex;
+  align-items: center;
+  gap: var(--isbf-v2-space-2);
+  text-align: start;
+}
+
+.isbf-learning-directory-deletion__warning {
+  color: var(--danger);
+}
+
 .isbf-learning-share-dialog__actions {
   display: flex;
   flex-wrap: wrap;
