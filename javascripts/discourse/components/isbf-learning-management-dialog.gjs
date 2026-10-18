@@ -8,6 +8,7 @@ import Form from "discourse/components/form";
 import { ajax } from "discourse/lib/ajax";
 import DButton from "discourse/ui-kit/d-button";
 import DModal from "discourse/ui-kit/d-modal";
+import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import { i18n } from "discourse-i18n";
 
 const COLLECTION_URL = "https://f.wps.cn/g/wG6gL3Rz/";
@@ -302,12 +303,14 @@ export default class ISBFLearningManagementDialog extends Component {
                 class="isbf-learning-share-dialog__contributor-user"
                 @action={{fn this.selectUser user}}
                 @disabled={{this.saving}}
-                @translatedLabel={{i18n
-                  (themePrefix "isbf_v2.learning_user_option")
-                  name=user.name
-                  username=user.username
-                }}
-              />
+              >
+                {{dAvatar user imageSize="small"}}
+                <span>{{i18n
+                    (themePrefix "isbf_v2.learning_user_option")
+                    name=user.name
+                    username=user.username
+                  }}</span>
+              </DButton>
             {{else}}
               {{#if this.users}}<p role="status">{{i18n
                     (themePrefix "isbf_v2.learning_no_user")

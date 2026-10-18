@@ -117,6 +117,16 @@ export default class ISBFLearningDirectoryEditor extends Component {
           {{/unless}}
           {{#if this.error}}<p role="alert">{{this.error}}</p>{{/if}}
           <form.Actions>
+            {{#if @onDelete}}
+              <DButton
+                class="btn-danger isbf-learning-directory-editor__delete"
+                @action={{@onDelete}}
+                @disabled={{this.saving}}
+                @translatedLabel={{i18n
+                  (themePrefix "isbf_v2.learning_confirm_delete")
+                }}
+              />
+            {{/if}}
             <DButton
               @action={{this.close}}
               @disabled={{this.saving}}

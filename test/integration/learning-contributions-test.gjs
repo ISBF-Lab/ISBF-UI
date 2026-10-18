@@ -4,6 +4,7 @@ import { themePrefix } from "virtual:theme";
 import { setupRenderingTest } from "discourse/tests/helpers/component-test";
 import pretender, { response } from "discourse/tests/helpers/create-pretender";
 import { i18n } from "discourse-i18n";
+import LearningDirectoryDeletion from "../../discourse/components/isbf-learning-directory-deletion";
 import LearningDirectoryEditor from "../../discourse/components/isbf-learning-directory-editor";
 import LearningManagementDialog from "../../discourse/components/isbf-learning-management-dialog";
 import ResourceParentPicker from "../../discourse/components/isbf-resource-parent-picker";
@@ -57,7 +58,14 @@ module(
       let saved;
       pretender.get("/isbf/learning/contributor-users", () =>
         response({
-          users: [{ id: 77, name: "测试贡献者", username: "contributor" }],
+          users: [
+            {
+              id: 77,
+              name: "测试贡献者",
+              username: "contributor",
+              avatar_template: "/user_avatar/test/contributor/{size}/1.png",
+            },
+          ],
         })
       );
       pretender.post("/isbf/learning/resources", (request) => {
@@ -86,6 +94,12 @@ module(
         .dom('button[type="submit"]')
         .isDisabled("a number needs an explicit matching user selection");
       await click(".isbf-learning-share-dialog__find-user");
+      assert
+        .dom(".isbf-learning-share-dialog__contributor-user img.avatar")
+        .exists("the matching account includes its avatar");
+      assert
+        .dom(".isbf-learning-share-dialog__contributor-user")
+        .includesText("@contributor");
       await click(".isbf-learning-share-dialog__contributor-user");
       await click('button[type="submit"]');
       assert.strictEqual(
@@ -154,6 +168,129 @@ module(
         "the edited title is submitted"
       );
       await settled();
+    });
+  }
+);
+
+module(
+  "ISBF | Integration | Component | LearningDirectoryDeletion",
+  function (hooks) {
+    setupRenderingTest(hooks, { stubRouter: true });
+
+    hooks.beforeEach(function () {
+      this.currentUser.set("admin", true);
+      this.entry = { id: "course-a", name: "课程" };
+      this.kind = "course";
+      this.onClose = () => {};
+      this.onDeleted = () => {};
+      this.plan = {
+        name: "课程",
+        required_confirmations: 3,
+        course_count: 1,
+        resource_count: 2,
+        has_children: true,
+        confirmation_token: "signed-plan",
+      };
+      pretender.get("/isbf/learning/courses/course-a/deletion-plan", () =>
+        response(this.plan)
+      );
+    });
+
+    async function show(context) {
+      await render(
+        <template>
+          <LearningDirectoryDeletion
+            @entry={{context.entry}}
+            @kind={{context.kind}}
+            @onClose={{context.onClose}}
+            @onDeleted={{context.onDeleted}}
+          />
+        </template>
+      );
+    }
+
+    for (const [kind, count] of [
+      ["course", 3],
+      ["grade", 3],
+      ["course", 2],
+      ["grade", 2],
+    ]) {
+      test(`${kind} sends deletion only after ${count} confirmations`, async function (assert) {
+        this.kind = kind;
+        this.plan.required_confirmations = count;
+        this.plan.has_children = count === 3;
+        const path = `/isbf/learning/${kind === "grade" ? "grades" : "courses"}/course-a`;
+        pretender.get(`${path}/deletion-plan`, () => response(this.plan));
+        let deleted = 0;
+        pretender.delete(path, (request) => {
+          deleted++;
+          assert.strictEqual(
+            new URLSearchParams(request.requestBody).get("confirmation_count"),
+            String(count)
+          );
+          return response({ success: true });
+        });
+        await show(this);
+        for (let step = 1; step < count; step++) {
+          assert.strictEqual(
+            deleted,
+            0,
+            "confirmation alone never deletes early"
+          );
+          await click(".isbf-learning-directory-deletion__confirm");
+        }
+        if (count === 3) {
+          assert
+            .dom("strong.isbf-learning-directory-deletion__warning")
+            .hasText(
+              i18n(themePrefix(`isbf_v2.learning_delete_${kind}_warning`))
+            );
+        }
+        await click(".isbf-learning-directory-deletion__confirm");
+        assert.strictEqual(deleted, 1);
+      });
+    }
+
+    for (const step of [1, 2, 3]) {
+      test(`Back cancels the whole deletion at step ${step}`, async function (assert) {
+        let closed = 0;
+        let deleted = 0;
+        this.onClose = () => closed++;
+        pretender.delete("/isbf/learning/courses/course-a", () => {
+          deleted++;
+          return response({ success: true });
+        });
+        await show(this);
+        for (let current = 1; current < step; current++) {
+          await click(".isbf-learning-directory-deletion__confirm");
+        }
+        await click(".isbf-learning-directory-deletion__actions .btn");
+        assert.strictEqual(closed, 1);
+        assert.strictEqual(deleted, 0);
+      });
+    }
+
+    test("stale content restarts confirmations and revoked permission prevents deletion", async function (assert) {
+      let deleted = 0;
+      pretender.delete("/isbf/learning/courses/course-a", () => {
+        deleted++;
+        return response(409, { errors: ["Content changed"] });
+      });
+      await show(this);
+      for (let current = 0; current < 3; current++) {
+        await click(".isbf-learning-directory-deletion__confirm");
+      }
+      assert.dom("[role=alert]").hasText("Content changed");
+      assert
+        .dom("strong.isbf-learning-directory-deletion__warning")
+        .doesNotExist("a stale plan must be reconfirmed from step one");
+      this.currentUser.setProperties({
+        admin: false,
+        academy_moderator_permissions: { manage_resources: false },
+      });
+      await settled();
+      assert.dom(".isbf-learning-directory-deletion__confirm").isDisabled();
+      assert.strictEqual(deleted, 1);
     });
   }
 );
