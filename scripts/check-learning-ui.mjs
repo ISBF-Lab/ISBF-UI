@@ -1941,7 +1941,10 @@ const gradePicker = read(
 );
 assert.ok(gradePicker.includes('@placement="bottom-start"'));
 assert.ok(gradePicker.includes('@visibilityOptimizer="none"'));
-assert.ok(gradePicker.includes('strategy: "fixed"'));
+assert.ok(gradePicker.includes('@strategy="fixed"'));
+assert.ok(gradePicker.includes("@constrainHeightToViewport={{true}}"));
+assert.ok(gradePicker.includes("@crossAxisShift={{false}}"));
+assert.doesNotMatch(gradePicker, /menu\.options\s*=/);
 const learningStyles = read("stylesheets/learning-resources.scss");
 // Inspect active source rules at the supported widths; this is not browser QA.
 function widthStyles(source, width) {

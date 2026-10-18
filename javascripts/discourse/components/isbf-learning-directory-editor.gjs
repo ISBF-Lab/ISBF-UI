@@ -84,6 +84,7 @@ export default class ISBFLearningDirectoryEditor extends Component {
     <DModal
       class="isbf-learning-share-dialog"
       @closeModal={{this.close}}
+      @inline={{true}}
       @title={{this.title}}
     >
       <:body>

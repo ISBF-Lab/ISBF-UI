@@ -207,6 +207,7 @@ export default class ISBFLearningManagementDialog extends Component {
     <DModal
       class="isbf-learning-share-dialog"
       @closeModal={{this.close}}
+      @inline={{true}}
       @submitOnEnter={{false}}
       @title={{this.title}}
     >

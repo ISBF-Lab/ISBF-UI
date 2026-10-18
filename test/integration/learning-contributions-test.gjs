@@ -6,6 +6,7 @@ import pretender, { response } from "discourse/tests/helpers/create-pretender";
 import { i18n } from "discourse-i18n";
 import LearningDirectoryEditor from "../../discourse/components/isbf-learning-directory-editor";
 import LearningManagementDialog from "../../discourse/components/isbf-learning-management-dialog";
+import ResourceParentPicker from "../../discourse/components/isbf-resource-parent-picker";
 
 module(
   "ISBF | Integration | Component | LearningManagementDialog",
@@ -161,6 +162,23 @@ module(
   "ISBF | Integration | Component | LearningDirectoryEditor",
   function (hooks) {
     setupRenderingTest(hooks, { stubRouter: true });
+
+    test("the parent selector initializes with declarative float options", async function (assert) {
+      this.grades = [{ id: 1, label: "大一" }];
+      this.onChange = () => {};
+      await render(
+        <template>
+          <ResourceParentPicker
+            @grades={{this.grades}}
+            @label="年级"
+            @onChange={{this.onChange}}
+            @value={{1}}
+          />
+        </template>
+      );
+      assert.dom(".isbf-learning__grade").hasText("大一");
+      assert.dom(".isbf-learning__grade").hasAttribute("aria-label", "年级");
+    });
 
     test("an existing course can be renamed and moved without changing its id", async function (assert) {
       this.entry = { id: "course-a", name: "微观经济学", grade: 1 };
