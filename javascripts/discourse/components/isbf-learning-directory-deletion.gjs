@@ -19,6 +19,7 @@ export default class ISBFLearningDirectoryDeletion extends Component {
   @tracked step = 1;
 
   #closed = false;
+  #requesting = false;
 
   constructor() {
     super(...arguments);
@@ -89,9 +90,10 @@ export default class ISBFLearningDirectoryDeletion extends Component {
 
   @action
   async loadPlan() {
-    if (this.#closed || this.loading || !this.canManage) {
+    if (this.#closed || this.#requesting || !this.canManage) {
       return;
     }
+    this.#requesting = true;
     this.loading = true;
     this.plan = null;
     this.step = 1;
@@ -111,6 +113,7 @@ export default class ISBFLearningDirectoryDeletion extends Component {
         this.error = i18n(themePrefix("isbf_v2.learning_delete_load_error"));
       }
     } finally {
+      this.#requesting = false;
       if (!this.#closed) {
         this.loading = false;
       }
