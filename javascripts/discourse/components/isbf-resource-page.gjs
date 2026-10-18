@@ -177,6 +177,7 @@ export default class ISBFResourcePage extends Component {
   get canSubmitCourses() {
     return Boolean(
       this.currentUser &&
+      (this.isLibrary || this.parents.length > 0) &&
       this.canSubmitResources &&
       (this.canManageCourses ||
         (this.isLibrary
@@ -385,11 +386,12 @@ export default class ISBFResourcePage extends Component {
 
   @action
   editGrade() {
-    if (!this.isLibrary && this.canManageResources) {
+    const entry = this.parents.find((parent) => parent.id === this.grade);
+    if (!this.isLibrary && this.canManageResources && entry) {
       this.#courseTrigger = document.activeElement;
       this.editingDirectory = {
         kind: "grade",
-        entry: this.parents.find((parent) => parent.id === this.grade),
+        entry,
       };
     }
   }
@@ -417,6 +419,7 @@ export default class ISBFResourcePage extends Component {
   @action
   directoryDeleted() {
     this.closeDirectoryDeletion();
+    this.#resourcesRequest++;
     this.resources = [];
     this.loadCourses();
   }
