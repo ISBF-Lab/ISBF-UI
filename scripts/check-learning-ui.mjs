@@ -1747,6 +1747,13 @@ assert.equal(
 );
 page.site.isbf_learning.course_requests = true;
 assert.equal(page.canSubmitCourses, true);
+page.grade = null;
+assert.equal(
+  page.canSubmitCourses,
+  false,
+  "Deleting the last parent leaves no course destination"
+);
+page.grade = 1;
 assert.equal(page.courseActionLabel, "isbf_v2.learning_request_course");
 page.courses = [{ id: courseId, grade: 1, name: "Economics" }];
 page.openCourseDialog();

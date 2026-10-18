@@ -177,8 +177,8 @@ export default class ISBFResourcePage extends Component {
   get canSubmitCourses() {
     return Boolean(
       this.currentUser &&
-      (this.isLibrary || this.parents.length > 0) &&
       this.canSubmitResources &&
+      (this.isLibrary || this.grade !== null) &&
       (this.canManageCourses ||
         (this.isLibrary
           ? this.config?.catalog_requests
