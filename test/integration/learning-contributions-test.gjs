@@ -274,7 +274,7 @@ module(
       let deleted = 0;
       pretender.delete("/isbf/learning/courses/course-a", () => {
         deleted++;
-        return response({ errors: ["Content changed"] }, 409);
+        return response(409, { errors: ["Content changed"] });
       });
       await show(this);
       for (let current = 0; current < 3; current++) {

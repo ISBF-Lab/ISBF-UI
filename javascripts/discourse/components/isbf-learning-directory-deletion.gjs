@@ -1,6 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { action } from "@ember/object";
+import { action, get } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
@@ -33,8 +33,9 @@ export default class ISBFLearningDirectoryDeletion extends Component {
 
   get canManage() {
     return Boolean(
-      this.currentUser?.admin ||
-      this.currentUser?.academy_moderator_permissions?.manage_resources
+      this.currentUser &&
+      (get(this.currentUser, "admin") ||
+        get(this.currentUser, "academy_moderator_permissions.manage_resources"))
     );
   }
 
@@ -110,7 +111,9 @@ export default class ISBFLearningDirectoryDeletion extends Component {
       }
     } catch {
       if (!this.#closed) {
-        this.error = i18n(themePrefix("isbf_v2.learning_delete_load_error"));
+        this.error = i18n(
+          themePrefix("isbf_v2.learning_directory_delete_load_error")
+        );
       }
     } finally {
       this.#requesting = false;
@@ -151,7 +154,8 @@ export default class ISBFLearningDirectoryDeletion extends Component {
       if (!this.#closed) {
         this.error =
           error?.jqXHR?.responseJSON?.errors?.[0] ||
-          i18n(themePrefix("isbf_v2.learning_delete_error"));
+          error?.responseJSON?.errors?.[0] ||
+          i18n(themePrefix("isbf_v2.learning_directory_delete_error"));
         await this.loadPlan();
       }
     } finally {
