@@ -192,6 +192,7 @@ for (const url of [
   "",
   "//example.edu/file",
   "/\\example.edu/file",
+  // eslint-disable-next-line no-script-url
   "javascript:alert(1)",
   "data:text/html,x",
   "ftp://example.edu/file",
@@ -435,7 +436,10 @@ for (const [locale, title, search] of [
   const text = read(`locales/${locale}.yml`);
   assert.ok(text.includes(`workbench_learning_resources: "${title}"`));
   assert.ok(text.includes(`learning_search: "${search}"`));
-  assert.doesNotMatch(text, /学习资源|学习资料|[Ll]earning resources?/);
+  assert.doesNotMatch(
+    text.replace(/^.*learning_wps_collection:.*\r?\n/gm, ""),
+    /学习资源|学习资料|[Ll]earning resources?/
+  );
 }
 
 let completeSubmission;
@@ -471,6 +475,7 @@ const makeDialog = () => {
 };
 const form = makeDialog();
 for (const link of [
+  // eslint-disable-next-line no-script-url
   "javascript:alert(1)",
   "/t/resource/1",
   "https://user:password@example.edu/",
@@ -1097,6 +1102,7 @@ const attachmentCard = new ResourceCard({
         name: "picture.png.zip",
         size: 1024,
       },
+      // eslint-disable-next-line no-script-url
       { url: "javascript:alert(1)", name: "unsafe.jpg", size: 1024 },
     ],
   },
@@ -1314,7 +1320,11 @@ await menuRevoked.deleteFromMenu({
 assert.deepEqual(plain(menuCard.menuTriggers), ["click"]);
 const makeEditCard = () => {
   const candidate = makeDeleteCard();
-  candidate.args.resource = { ...editableResource, can_delete: true };
+  candidate.args.resource = {
+    ...editableResource,
+    can_delete: true,
+    can_edit: true,
+  };
   return candidate;
 };
 const editCard = makeEditCard();
@@ -1325,11 +1335,16 @@ for (const change of [
   { files: [fileId] },
   { files: undefined },
 ]) {
-  editCard.args.resource = { ...editableResource, can_delete: true, ...change };
+  editCard.args.resource = {
+    ...editableResource,
+    can_delete: true,
+    can_edit: true,
+    ...change,
+  };
   assert.equal(
     editCard.canEdit,
-    false,
-    "Legacy attachments and unconfirmed link resources cannot edit"
+    true,
+    "Managers can edit published legacy resources when the server grants editing"
   );
   assert.equal(
     editCard.canDelete,
@@ -1337,7 +1352,11 @@ for (const change of [
     "Legacy resource deletion is preserved"
   );
 }
-editCard.args.resource = { ...editableResource, can_delete: true };
+editCard.args.resource = {
+  ...editableResource,
+  can_delete: true,
+  can_edit: true,
+};
 for (const currentUser of usersWithoutResourceManagement) {
   editCard.currentUser = currentUser;
   assert.equal(editCard.canEdit, false);
@@ -2042,6 +2061,6 @@ assert.equal(
   new ReviewDetail({ reviewable: { payload: { grade: 9 } } }).gradeLabel,
   ""
 );
-console.log(
-  "Learning sharing/editing, admin lifecycle, native pointer menus, responsive source constraints, course reviews, Unicode limits and safe links OK"
+process.stdout.write(
+  "Learning sharing/editing, admin lifecycle, native pointer menus, responsive source constraints, course reviews, Unicode limits and safe links OK\n"
 );

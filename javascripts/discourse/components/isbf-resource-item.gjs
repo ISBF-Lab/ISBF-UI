@@ -7,6 +7,7 @@ import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import DMenu from "discourse/float-kit/components/d-menu";
 import { ajax } from "discourse/lib/ajax";
+import { or } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import DDropdownMenu from "discourse/ui-kit/d-dropdown-menu";
 import { i18n } from "discourse-i18n";
@@ -58,7 +59,9 @@ export default class ISBFResourceItem extends Component {
   }
 
   get canEdit() {
-    return this.canDelete && learningEditableResource(this.args.resource);
+    return this.args.library
+      ? this.canDelete && learningEditableResource(this.args.resource)
+      : this.canDelete && this.args.resource.can_edit === true;
   }
 
   get contributor() {
@@ -80,6 +83,16 @@ export default class ISBFResourceItem extends Component {
       ? ""
       : new Intl.DateTimeFormat(undefined, {
           dateStyle: "medium",
+        }).format(date);
+  }
+
+  get contributionTimeLabel() {
+    const date = new Date(this.args.resource.created_at);
+    return Number.isNaN(date.getTime())
+      ? ""
+      : new Intl.DateTimeFormat(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
         }).format(date);
   }
 
@@ -330,9 +343,9 @@ export default class ISBFResourceItem extends Component {
       {{#if @resource.description}}<p
           class="isbf-learning-resource__description"
         >{{@resource.description}}</p>{{/if}}
-      {{#if @searching}}<p class="isbf-learning-resource__context">{{#if
-            @library
-          }}{{@resource.category.name}}
+      {{#if (or @searching @contributions)}}<p
+          class="isbf-learning-resource__context"
+        >{{#if @library}}{{@resource.category.name}}
             ·
             {{@resource.group.name}}{{else}}{{this.gradeLabel}}
             ·
@@ -361,6 +374,17 @@ export default class ISBFResourceItem extends Component {
             </li>
           {{/each}}
         </ul>
+      {{/if}}
+      {{#if @contributions}}
+        {{#each this.links as |url|}}<p><a
+              href={{url}}
+              rel="noopener noreferrer"
+              target="_blank"
+            >{{url}}</a></p>{{/each}}
+        <p class="isbf-learning-resource__context">{{i18n
+            (themePrefix "isbf_v2.learning_library_time")
+            time=this.contributionTimeLabel
+          }}</p>
       {{/if}}
       {{#if this.additionalLinks.length}}
         <ul

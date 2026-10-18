@@ -156,6 +156,7 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
 
 .isbf-learning__content-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--isbf-v2-space-3);
   padding: var(--isbf-v2-space-4);
@@ -165,6 +166,15 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
     flex: 1;
     min-width: 0;
   }
+}
+
+.isbf-learning__edit-course.btn {
+  max-width: 100%;
+  min-height: 44px;
+  padding-inline: var(--isbf-v2-space-2);
+  font-size: var(--isbf-v2-font-xs);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .isbf-learning__share {

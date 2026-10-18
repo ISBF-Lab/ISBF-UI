@@ -4,7 +4,7 @@ import DButton from "discourse/ui-kit/d-button";
 import { i18n } from "discourse-i18n";
 import ISBFResourceParentPicker from "./isbf-resource-parent-picker";
 
-<template>
+export default <template>
   <aside aria-label={{@page.directoryLabel}} class="isbf-learning__courses">
     <div class="isbf-resource-parent">
       <div class="isbf-resource-parent__picker">
@@ -15,6 +15,14 @@ import ISBFResourceParentPicker from "./isbf-resource-parent-picker";
           @value={{@page.grade}}
         />
       </div>
+      {{#unless @page.isLibrary}}{{#if @page.canManageResources}}<DButton
+            class="btn-flat isbf-learning__edit-grade"
+            @action={{@page.editGrade}}
+            @icon="pencil"
+            @translatedTitle={{i18n
+              (themePrefix "isbf_v2.learning_edit_grade")
+            }}
+          />{{/if}}{{/unless}}
       {{#if @page.isLibrary}}{{#if @page.canSubmitCourses}}<DButton
             class="btn-flat"
             @action={{fn @page.openCourseDialog "category"}}
