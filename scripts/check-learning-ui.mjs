@@ -75,6 +75,21 @@ const model = (values = {}) => ({
 });
 
 assert.equal(learningConfig({ isbf_learning: config }), config);
+for (const grades of [config.grades.slice(1), []]) {
+  const remaining = { ...config, grades };
+  assert.equal(
+    learningConfig({ isbf_learning: remaining }),
+    remaining,
+    "A deleted parent must not disable course resources after a fresh login"
+  );
+}
+for (const grades of [
+  [config.grades[0], config.grades[0]],
+  [{ id: 5, label: "Invalid" }],
+  [null],
+]) {
+  assert.equal(learningConfig({ isbf_learning: { ...config, grades } }), null);
+}
 assert.equal(learningConfig({}), null);
 assert.equal(
   learningConfig({ isbf_learning: { ...config, category_id: 0 } }),

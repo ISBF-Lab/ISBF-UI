@@ -3,11 +3,15 @@ export function learningConfig(site) {
   return Number.isSafeInteger(config?.category_id) &&
     config.category_id > 0 &&
     Array.isArray(config.grades) &&
-    [1, 2, 3, 4].every((id) =>
-      config.grades.some(
-        (grade) => grade.id === id && typeof grade.label === "string",
-      ),
-    )
+    config.grades.every(
+      (grade) =>
+        Number.isSafeInteger(grade?.id) &&
+        grade.id >= 1 &&
+        grade.id <= 4 &&
+        typeof grade.label === "string"
+    ) &&
+    new Set(config.grades.map((grade) => grade.id)).size ===
+      config.grades.length
     ? config
     : null;
 }
@@ -49,7 +53,7 @@ export function learningEditDetails(
   topic,
   post,
   courseId,
-  prefix = "isbf_learning",
+  prefix = "isbf_learning"
 ) {
   const firstPost = Array.isArray(topic?.post_stream?.posts)
     ? topic.post_stream.posts.find((entry) => entry.post_number === 1)
