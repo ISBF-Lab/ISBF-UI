@@ -6,4 +6,6 @@ Source baseline: ISBF-UI `bff5fc0e714e58a5a2679ac0549910dbef283b97`; the affecte
 
 The settings form uses FormKit URL validation and the existing `manage_resources` grant. The server enforces that grant independently of review permission and validates the single native site setting through a URL validator. HTTP and HTTPS links on other domains are accepted; no DNS lookup or WPS-domain restriction is applied. The default destination remains the user's existing WPS form. Site-setting changes retain native audit logging.
 
+Native `htmlClass` exposes the collection-dialog open state so the root's stable scrollbar gutter is suspended only while this modal is mounted. The native viewport-sized dialog/backdrop can then cover the complete viewport and center precisely. The class and gutter override are removed with the modal; other dialogs and normal page scrolling retain their existing behavior.
+
 This approval does not extend to other dialogs, page regions, or global controls. Runtime verification and release evidence are recorded separately; rendering alone does not expand Approved scope.

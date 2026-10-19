@@ -378,6 +378,10 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   overflow-wrap: anywhere;
 }
 
+html.isbf-learning-collection-open {
+  scrollbar-gutter: auto;
+}
+
 .isbf-learning-collection-modal.d-modal {
   box-sizing: border-box;
   align-items: center;

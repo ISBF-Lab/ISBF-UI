@@ -4,6 +4,7 @@ import { action, get, set } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import Form from "discourse/components/form";
+import htmlClass from "discourse/helpers/html-class";
 import { ajax } from "discourse/lib/ajax";
 import { not } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
@@ -87,6 +88,7 @@ export default class ISBFLearningCollectionFormDialog extends Component {
   }
 
   <template>
+    {{htmlClass "isbf-learning-collection-open"}}
     <DModal
       class="isbf-learning-share-dialog isbf-learning-collection-modal isbf-learning-collection-form-dialog"
       @closeModal={{this.close}}
