@@ -1,7 +1,7 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { fn } from "@ember/helper";
-import { action } from "@ember/object";
+import { action, get } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import Form from "discourse/components/form";
@@ -10,8 +10,6 @@ import DButton from "discourse/ui-kit/d-button";
 import DModal from "discourse/ui-kit/d-modal";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import { i18n } from "discourse-i18n";
-
-const COLLECTION_URL = "https://f.wps.cn/g/wG6gL3Rz/";
 
 export default class ISBFLearningManagementDialog extends Component {
   @service currentUser;
@@ -25,7 +23,6 @@ export default class ISBFLearningManagementDialog extends Component {
   @tracked studentNumber = "";
   @tracked users = null;
 
-  collectionUrl = COLLECTION_URL;
   data;
   #closed = false;
   #lookupGeneration = 0;
@@ -65,6 +62,10 @@ export default class ISBFLearningManagementDialog extends Component {
       this.currentUser?.admin ||
       this.currentUser?.academy_moderator_permissions?.manage_resources
     );
+  }
+
+  get collectionUrl() {
+    return get(this.siteSettings, "isbf_learning_collection_form_url");
   }
 
   get title() {
@@ -206,9 +207,8 @@ export default class ISBFLearningManagementDialog extends Component {
 
   <template>
     <DModal
-      class="isbf-learning-share-dialog"
+      class="isbf-learning-share-dialog isbf-learning-collection-modal"
       @closeModal={{this.close}}
-      @inline={{true}}
       @submitOnEnter={{false}}
       @title={{this.title}}
     >
@@ -337,11 +337,13 @@ export default class ISBFLearningManagementDialog extends Component {
             </form.Actions>
           </Form>
         {{else}}
-          <p><a
-              href={{this.collectionUrl}}
-              rel="noopener noreferrer"
-              target="_blank"
-            >{{i18n (themePrefix "isbf_v2.learning_wps_collection")}}</a></p>
+          <p>{{i18n (themePrefix "isbf_v2.learning_collection_invitation")}}</p>
+          <a
+            class="btn btn-primary isbf-learning-share-dialog__collection-link"
+            href={{this.collectionUrl}}
+            rel="noopener noreferrer"
+            target="_blank"
+          >{{i18n (themePrefix "isbf_v2.learning_collection_open")}}</a>
         {{/if}}
       </:body>
     </DModal>

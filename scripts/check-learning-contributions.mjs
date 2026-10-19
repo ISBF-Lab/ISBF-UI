@@ -32,7 +32,8 @@ function componentClass(name, globals = {}) {
     themePrefix: (key) => key,
     i18n: (key) => key,
     document: { activeElement: { focus() {} } },
-    COLLECTION_URL: "https://f.wps.cn/g/wG6gL3Rz/",
+    get: (object, path) =>
+      path.split(".").reduce((value, key) => value?.[key], object),
     ...globals,
   });
 }
@@ -126,14 +127,15 @@ assert.equal(
 assert.equal(dialog.associationRequired, false);
 dialog.currentUser = {};
 assert.equal(dialog.canManage, false);
-assert.match(
-  read("javascripts/discourse/components/isbf-learning-management-dialog.gjs"),
-  /https:\/\/f\.wps\.cn\/g\/wG6gL3Rz\//
+dialog.siteSettings = {
+  isbf_learning_collection_form_url: "https://forms.example.edu/collection",
+};
+assert.equal(
+  dialog.collectionUrl,
+  "https://forms.example.edu/collection",
+  "the collection destination comes from the saved setting"
 );
-assert.match(
-  read("locales/zh_CN.yml"),
-  /【WPS表单】邀你填写「ISBF-One学习资料收集」，经审核后会进入ISBF-One资料库/
-);
+assert.match(read("locales/zh_CN.yml"), /你也想分享学习资料？/);
 process.stdout.write(
   "Contribution switching, stale results, management permissions, student selection and WPS destination OK\n"
 );

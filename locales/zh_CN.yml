@@ -2,6 +2,11 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    learning_collection_invitation: "你也想分享学习资料？请填写资料收集表单。我们会审核、整理，通过后加入 ISBF-One 资料库。"
+    learning_collection_open: "填写资料收集表单"
+    learning_collection_settings: "收集表单设置"
+    learning_collection_url: "收集表单链接"
+    learning_collection_save_error: "链接保存失败，请重试。"
     poll_button: "投票"
     poll_button_title: "创建投票"
     solved_accept: "采纳答案"

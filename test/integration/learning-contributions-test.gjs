@@ -1,4 +1,10 @@
-import { click, fillIn, render, settled } from "@ember/test-helpers";
+import {
+  click,
+  fillIn,
+  getRootElement,
+  render,
+  settled,
+} from "@ember/test-helpers";
 import { module, test } from "qunit";
 import { themePrefix } from "virtual:theme";
 import { setupRenderingTest } from "discourse/tests/helpers/component-test";
@@ -15,6 +21,9 @@ module(
     setupRenderingTest(hooks, { stubRouter: true });
 
     hooks.beforeEach(function () {
+      this.owner.lookup("service:modal").setContainerElement(getRootElement());
+      this.siteSettings.isbf_learning_collection_form_url =
+        "https://f.wps.cn/g/wG6gL3Rz/";
       this.siteSettings.min_topic_title_length = 5;
       this.siteSettings.max_topic_title_length = 255;
       this.courses = [{ id: "course-a", name: "微观经济学", grade: 1 }];
@@ -42,9 +51,18 @@ module(
           '.isbf-learning-share-dialog a[href="https://f.wps.cn/g/wG6gL3Rz/"]'
         )
         .hasText(
-          i18n(themePrefix("isbf_v2.learning_wps_collection")),
-          "the collection entry uses the specified text and destination"
+          i18n(themePrefix("isbf_v2.learning_collection_open")),
+          "the collection entry has a clear button label and destination"
         );
+      assert
+        .dom(".isbf-learning-share-dialog")
+        .includesText(
+          i18n(themePrefix("isbf_v2.learning_collection_invitation")),
+          "the invitation explains review before publication"
+        );
+      assert
+        .dom(".isbf-learning-share-dialog a")
+        .hasClass("btn-primary", "the destination is a primary button");
       assert
         .dom(".isbf-learning-share-dialog form")
         .doesNotExist("ordinary users cannot directly upload");
