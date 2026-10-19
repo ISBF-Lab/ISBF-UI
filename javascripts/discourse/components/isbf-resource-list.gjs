@@ -24,6 +24,13 @@ export default <template>
                   }}
                 />
               {{/if}}{{/unless}}{{/unless}}{{/if}}{{/unless}}
+      {{#if @page.canManageCollectionForm}}<DButton
+          class="btn-flat isbf-learning__collection-settings"
+          @action={{@page.editCollectionForm}}
+          @translatedLabel={{i18n
+            (themePrefix "isbf_v2.learning_collection_settings")
+          }}
+        />{{/if}}
       {{#unless @page.isLibrary}}<DButton
           class="btn-flat isbf-learning__contributions"
           @action={{@page.toggleContributions}}

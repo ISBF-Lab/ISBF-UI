@@ -452,7 +452,10 @@ for (const [locale, title, search] of [
   assert.ok(text.includes(`workbench_learning_resources: "${title}"`));
   assert.ok(text.includes(`learning_search: "${search}"`));
   assert.doesNotMatch(
-    text.replace(/^.*learning_wps_collection:.*\r?\n/gm, ""),
+    text.replace(
+      /^.*learning_(?:wps_collection|collection_invitation):.*\r?\n/gm,
+      ""
+    ),
     /学习资源|学习资料|[Ll]earning resources?/
   );
 }

@@ -1,7 +1,7 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { on } from "@ember/modifier";
-import { action } from "@ember/object";
+import { action, get } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
@@ -15,6 +15,7 @@ import {
   learningResourceQuery,
   libraryConfig,
 } from "../lib/learning-resources";
+import ISBFLearningCollectionFormDialog from "./isbf-learning-collection-form-dialog";
 import ISBFLearningDirectoryDeletion from "./isbf-learning-directory-deletion";
 import ISBFLearningDirectoryEditor from "./isbf-learning-directory-editor";
 import ISBFLearningManagementDialog from "./isbf-learning-management-dialog";
@@ -49,6 +50,7 @@ export default class ISBFResourcePage extends Component {
   @tracked grades = [];
   @tracked editingDirectory = null;
   @tracked deletingDirectory = null;
+  @tracked showCollectionFormDialog = false;
 
   #coursesRequest = 0;
   #courseTrigger;
@@ -159,6 +161,15 @@ export default class ISBFResourcePage extends Component {
     );
   }
 
+  get canManageCollectionForm() {
+    return Boolean(
+      !this.isLibrary &&
+      this.currentUser &&
+      (get(this.currentUser, "admin") ||
+        get(this.currentUser, "academy_moderator_permissions.manage_resources"))
+    );
+  }
+
   get canSubmitResources() {
     if (
       this.isLibrary ||
@@ -260,6 +271,18 @@ export default class ISBFResourcePage extends Component {
 
   get backHref() {
     return this.isbfBackNavigation.href("/isbf/workbench");
+  }
+
+  @action
+  editCollectionForm() {
+    if (this.canManageCollectionForm) {
+      this.showCollectionFormDialog = true;
+    }
+  }
+
+  @action
+  closeCollectionFormDialog() {
+    this.showCollectionFormDialog = false;
   }
 
   @action
@@ -639,6 +662,10 @@ export default class ISBFResourcePage extends Component {
             )
           }}</p>
       {{else if this.currentUser}}
+        {{#if this.showCollectionFormDialog}}<ISBFLearningCollectionFormDialog
+            @onClose={{this.closeCollectionFormDialog}}
+            @onSaved={{this.closeCollectionFormDialog}}
+          />{{/if}}
         {{#if this.shareContext}}
           {{#if this.isLibrary}}<ISBFResourceShareDialog
               @course={{this.shareContext.course}}

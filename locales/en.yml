@@ -2,6 +2,11 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    learning_collection_invitation: "Want to share learning resources? Complete the collection form. We will review and organize your submission before adding it to the ISBF-One library."
+    learning_collection_open: "Complete the collection form"
+    learning_collection_settings: "Collection form settings"
+    learning_collection_url: "Collection form link"
+    learning_collection_save_error: "The link could not be saved. Please try again."
     poll_button: "Poll"
     poll_button_title: "Create poll"
     solved_accept: "Accept answer"
