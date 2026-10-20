@@ -2,6 +2,17 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    resource_apply_share: "申请分享"
+    library_edit_category: "编辑分类"
+    library_edit_group: "编辑分组"
+    library_group_name: "分组"
+    library_delete_category: "删除分类"
+    library_delete_group: "删除分组"
+    library_delete_step_1: "第一次确认：要删除“%{name}”吗？"
+    library_delete_step_2: "第二次确认：“%{name}”包含 %{courses} 个分组、%{resources} 份资料。删除后将从资料库和“我的贡献”中移除。"
+    library_delete_step_3: "第三次确认：即将删除“%{name}”及其下全部内容（%{courses} 个分组、%{resources} 份资料）。"
+    library_delete_category_warning: "此分类下全部分组和资料都会一并移除。"
+    library_delete_group_warning: "此分组下全部资料都会一并移除。"
     learning_collection_invitation: "你也想分享学习资料？请填写资料收集表单。我们会审核、整理，通过后加入 ISBF-One 资料库。"
     learning_collection_open: "填写资料收集表单"
     learning_collection_settings: "收集表单设置"

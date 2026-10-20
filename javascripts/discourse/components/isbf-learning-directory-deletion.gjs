@@ -40,33 +40,46 @@ export default class ISBFLearningDirectoryDeletion extends Component {
   }
 
   get endpoint() {
-    return `/isbf/learning/${this.args.kind === "grade" ? "grades" : "courses"}/${encodeURIComponent(this.args.entry.id)}`;
+    return `/isbf/${this.args.library ? "library" : "learning"}/${this.args.library ? (this.args.kind === "grade" ? "categories" : "groups") : this.args.kind === "grade" ? "grades" : "courses"}/${encodeURIComponent(this.args.entry.id)}`;
   }
 
   get title() {
     return i18n(
       themePrefix(
-        this.args.kind === "grade"
-          ? "isbf_v2.learning_delete_grade"
-          : "isbf_v2.learning_delete_course"
+        this.args.library
+          ? this.args.kind === "grade"
+            ? "isbf_v2.library_delete_category"
+            : "isbf_v2.library_delete_group"
+          : this.args.kind === "grade"
+            ? "isbf_v2.learning_delete_grade"
+            : "isbf_v2.learning_delete_course"
       )
     );
   }
 
   get message() {
-    return i18n(themePrefix(`isbf_v2.learning_delete_step_${this.step}`), {
-      name: this.plan.name,
-      courses: this.plan.course_count,
-      resources: this.plan.resource_count,
-    });
+    return i18n(
+      themePrefix(
+        `isbf_v2.${this.args.library ? "library" : "learning"}_delete_step_${this.step}`
+      ),
+      {
+        name: this.plan.name,
+        courses: this.plan.course_count,
+        resources: this.plan.resource_count,
+      }
+    );
   }
 
   get warning() {
     return i18n(
       themePrefix(
-        this.args.kind === "grade"
-          ? "isbf_v2.learning_delete_grade_warning"
-          : "isbf_v2.learning_delete_course_warning"
+        this.args.library
+          ? this.args.kind === "grade"
+            ? "isbf_v2.library_delete_category_warning"
+            : "isbf_v2.library_delete_group_warning"
+          : this.args.kind === "grade"
+            ? "isbf_v2.learning_delete_grade_warning"
+            : "isbf_v2.learning_delete_course_warning"
       )
     );
   }

@@ -24,13 +24,19 @@ export default class ISBFLearningCollectionFormDialog extends Component {
   constructor() {
     super(...arguments);
     this.data = {
-      url: get(this.siteSettings, "isbf_learning_collection_form_url"),
+      url: get(this.siteSettings, this.settingName),
     };
   }
 
   willDestroy() {
     super.willDestroy(...arguments);
     this.#closed = true;
+  }
+
+  get settingName() {
+    return this.args.library
+      ? "isbf_library_collection_form_url"
+      : "isbf_learning_collection_form_url";
   }
 
   get canManage() {
@@ -57,19 +63,18 @@ export default class ISBFLearningCollectionFormDialog extends Component {
     this.saving = true;
     this.error = null;
     try {
-      const response = await ajax("/isbf/learning/collection-form", {
-        type: "PUT",
-        data: { url: data.url.trim() },
-      });
+      const response = await ajax(
+        `/isbf/${this.args.library ? "library" : "learning"}/collection-form`,
+        {
+          type: "PUT",
+          data: { url: data.url.trim() },
+        }
+      );
       if (response.success !== true || !response.url) {
         throw new Error("Unexpected collection form response");
       }
       if (!this.#closed) {
-        set(
-          this.siteSettings,
-          "isbf_learning_collection_form_url",
-          response.url
-        );
+        set(this.siteSettings, this.settingName, response.url);
         this.#closed = true;
         this.args.onSaved();
       }

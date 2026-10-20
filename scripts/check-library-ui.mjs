@@ -81,7 +81,7 @@ requests.at(-1).resolve({ groups: [] });
 await loading;
 assert.equal(page.grade, null);
 assert.equal(page.selectedCourseId, null);
-assert.equal(page.shareDisabled, true);
+assert.equal(page.shareDisabled, false);
 page.openCourseDialog();
 assert.equal(page.showCourseDialog, false);
 page.openCourseDialog("category");
@@ -329,24 +329,26 @@ for (const library of [false, true]) {
   permissionPage.site = {
     isbf_learning: learningConfig,
     isbf_library: config,
-    categories: [{ id: 10, canCreateTopic: false }],
+    categories: [
+      { id: 10, canCreateTopic: false },
+      { id: 20, canCreateTopic: false },
+    ],
   };
   permissionPage.currentUser = academyUser;
   permissionPage.courses = [{ id: "group", grade: 1, category_id: "parent" }];
   permissionPage.selectedCourseId = "group";
-  assert.equal(permissionPage.canManageCourses, !library);
-  assert.equal(permissionPage.canSubmitResources, library);
-  assert.equal(permissionPage.canSubmitCourses, library);
-  assert.equal(permissionPage.shareDisabled, !library);
-  assert.equal(
-    permissionPage.shareLabel,
-    library ? "isbf_v2.learning_apply_share" : "isbf_v2.learning_share"
+  assert.equal(permissionPage.canManageCourses, true);
+  assert.equal(permissionPage.canSubmitResources, false);
+  assert.equal(permissionPage.canSubmitCourses, false);
+  assert.equal(permissionPage.shareDisabled, true);
+  assert.equal(permissionPage.shareLabel, "isbf_v2.learning_share");
+  permissionPage.site.categories.forEach(
+    (category) => (category.canCreateTopic = true)
   );
-  permissionPage.site.categories[0].canCreateTopic = true;
   assert.equal(permissionPage.canSubmitResources, true);
   assert.equal(permissionPage.canSubmitCourses, true);
   permissionPage.currentUser = { moderator: true };
-  assert.equal(permissionPage.canManageCourses, library);
+  assert.equal(permissionPage.canManageCourses, false);
   permissionPage.currentUser = { admin: true, academy_moderator_role: true };
   permissionPage.site.categories[0].canCreateTopic = false;
   assert.equal(permissionPage.canSubmitResources, true);
@@ -364,8 +366,8 @@ for (const library of [false, true]) {
   });
   permissionItem.site = permissionPage.site;
   permissionItem.currentUser = academyUser;
-  assert.equal(permissionItem.canDelete, !library);
-  assert.equal(permissionItem.canEdit, !library);
+  assert.equal(permissionItem.canDelete, true);
+  assert.equal(permissionItem.canEdit, true);
   permissionItem.args.resource.can_delete = false;
   assert.equal(permissionItem.canDelete, false);
 
@@ -392,29 +394,16 @@ for (const library of [false, true]) {
     course: { id: "group" },
     group: { id: "group" },
   });
-  assert.equal(Boolean(permissionPage.shareContext), !library);
+  assert.equal(Boolean(permissionPage.shareContext), true);
 }
 const pageSource = read(
   "javascripts/discourse/components/isbf-resource-page.gjs"
 );
-assert.match(
-  pageSource,
-  /this.isLibrary\s*\? this.currentUser\?\.moderator\s*:/
-);
 assert.match(pageSource, /this.currentUser &&\s*this.canSubmitResources &&/);
-assert.match(
-  pageSource,
-  /!this.selectedCourse \|\|\s*!this.canSubmitResources \|\|/
-);
-for (const name of [
-  "isbf-resource-page",
-  "isbf-resource-item",
-  "isbf-resource-share-dialog",
-]) {
-  const permissionSource = read(`javascripts/discourse/components/${name}.gjs`);
+for (const name of ["isbf-resource-page", "isbf-resource-item"]) {
   assert.match(
-    permissionSource,
-    /!this\.(?:args\.library|isLibrary) &&\s*this.currentUser\?\.academy_moderator_permissions\?\.manage_resources/
+    read(`javascripts/discourse/components/${name}.gjs`),
+    /this.currentUser\?\.academy_moderator_permissions\?\.manage_resources/
   );
 }
 

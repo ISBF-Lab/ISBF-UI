@@ -15,14 +15,20 @@ export default <template>
           @value={{@page.grade}}
         />
       </div>
-      {{#unless @page.isLibrary}}{{#if @page.canManageResources}}<DButton
-            class="btn-flat isbf-learning__edit-grade"
-            @action={{@page.editGrade}}
-            @icon="pencil"
-            @translatedTitle={{i18n
-              (themePrefix "isbf_v2.learning_edit_grade")
-            }}
-          />{{/if}}{{/unless}}
+      {{#if @page.canManageResources}}<DButton
+          class="btn-flat isbf-learning__edit-grade"
+          @action={{@page.editGrade}}
+          @icon="pencil"
+          @translatedTitle={{i18n
+            (themePrefix
+              (if
+                @page.isLibrary
+                "isbf_v2.library_edit_category"
+                "isbf_v2.learning_edit_grade"
+              )
+            )
+          }}
+        />{{/if}}
       {{#if @page.isLibrary}}{{#if @page.canSubmitCourses}}<DButton
             class="btn-flat"
             @action={{fn @page.openCourseDialog "category"}}

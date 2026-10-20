@@ -11,7 +11,6 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import {
   learningConfig,
-  learningEditableResource,
   learningResourceQuery,
   libraryConfig,
 } from "../lib/learning-resources";
@@ -22,7 +21,6 @@ import ISBFLearningManagementDialog from "./isbf-learning-management-dialog";
 import ISBFResourceCatalog from "./isbf-resource-catalog";
 import ISBFResourceDirectoryDialog from "./isbf-resource-directory-dialog";
 import ISBFResourceList from "./isbf-resource-list";
-import ISBFResourceShareDialog from "./isbf-resource-share-dialog";
 
 export default class ISBFResourcePage extends Component {
   @service appEvents;
@@ -147,23 +145,19 @@ export default class ISBFResourcePage extends Component {
   get canManageCourses() {
     return Boolean(
       this.currentUser?.admin ||
-      (this.isLibrary
-        ? this.currentUser?.moderator
-        : this.currentUser?.academy_moderator_permissions?.manage_resources)
+      this.currentUser?.academy_moderator_permissions?.manage_resources
     );
   }
 
   get canManageResources() {
     return Boolean(
       this.currentUser?.admin ||
-      (!this.isLibrary &&
-        this.currentUser?.academy_moderator_permissions?.manage_resources)
+      this.currentUser?.academy_moderator_permissions?.manage_resources
     );
   }
 
   get canManageCollectionForm() {
     return Boolean(
-      !this.isLibrary &&
       this.currentUser &&
       (get(this.currentUser, "admin") ||
         get(this.currentUser, "academy_moderator_permissions.manage_resources"))
@@ -171,11 +165,7 @@ export default class ISBFResourcePage extends Component {
   }
 
   get canSubmitResources() {
-    if (
-      this.isLibrary ||
-      !this.currentUser?.academy_moderator_role ||
-      this.currentUser?.admin
-    ) {
+    if (!this.currentUser?.academy_moderator_role || this.currentUser?.admin) {
       return true;
     }
     return Boolean(
@@ -239,7 +229,7 @@ export default class ISBFResourcePage extends Component {
   }
 
   get shareDisabled() {
-    if (!this.isLibrary && !this.canManageResources) {
+    if (!this.canManageResources) {
       return false;
     }
     return (
@@ -401,7 +391,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   editCourse(course) {
-    if (!this.isLibrary && this.canManageResources) {
+    if (this.canManageResources) {
       this.#courseTrigger = document.activeElement;
       this.editingDirectory = { kind: "course", entry: course };
     }
@@ -410,7 +400,7 @@ export default class ISBFResourcePage extends Component {
   @action
   editGrade() {
     const entry = this.parents.find((parent) => parent.id === this.grade);
-    if (!this.isLibrary && this.canManageResources && entry) {
+    if (this.canManageResources && entry) {
       this.#courseTrigger = document.activeElement;
       this.editingDirectory = {
         kind: "grade",
@@ -427,7 +417,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   deleteDirectory() {
-    if (!this.isLibrary && this.canManageResources && this.editingDirectory) {
+    if (this.canManageResources && this.editingDirectory) {
       this.deletingDirectory = this.editingDirectory;
       this.editingDirectory = null;
     }
@@ -511,7 +501,6 @@ export default class ISBFResourcePage extends Component {
       this.config?.resource_admin_management !== true ||
       this.shareContext ||
       resource?.can_delete !== true ||
-      (this.isLibrary && !learningEditableResource(resource)) ||
       !(this.isLibrary ? resource.group?.id : resource.course?.id)
     ) {
       return;
@@ -663,29 +652,26 @@ export default class ISBFResourcePage extends Component {
           }}</p>
       {{else if this.currentUser}}
         {{#if this.showCollectionFormDialog}}<ISBFLearningCollectionFormDialog
+            @library={{this.isLibrary}}
             @onClose={{this.closeCollectionFormDialog}}
             @onSaved={{this.closeCollectionFormDialog}}
           />{{/if}}
         {{#if this.shareContext}}
-          {{#if this.isLibrary}}<ISBFResourceShareDialog
-              @course={{this.shareContext.course}}
-              @library={{this.isLibrary}}
-              @onClose={{this.closeShareDialog}}
-              @onSubmitted={{this.resourceSubmitted}}
-              @resource={{this.shareContext.resource}}
-            />{{else}}<ISBFLearningManagementDialog
-              @course={{this.shareContext.course}}
-              @courses={{this.courses}}
-              @grades={{this.parents}}
-              @onClose={{this.closeShareDialog}}
-              @onSubmitted={{this.resourceSubmitted}}
-              @resource={{this.shareContext.resource}}
-            />{{/if}}
+          <ISBFLearningManagementDialog
+            @course={{this.shareContext.course}}
+            @courses={{this.courses}}
+            @grades={{this.parents}}
+            @library={{this.isLibrary}}
+            @onClose={{this.closeShareDialog}}
+            @onSubmitted={{this.resourceSubmitted}}
+            @resource={{this.shareContext.resource}}
+          />
         {{/if}}
         {{#if this.editingDirectory}}<ISBFLearningDirectoryEditor
             @entry={{this.editingDirectory.entry}}
             @grades={{this.parents}}
             @kind={{this.editingDirectory.kind}}
+            @library={{this.isLibrary}}
             @onClose={{this.closeDirectoryEditor}}
             @onDelete={{this.deleteDirectory}}
             @onSaved={{this.directorySaved}}
@@ -693,6 +679,7 @@ export default class ISBFResourcePage extends Component {
         {{#if this.deletingDirectory}}<ISBFLearningDirectoryDeletion
             @entry={{this.deletingDirectory.entry}}
             @kind={{this.deletingDirectory.kind}}
+            @library={{this.isLibrary}}
             @onClose={{this.closeDirectoryDeletion}}
             @onDeleted={{this.directoryDeleted}}
           />{{/if}}

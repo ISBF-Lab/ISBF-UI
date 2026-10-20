@@ -45,7 +45,9 @@ export default class ISBFLearningManagementDialog extends Component {
         this.currentUser?.username ||
         "",
       student_number: this.studentNumber,
-      course_id: resource?.course?.id || this.args.course?.id,
+      course_id:
+        (this.args.library ? resource?.group?.id : resource?.course?.id) ||
+        this.args.course?.id,
     };
     if (this.selectedUser && this.studentNumber) {
       this.lookupUsers();
@@ -66,7 +68,12 @@ export default class ISBFLearningManagementDialog extends Component {
   }
 
   get collectionUrl() {
-    return get(this.siteSettings, "isbf_learning_collection_form_url");
+    return get(
+      this.siteSettings,
+      this.args.library
+        ? "isbf_library_collection_form_url"
+        : "isbf_learning_collection_form_url"
+    );
   }
 
   get title() {
@@ -94,8 +101,11 @@ export default class ISBFLearningManagementDialog extends Component {
       ...course,
       label: i18n(themePrefix("isbf_v2.learning_course_option"), {
         grade:
-          this.args.grades?.find((grade) => grade.id === course.grade)?.label ||
-          "",
+          this.args.grades?.find(
+            (grade) =>
+              grade.id ===
+              (this.args.library ? course.category_id : course.grade)
+          )?.label || "",
         name: course.name,
       }),
     }));
@@ -121,9 +131,12 @@ export default class ISBFLearningManagementDialog extends Component {
     this.lookingUp = true;
     this.lookupError = null;
     try {
-      const response = await ajax("/isbf/learning/contributor-users", {
-        data: { student_number: this.studentNumber },
-      });
+      const response = await ajax(
+        `/isbf/${this.args.library ? "library" : "learning"}/contributor-users`,
+        {
+          data: { student_number: this.studentNumber },
+        }
+      );
       if (!this.#closed && generation === this.#lookupGeneration) {
         this.users = response.users || [];
         if (this.selectedUser) {
@@ -174,13 +187,17 @@ export default class ISBFLearningManagementDialog extends Component {
         student_number: this.studentNumber,
         contributor_user_id: this.selectedUser?.id || "",
       };
+      if (this.args.library) {
+        payload.group_id = payload.course_id;
+        delete payload.course_id;
+      }
       if (data.link?.trim()) {
         payload.link = data.link.trim();
       } else {
         delete payload.link;
       }
       const response = await ajax(
-        `/isbf/learning/resources${this.args.resource ? `/${this.args.resource.id}` : ""}`,
+        `/isbf/${this.args.library ? "library" : "learning"}/resources${this.args.resource ? `/${this.args.resource.id}` : ""}`,
         {
           type: this.args.resource ? "PUT" : "POST",
           data: payload,
@@ -266,7 +283,15 @@ export default class ISBFLearningManagementDialog extends Component {
             <form.Field
               @disabled={{this.saving}}
               @name="course_id"
-              @title={{i18n (themePrefix "isbf_v2.learning_course_name")}}
+              @title={{i18n
+                (themePrefix
+                  (if
+                    @library
+                    "isbf_v2.library_group_name"
+                    "isbf_v2.learning_course_name"
+                  )
+                )
+              }}
               @type="select"
               @validation="required"
               as |field|

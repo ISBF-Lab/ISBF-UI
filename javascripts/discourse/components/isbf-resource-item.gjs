@@ -12,11 +12,7 @@ import DButton from "discourse/ui-kit/d-button";
 import DDropdownMenu from "discourse/ui-kit/d-dropdown-menu";
 import { i18n } from "discourse-i18n";
 import { isImageAttachment } from "../lib/content-images";
-import {
-  learningEditableResource,
-  learningFileSize,
-  learningSafeUrl,
-} from "../lib/learning-resources";
+import { learningFileSize, learningSafeUrl } from "../lib/learning-resources";
 import contentImages from "../modifiers/content-images";
 
 export default class ISBFResourceItem extends Component {
@@ -51,17 +47,14 @@ export default class ISBFResourceItem extends Component {
   get canDelete() {
     return Boolean(
       (this.currentUser?.admin ||
-        (!this.args.library &&
-          this.currentUser?.academy_moderator_permissions?.manage_resources)) &&
+        this.currentUser?.academy_moderator_permissions?.manage_resources) &&
       this.config?.resource_admin_management === true &&
       this.args.resource.can_delete === true
     );
   }
 
   get canEdit() {
-    return this.args.library
-      ? this.canDelete && learningEditableResource(this.args.resource)
-      : this.canDelete && this.args.resource.can_edit === true;
+    return this.canDelete && this.args.resource.can_edit === true;
   }
 
   get contributor() {
