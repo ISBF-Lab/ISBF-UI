@@ -40,6 +40,33 @@ function displayTime(value, allDay) {
       }).format(new Date(value));
 }
 
+function communityEntries(events) {
+  return events.flatMap((event) =>
+    (event.occurrences || []).map((occurrence) => {
+      const end =
+        occurrence.ends_at ||
+        (event.all_day
+          ? occurrence.starts_at
+          : new Date(
+              new Date(occurrence.starts_at).getTime() + 3600000
+            ).toISOString());
+      return {
+        id: event.id,
+        title: event.name || event.post?.topic?.title,
+        starts_at: occurrence.starts_at,
+        ends_at: event.all_day
+          ? new Date(
+              new Date(`${end.slice(0, 10)}T00:00:00.000Z`).getTime() + 86400000
+            ).toISOString()
+          : end,
+        all_day: event.all_day,
+        href: event.post?.url,
+        kind: "community",
+      };
+    })
+  );
+}
+
 export default class ISBFV2Calendar extends Component {
   @service appEvents;
   @service currentUser;
@@ -59,7 +86,6 @@ export default class ISBFV2Calendar extends Component {
   @tracked loadError = false;
   @tracked isCompact = false;
   @tracked mobileAnchorDay;
-  @tracked mobileFocusDate = null;
   @tracked todayKey;
   @tracked isEditing = false;
   @tracked editingId = null;
@@ -69,8 +95,8 @@ export default class ISBFV2Calendar extends Component {
   @tracked endInput = "";
   @tracked allDay = false;
   @tracked saveError = false;
-
   weekdays = WEEKDAYS.map((day) => i18n(themePrefix(`isbf_v2.week_${day}`)));
+
   #requestNumber = 0;
   #updatesRequestNumber = 0;
   #focusRequestNumber = 0;
@@ -79,6 +105,12 @@ export default class ISBFV2Calendar extends Component {
   #followingToday = true;
   #mediaQuery;
   #midnightTimer;
+  #ownerId;
+  #swipe;
+  #multiTouch = false;
+  #suppressClickUntil = 0;
+  #needsCompactProbe = false;
+  @tracked _extraWeekMonths = {};
 
   constructor() {
     super(...arguments);
@@ -87,6 +119,7 @@ export default class ISBFV2Calendar extends Component {
     this.selectedDate = dateKey(today);
     this.todayKey = this.selectedDate;
     this.mobileAnchorDay = today.getDate();
+    this.#ownerId = this.currentUser?.id ?? null;
     this.#mediaQuery = window.matchMedia("(max-width: 600px)");
     this.isCompact = this.#mediaQuery.matches;
     this.#mediaQuery.addEventListener("change", this.onViewportChange);
@@ -105,6 +138,7 @@ export default class ISBFV2Calendar extends Component {
     this.#requestNumber++;
     this.#updatesRequestNumber++;
     this.#focusRequestNumber++;
+    this.cancelSwipe();
     clearTimeout(this.#midnightTimer);
     this.#mediaQuery.removeEventListener("change", this.onViewportChange);
     window.removeEventListener("focus", this.refreshToday);
@@ -146,10 +180,13 @@ export default class ISBFV2Calendar extends Component {
     return calendarWindow(
       this.visibleMonth,
       this.isCompact,
-      this.mobileFocusDate
-        ? localDate(this.mobileFocusDate).getDate()
-        : this.mobileAnchorDay
+      this.#ownerId === (this.currentUser?.id ?? null) &&
+        this._extraWeekMonths[dateKey(this.visibleMonth)] === true
     );
+  }
+
+  get fetchRange() {
+    return calendarWindow(this.visibleMonth, false);
   }
 
   get monthCells() {
@@ -280,8 +317,12 @@ export default class ISBFV2Calendar extends Component {
 
   @action
   async loadMonth() {
+    this.#syncOwner();
     const request = ++this.#requestNumber;
-    const { from, to } = this.viewRange;
+    const owner = this.#ownerId;
+    const month = this.visibleMonth;
+    const compact = this.isCompact;
+    const { from, to } = this.fetchRange;
     const data = { from: from.toISOString(), to: to.toISOString() };
     const personalData = {
       from: new Date(from.getTime() - 86400000).toISOString(),
@@ -306,47 +347,77 @@ export default class ISBFV2Calendar extends Component {
         : Promise.resolve({ events: [] }),
     ]);
 
-    if (request !== this.#requestNumber || this.isDestroying) {
+    if (!this.#currentRequest(request, owner)) {
       return;
     }
 
-    this.personalEntries =
+    const entries =
       personal.status === "fulfilled"
         ? personal.value.entries.map((entry) => ({
             ...entry,
             kind: "personal",
           }))
         : [];
-    this.communityEvents =
+    let events =
       community.status === "fulfilled"
-        ? community.value.events.flatMap((event) =>
-            (event.occurrences || []).map((occurrence) => {
-              const end =
-                occurrence.ends_at ||
-                (event.all_day
-                  ? occurrence.starts_at
-                  : new Date(
-                      new Date(occurrence.starts_at).getTime() + 3600000
-                    ).toISOString());
-              return {
-                id: event.id,
-                title: event.name || event.post?.topic?.title,
-                starts_at: occurrence.starts_at,
-                ends_at: event.all_day
-                  ? new Date(
-                      new Date(`${end.slice(0, 10)}T00:00:00.000Z`).getTime() +
-                        86400000
-                    ).toISOString()
-                  : end,
-                all_day: event.all_day,
-                href: event.post?.url,
-                kind: "community",
-              };
-            })
-          )
+        ? communityEntries(community.value.events)
         : [];
-    this.loadError =
+    let failed =
       personal.status === "rejected" || community.status === "rejected";
+    const sixthWeek = new Date(
+      from.getFullYear(),
+      from.getMonth(),
+      from.getDate() + 35
+    );
+    const capped =
+      community.status === "fulfilled" && community.value.events.length >= 200;
+    let probed = false;
+    this.personalEntries = entries;
+    this.communityEvents = events;
+    if (this.#hasExtraWeek([...entries, ...events], sixthWeek)) {
+      this._extraWeekMonths = {
+        ...this._extraWeekMonths,
+        [dateKey(month)]: true,
+      };
+    }
+    if ((compact || this.isCompact) && capped) {
+      try {
+        const supplement = await ajax("/discourse-post-event/events.json", {
+          data: {
+            after: sixthWeek.toISOString(),
+            before: data.to,
+            category_id: settings.calendar_category_id,
+            limit: 200,
+          },
+        });
+        events = [
+          ...new Map(
+            [...events, ...communityEntries(supplement.events)].map((event) => [
+              `${event.id}:${event.starts_at}`,
+              event,
+            ])
+          ).values(),
+        ];
+        probed = true;
+      } catch {
+        failed = true;
+      }
+    }
+    if (!this.#currentRequest(request, owner)) {
+      return;
+    }
+
+    const hasExtraWeek = this.#hasExtraWeek([...entries, ...events], sixthWeek);
+    if (hasExtraWeek || !failed) {
+      this._extraWeekMonths = {
+        ...this._extraWeekMonths,
+        [dateKey(month)]: hasExtraWeek,
+      };
+    }
+    this.personalEntries = entries;
+    this.communityEvents = events;
+    this.#needsCompactProbe = capped && !probed;
+    this.loadError = failed;
     this.isLoading = false;
   }
 
@@ -362,12 +433,12 @@ export default class ISBFV2Calendar extends Component {
 
   @action
   goToday() {
+    this.cancelSwipe();
     const today = new Date();
     this.visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     this.selectedDate = dateKey(today);
     this.todayKey = this.selectedDate;
     this.mobileAnchorDay = today.getDate();
-    this.mobileFocusDate = null;
     this.#followingToday = true;
     this.#scheduleDayRefresh();
     void this.loadMonth();
@@ -382,29 +453,22 @@ export default class ISBFV2Calendar extends Component {
     ) {
       return;
     }
-    const previous = this.viewRange;
+    const previous = this.fetchRange;
+    this.cancelSwipe();
     this.isCompact = event.matches;
     const selected = localDate(this.selectedDate);
     const range = this.viewRange;
     if (selected < range.from || selected >= range.to) {
-      if (this.isCompact) {
-        this.mobileFocusDate = this.selectedDate;
-        this.visibleMonth = new Date(
-          selected.getFullYear(),
-          selected.getMonth(),
-          1
-        );
-      } else {
-        this.visibleMonth = new Date(
-          selected.getFullYear(),
-          selected.getMonth(),
-          1
-        );
-      }
+      this.visibleMonth = new Date(
+        selected.getFullYear(),
+        selected.getMonth(),
+        1
+      );
     }
     if (
-      previous.from.getTime() !== this.viewRange.from.getTime() ||
-      previous.to.getTime() !== this.viewRange.to.getTime()
+      previous.from.getTime() !== this.fetchRange.from.getTime() ||
+      previous.to.getTime() !== this.fetchRange.to.getTime() ||
+      (this.isCompact && this.#needsCompactProbe)
     ) {
       void this.loadMonth();
     }
@@ -427,7 +491,6 @@ export default class ISBFV2Calendar extends Component {
       if (this.#followingToday) {
         this.visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         this.mobileAnchorDay = today.getDate();
-        this.mobileFocusDate = null;
         if (selectedToday) {
           this.selectedDate = key;
         }
@@ -438,13 +501,13 @@ export default class ISBFV2Calendar extends Component {
   }
 
   @action
-  selectDate(key) {
+  selectDate(key, event) {
+    if (this.#suppressSwipeClick(event)) {
+      return;
+    }
     this.selectedDate = key;
     if (key !== this.todayKey) {
       this.#followingToday = false;
-    }
-    if (this.isCompact) {
-      return;
     }
     const date = localDate(key);
     if (
@@ -459,6 +522,75 @@ export default class ISBFV2Calendar extends Component {
   @action
   setFilter(filter) {
     this.filter = filter;
+  }
+
+  @action
+  startSwipe(event) {
+    if (!this.isCompact || this.#disposed || this.isDestroying) {
+      return;
+    }
+    this.#suppressClickUntil = 0;
+    if (event.touches.length !== 1 || this.#multiTouch) {
+      this.#swipe = null;
+      this.#multiTouch = true;
+      return;
+    }
+    const touch = event.touches[0];
+    this.#swipe = {
+      x: touch.clientX,
+      y: touch.clientY,
+      id: touch.identifier,
+      month: dateKey(this.visibleMonth),
+      owner: this.currentUser?.id ?? null,
+    };
+  }
+
+  @action
+  moveSwipe(event) {
+    if (event.touches.length !== 1) {
+      this.#swipe = null;
+      this.#multiTouch = true;
+    }
+  }
+
+  @action
+  endSwipe(event) {
+    if (event.touches.length) {
+      this.#swipe = null;
+      return;
+    }
+    const swipe = this.#swipe;
+    const blocked = this.#multiTouch;
+    this.cancelSwipe();
+    if (
+      !swipe ||
+      blocked ||
+      !this.isCompact ||
+      this.#disposed ||
+      this.isDestroying ||
+      swipe.month !== dateKey(this.visibleMonth) ||
+      swipe.owner !== (this.currentUser?.id ?? null)
+    ) {
+      return;
+    }
+    const touch = [...event.changedTouches].find(
+      (item) => item.identifier === swipe.id
+    );
+    if (!touch) {
+      return;
+    }
+    const dy = touch.clientY - swipe.y;
+    const dx = touch.clientX - swipe.x;
+    if (Math.abs(dy) >= 48 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+      this.#suppressClickUntil = Date.now() + 500;
+      this.#changeMonth(dy < 0 ? 1 : -1);
+    }
+  }
+
+  @action
+  cancelSwipe() {
+    this.#swipe = null;
+    this.#multiTouch = false;
   }
 
   @action
@@ -626,7 +758,6 @@ export default class ISBFV2Calendar extends Component {
     const date = localDate(key);
     this.visibleMonth = new Date(date.getFullYear(), date.getMonth(), 1);
     this.selectedDate = key;
-    this.mobileFocusDate = key;
     this.#followingToday = false;
     this.focusedEntryId = entry.id;
     this.filter = "all";
@@ -642,7 +773,6 @@ export default class ISBFV2Calendar extends Component {
       this.visibleMonth.getMonth() + amount,
       1
     );
-    this.mobileFocusDate = null;
     this.#followingToday = false;
     this.mobileAnchorDay = localDate(this.todayKey).getDate();
     this.selectedDate = dateKey(
@@ -665,6 +795,59 @@ export default class ISBFV2Calendar extends Component {
       this.refreshToday,
       midnight.getTime() - now.getTime() + 50
     );
+  }
+
+  #currentRequest(request, owner) {
+    return (
+      request === this.#requestNumber &&
+      owner === (this.currentUser?.id ?? null) &&
+      !this.#disposed &&
+      !this.isDestroying
+    );
+  }
+
+  #hasExtraWeek(items, from) {
+    return items.some((item) => {
+      for (let day = 0; day < 7; day++) {
+        const date = new Date(
+          from.getFullYear(),
+          from.getMonth(),
+          from.getDate() + day
+        );
+        if (this.#occursOn(item, dateKey(date))) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
+  #suppressSwipeClick(event) {
+    if (event && event.detail !== 0 && Date.now() < this.#suppressClickUntil) {
+      this.#suppressClickUntil = 0;
+      event.preventDefault();
+      event.stopPropagation();
+      return true;
+    }
+    return false;
+  }
+
+  #syncOwner() {
+    const owner = this.currentUser?.id ?? null;
+    if (owner === this.#ownerId) {
+      return;
+    }
+    this.#ownerId = owner;
+    this.#requestNumber++;
+    this.#updatesRequestNumber++;
+    this.#focusRequestNumber++;
+    this.#queryEntryId = null;
+    this._extraWeekMonths = {};
+    this.personalEntries = [];
+    this.communityEvents = [];
+    this.pendingUpdates = [];
+    this.#needsCompactProbe = false;
+    this.cancelSwipe();
   }
 
   #focusEditor() {
@@ -799,7 +982,13 @@ export default class ISBFV2Calendar extends Component {
               this.weekdays
               as |day|
             }}<span>{{day}}</span>{{/each}}</div>
-          <div class="isbf-v2-calendar__days">
+          <div
+            class="isbf-v2-calendar__days"
+            {{on "touchstart" this.startSwipe passive=true}}
+            {{on "touchmove" this.moveSwipe passive=true}}
+            {{on "touchend" this.endSwipe passive=true}}
+            {{on "touchcancel" this.cancelSwipe passive=true}}
+          >
             {{#each this.monthCells as |cell|}}
               <button
                 aria-label={{cell.key}}
@@ -846,10 +1035,16 @@ export default class ISBFV2Calendar extends Component {
           {{#if this.isLoading}}<p class="isbf-v2-calendar__empty">{{i18n
                 (themePrefix "isbf_v2.calendar_loading")
               }}</p>{{/if}}
-          {{#if this.loadError}}<p
-              class="isbf-v2-calendar__error"
-              role="alert"
-            >{{i18n (themePrefix "isbf_v2.calendar_load_error")}}</p>{{/if}}
+          {{#if this.loadError}}
+            <p class="isbf-v2-calendar__error" role="alert">{{i18n
+                (themePrefix "isbf_v2.calendar_load_error")
+              }}</p>
+            <DButton
+              @action={{this.loadMonth}}
+              @disabled={{this.isLoading}}
+              @label={{themePrefix "isbf_v2.official_retry"}}
+            />
+          {{/if}}
           {{#unless this.isLoading}}
             {{#each this.selectedItems as |item|}}
               <article

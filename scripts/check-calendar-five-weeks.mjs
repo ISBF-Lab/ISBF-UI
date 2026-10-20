@@ -151,16 +151,23 @@ async function harness(width = 390, date = "2026-01-31T12:00:00") {
       default: { currentLocale: () => "en" },
       i18n: (value) => value,
     },
-    "../lib/official-calendar": {
-      officialDateKey: (value) => value.slice(0, 10),
-      officialOccursOn: () => false,
-      officialTimeLabel: () => "",
-    },
     "./isbf-calendar-note-editor": { default: null },
     "./isbf-calendar-entry-editor": { default: null },
     "./isbf-calendar-subscribe": { default: null },
     "./isbf-calendar-update-dialog": { default: null },
   };
+  const official = new vm.SourceTextModule(
+    read("javascripts/discourse/lib/official-calendar.js"),
+    { context }
+  );
+  await official.link((name) => {
+    if (name === "./optional-topic-title") {
+      return synthetic({ optionalTopicTitle: (value) => value });
+    }
+    assert.ok(dependencies[name], `Unstubbed official dependency: ${name}`);
+    return synthetic(dependencies[name]);
+  });
+  await official.evaluate();
   const module = new vm.SourceTextModule(
     read("javascripts/discourse/components/isbf-v2-calendar.gjs")
       .replace(/<template>[\s\S]*<\/template>/, "")
@@ -171,6 +178,9 @@ async function harness(width = 390, date = "2026-01-31T12:00:00") {
   await module.link((name) => {
     if (name === "../lib/calendar-window") {
       return helper;
+    }
+    if (name === "../lib/official-calendar") {
+      return official;
     }
     assert.ok(dependencies[name], `Unstubbed dependency: ${name}`);
     return synthetic(dependencies[name]);
@@ -217,7 +227,7 @@ function assertGrid(calendar, count) {
 }
 
 function assertQueries(h, calendar) {
-  const { from, to } = calendar.viewRange;
+  const { from, to } = calendar.fetchRange;
   const personal = h.calls.findLast(
     (call) => call.path === "/isbf/api/entries.json"
   );
@@ -230,57 +240,94 @@ function assertQueries(h, calendar) {
   assert.equal(personal.data.to, new Date(+to + 86400000).toISOString());
 }
 
-// Use a DST timezone as well as the site's timezone: a calendar day is not
-// always 24 hours, and ISO conversion must not shift the visible day keys.
+// Use local calendar arithmetic in both the site timezone and a DST timezone.
 for (const timezone of ["Asia/Shanghai", "America/New_York"]) {
   process.env.TZ = timezone;
   const h = await harness();
-  for (const [month, anchor, expected] of [
+  for (const [month, day, expected] of [
     ["2026-02-01", 31, "2026-02-28"],
     ["2024-02-01", 31, "2024-02-29"],
     ["2026-03-01", 31, "2026-03-31"],
-    ["2026-12-01", 1, "2026-12-01"],
   ]) {
-    const date = h.calendarMonthAnchor(local(month), anchor);
+    const date = h.calendarMonthAnchor(local(month), day);
     assert.equal(key(date), expected);
     assert.equal(date.getHours(), 12);
   }
-  for (const [month, anchor] of [
-    ["2026-01-01", 1],
-    ["2026-12-01", 31],
-    ["2024-02-01", 29],
-    ["2026-03-01", 8],
-    ["2026-11-01", 1],
+  for (const [month, from, count] of [
+    ["2026-10-01", "2026-09-28", 35],
+    ["2026-11-01", "2026-10-26", 42],
+    ["2027-02-01", "2027-02-01", 35],
+    ["2026-03-01", "2026-02-23", 42],
+    ["2026-12-01", "2026-11-30", 35],
   ]) {
-    for (const compact of [true, false]) {
-      const range = h.calendarWindow(local(month), compact, anchor);
-      const expected = compact
-        ? h.calendarMonthAnchor(local(month), anchor)
-        : local(month);
-      expected.setDate(expected.getDate() - ((expected.getDay() + 6) % 7));
-      if (compact) {
-        expected.setDate(expected.getDate() - 14);
+    for (const [compact, expanded, days] of [
+      [true, false, count],
+      [true, true, 42],
+      [false, false, 42],
+    ]) {
+      const range = h.calendarWindow(local(month), compact, expanded);
+      assert.equal(key(range.from), from);
+      assert.equal(range.from.getHours(), 0);
+      assert.equal(range.to.getHours(), 0);
+      assert.equal(range.dayCount, days);
+      const end = new Date(range.from);
+      for (let day = 0; day < days; day++) {
+        end.setDate(end.getDate() + 1);
       }
-      expected.setHours(0, 0, 0, 0);
-      assert.equal(range.from.getTime(), expected.getTime());
-      expected.setDate(expected.getDate() + (compact ? 35 : 42));
-      assert.equal(range.to.getTime(), expected.getTime());
-      assert.equal(range.dayCount, compact ? 35 : 42);
+      assert.equal(
+        +range.to,
+        +end,
+        "exclusive end follows local days across DST/year"
+      );
     }
   }
 }
+process.env.TZ = "Asia/Shanghai";
 
-for (const width of [390, 430, 600, 601, 768, 1024, 1440]) {
-  const h = await harness(width);
+const empty = (path) =>
+  path.includes("events.json") ? { events: [] } : { entries: [] };
+const entry = (id, starts_at, ends_at, extra = {}) => ({
+  id,
+  starts_at,
+  ends_at,
+  ...extra,
+});
+const event = (id, starts_at, ends_at, extra = {}) => ({
+  id,
+  name: `Event ${id}`,
+  occurrences: [{ starts_at, ends_at }],
+  ...extra,
+});
+const sixth = entry(
+  1,
+  "2026-11-02T09:00:00+08:00",
+  "2026-11-02T10:00:00+08:00"
+);
+const fifth = entry(
+  2,
+  "2026-10-31T09:00:00+08:00",
+  "2026-10-31T10:00:00+08:00"
+);
+const sixthEvent = event(3, sixth.starts_at, sixth.ends_at);
+const isCommunity = (path) => path.includes("events.json");
+
+for (const width of [390, 430, 600, 601, 768, 1024, 1440, 1920]) {
+  const h = await harness(width, "2026-10-20T12:00:00");
   const calendar = new h.Calendar();
   await flush();
   assert.equal(calendar.isCompact, width <= 600);
   assertGrid(calendar, width <= 600 ? 35 : 42);
+  assert.equal(key(calendar.viewRange.from), "2026-09-28");
+  assert.equal(key(calendar.fetchRange.to), "2026-11-09");
   assertQueries(h, calendar);
-  if (width <= 600) {
-    const index = calendar.monthCells.findIndex((cell) => cell.isToday);
-    assert.equal(Math.floor(index / 7), 2, "today starts in the third row");
-  }
+  const requests = h.calls.length;
+  h.resize(width <= 600 ? 1024 : 390);
+  await flush();
+  assert.equal(
+    h.calls.length,
+    requests,
+    "resize reuses the same six-week query"
+  );
   calendar.willDestroy();
   assert.equal(h.timers.size, 0);
   assert.equal(
@@ -289,203 +336,512 @@ for (const width of [390, 430, 600, 601, 768, 1024, 1440]) {
   );
 }
 
+// Decisions use all fetched sources, independently of the active agenda filter.
+for (const [personal, community, count, description] of [
+  [[fifth], [], 35, "first five weeks"],
+  [[sixth], [], 42, "personal sixth week"],
+  [[], [sixthEvent], 42, "community sixth week"],
+  [
+    [
+      entry(4, "2026-11-02T00:00:00Z", "2026-11-03T00:00:00Z", {
+        all_day: true,
+      }),
+    ],
+    [],
+    42,
+    "all-day",
+  ],
+  [
+    [entry(5, "2026-11-01T23:30:00+08:00", "2026-11-02T00:30:00+08:00")],
+    [],
+    42,
+    "cross-week",
+  ],
+  [
+    [entry(6, "2026-11-01T23:00:00+08:00", "2026-11-02T00:00:00+08:00")],
+    [],
+    35,
+    "exclusive boundary",
+  ],
+  [
+    [
+      entry(7, "2026-11-02T00:00:00+08:00", "2026-11-02T00:00:00+08:00", {
+        source_item_id: 10,
+      }),
+    ],
+    [],
+    42,
+    "official deadline",
+  ],
+]) {
+  const h = await harness(390, "2026-10-20T12:00:00");
+  const calendar = new h.Calendar();
+  await flush();
+  calendar.setFilter("community");
+  h.setHandler((path) =>
+    isCommunity(path) ? { events: community } : { entries: personal }
+  );
+  await calendar.loadMonth();
+  assertGrid(calendar, count);
+  assert.equal(calendar.viewRange.dayCount, count, description);
+  const calls = h.calls.length;
+  calendar.setFilter("personal");
+  calendar.setFilter("all");
+  assert.equal(
+    calendar.viewRange.dayCount,
+    count,
+    "filter does not change the grid"
+  );
+  assert.equal(h.calls.length, calls);
+  h.setHandler(empty);
+  await calendar.loadMonth();
+  assertGrid(calendar, 35); // Deleting the final sixth-week occurrence collapses.
+  calendar.willDestroy();
+}
+
+// A failed source cannot prove an empty sixth week; successful data can expand it.
+for (const failing of ["personal", "community"]) {
+  const h = await harness(390, "2026-10-20T12:00:00");
+  const calendar = new h.Calendar();
+  await flush();
+  h.setHandler((path) => {
+    if (isCommunity(path) === (failing === "community")) {
+      throw new Error("offline");
+    }
+    return isCommunity(path) ? { events: [sixthEvent] } : { entries: [sixth] };
+  });
+  await calendar.loadMonth();
+  assertGrid(calendar, 42);
+  assert.equal(calendar.loadError, true);
+  assert.equal(calendar.isLoading, false);
+  h.setHandler((path) => {
+    if (isCommunity(path) === (failing === "community")) {
+      throw new Error("offline");
+    }
+    return empty(path);
+  });
+  await calendar.loadMonth();
+  assertGrid(calendar, 42);
+  h.setHandler(empty);
+  await calendar.loadMonth();
+  assertGrid(calendar, 35);
+  assert.equal(calendar.loadError, false);
+  calendar.nextMonth();
+  await flush();
+  assertGrid(calendar, 42, "natural six-week months never collapse");
+  calendar.willDestroy();
+}
+
+// A capped base response probes the entire sixth week, preserving occurrences.
+{
+  const h = await harness(390, "2026-10-20T12:00:00");
+  const calendar = new h.Calendar();
+  await flush();
+  const base = Array.from({ length: 200 }, (_, i) =>
+    event(i + 10, fifth.starts_at, fifth.ends_at)
+  );
+  base[0] = sixthEvent;
+  const recurring = event(
+    3,
+    "2026-11-03T09:00:00+08:00",
+    "2026-11-03T10:00:00+08:00"
+  );
+  h.calls.length = 0;
+  h.setHandler((path, options) =>
+    !isCommunity(path)
+      ? { entries: [] }
+      : options.data.after === calendar.fetchRange.from.toISOString()
+        ? { events: base }
+        : { events: [sixthEvent, recurring] }
+  );
+  await calendar.loadMonth();
+  const probe = h.calls.filter((call) => isCommunity(call.path))[1];
+  assert.ok(probe, "capped base triggers supplemental query");
+  assert.equal(
+    probe.data.after,
+    new Date("2026-11-02T00:00:00+08:00").toISOString()
+  );
+  assert.equal(
+    probe.data.before,
+    new Date("2026-11-09T00:00:00+08:00").toISOString()
+  );
+  assert.equal(probe.data.limit, 200);
+  assert.equal(
+    calendar.communityEvents.length,
+    201,
+    "dedup uses event id plus occurrence start"
+  );
+  assertGrid(calendar, 42);
+  // A failed probe cannot collapse a known expanded month.
+  h.setHandler((path, options) => {
+    if (!isCommunity(path)) {
+      return { entries: [] };
+    }
+    if (options.data.after !== calendar.fetchRange.from.toISOString()) {
+      throw new Error("probe offline");
+    }
+    return {
+      events: Array.from({ length: 200 }, (_, i) =>
+        event(i + 10, fifth.starts_at, fifth.ends_at)
+      ),
+    };
+  });
+  await calendar.loadMonth();
+  assertGrid(calendar, 42);
+  assert.equal(calendar.loadError, true);
+  calendar.willDestroy();
+}
+
+{
+  const resizeHarness = await harness(1440, "2026-10-20T12:00:00");
+  const instance = new resizeHarness.Calendar();
+  await flush();
+  resizeHarness.setHandler((path, options) =>
+    !isCommunity(path)
+      ? { entries: [] }
+      : options.data.after === instance.fetchRange.from.toISOString()
+        ? {
+            events: Array.from({ length: 200 }, (_, id) =>
+              event(id, fifth.starts_at, fifth.ends_at)
+            ),
+          }
+        : { events: [sixthEvent] }
+  );
+  await instance.loadMonth();
+  resizeHarness.calls.length = 0;
+  resizeHarness.resize(390);
+  await flush();
+  assertGrid(instance, 42);
+  assert.ok(
+    resizeHarness.calls.some(
+      (call) =>
+        call.data?.after === new Date("2026-11-02T00:00:00+08:00").toISOString()
+    ),
+    "entering mobile probes a previously capped desktop response"
+  );
+  instance.willDestroy();
+}
+
+{
+  const pendingHarness = await harness(390, "2026-10-20T12:00:00");
+  const instance = new pendingHarness.Calendar();
+  await flush();
+  let finishProbe;
+  pendingHarness.setHandler((path, options) => {
+    if (!isCommunity(path)) {
+      return { entries: [sixth] };
+    }
+    if (options.data.after === instance.fetchRange.from.toISOString()) {
+      return {
+        events: Array.from({ length: 200 }, (_, id) =>
+          event(id, fifth.starts_at, fifth.ends_at)
+        ),
+      };
+    }
+    return new Promise((resolve) => (finishProbe = resolve));
+  });
+  const pending = instance.loadMonth();
+  await flush();
+  assert.equal(instance.isLoading, true);
+  assertGrid(instance, 42);
+  finishProbe({ events: [] });
+  await pending;
+  assertGrid(instance, 42);
+  instance.willDestroy();
+}
+
+{
+  const h = await harness();
+  const calendar = new h.Calendar();
+  await flush();
+  calendar.nextMonth();
+  await flush();
+  assert.equal(calendar.selectedDate, "2026-02-28");
+  calendar.nextMonth();
+  await flush();
+  assert.equal(
+    calendar.selectedDate,
+    "2026-03-31",
+    "navigation retains today's preferred day"
+  );
+  calendar.previousMonth();
+  await flush();
+  assertGrid(calendar, 35);
+  const spillover = calendar.monthCells.find((cell) => !cell.inMonth);
+  calendar.selectDate(spillover.key);
+  await flush();
+  assert.equal(calendar.selectedDate, spillover.key);
+  assert.equal(
+    calendar.visibleMonth.getMonth(),
+    local(spillover.key).getMonth(),
+    "gray date opens its natural month"
+  );
+  assertQueries(h, calendar);
+  h.resize(1440);
+  await flush();
+  assertGrid(calendar, 42);
+  const desktopSpill = calendar.monthCells.find((cell) => !cell.inMonth);
+  calendar.selectDate(desktopSpill.key);
+  await flush();
+  assert.equal(
+    calendar.visibleMonth.getMonth(),
+    local(desktopSpill.key).getMonth()
+  );
+  h.resize(390);
+  calendar.goToday();
+  await flush();
+
+  // Following today survives midnight and sleeping tabs; manual browsing stays put.
+  h.setNow("2026-02-01T00:00:01");
+  assert.equal(h.timers.size, 1);
+  const timer = [...h.timers.values()][0];
+  h.timers.clear();
+  timer.callback();
+  await flush();
+  assert.equal(calendar.todayKey, "2026-02-01");
+  assert.equal(calendar.selectedDate, "2026-02-01");
+  calendar.nextMonth();
+  await flush();
+  const browsed = +calendar.visibleMonth;
+  h.document.hidden = true;
+  h.document.visibilityState = "hidden";
+  h.document.emit("visibilitychange");
+  h.setNow("2026-02-02T08:00:00");
+  h.document.hidden = false;
+  h.document.visibilityState = "visible";
+  h.document.emit("visibilitychange");
+  h.window.emit("focus");
+  await flush();
+  assert.equal(calendar.todayKey, "2026-02-02");
+  assert.equal(+calendar.visibleMonth, browsed);
+  calendar.goToday();
+  await flush();
+  h.setNow("2026-02-09T08:00:00");
+  h.window.emit("focus");
+  await flush();
+  assert.equal(calendar.selectedDate, "2026-02-09");
+  assertGrid(calendar, 35);
+  assertQueries(h, calendar);
+
+  h.setHandler((path) =>
+    path === "/isbf/api/entries/9.json"
+      ? {
+          entry: entry(9, "2027-12-31T00:00:00Z", "2028-01-01T00:00:00Z", {
+            all_day: true,
+          }),
+        }
+      : empty(path)
+  );
+  h.router.currentURL = "/calendar?entry_id=9";
+  await calendar.focusFromRoute();
+  await flush();
+  assert.equal(calendar.selectedDate, "2027-12-31");
+  assert.equal(key(calendar.visibleMonth), "2027-12-01");
+  assert.equal(calendar.focusedEntryId, 9);
+  assert.equal("mobileFocusDate" in calendar, false);
+  assertGrid(calendar, 35);
+  calendar.willDestroy();
+}
+
 for (const [date, hours] of [
   ["2026-03-08T00:00:00", 23],
   ["2026-11-01T00:00:00", 25],
 ]) {
+  process.env.TZ = "America/New_York";
   const dst = await harness(390, date);
-  const calendar = new dst.Calendar();
+  const instance = new dst.Calendar();
   await flush();
   const { delay } = [...dst.timers.values()][0];
-  assert.ok(
-    delay >= hours * 3600000 && delay < hours * 3600000 + 1000,
-    "midnight timer follows local midnight across DST"
+  assert.ok(delay >= hours * 3600000 && delay < hours * 3600000 + 1000);
+  instance.willDestroy();
+}
+process.env.TZ = "Asia/Shanghai";
+
+// Touch input uses one completed vertical gesture, with ordinary taps preserved.
+const touch = (x, y, identifier = 1) => ({
+  clientX: x,
+  clientY: y,
+  identifier,
+});
+const touches = (...points) => ({ touches: points, changedTouches: points });
+for (const width of [390, 1440]) {
+  const h = await harness(width, "2026-10-20T12:00:00");
+  const calendar = new h.Calendar();
+  await flush();
+  const original = +calendar.visibleMonth;
+  const swipe = (dx, dy) => {
+    calendar.startSwipe(touches(touch(100, 200)));
+    calendar.moveSwipe(touches(touch(100 + dx, 200 + dy)));
+    calendar.endSwipe({
+      touches: [],
+      changedTouches: [touch(100 + dx, 200 + dy)],
+    });
+  };
+  swipe(0, -47);
+  swipe(50, -60);
+  assert.equal(
+    +calendar.visibleMonth,
+    original,
+    "threshold and direction reject gestures"
+  );
+  swipe(0, -80);
+  await flush();
+  assert.equal(calendar.visibleMonth.getMonth(), width <= 600 ? 10 : 9);
+  const click = (detail = 1) => {
+    let prevented = false;
+    calendar.selectDate(calendar.selectedDate, {
+      detail,
+      preventDefault() {
+        prevented = true;
+      },
+      stopPropagation() {},
+      stopImmediatePropagation() {},
+    });
+    return prevented;
+  };
+  assert.equal(click(0), false, "keyboard activation remains available");
+  assert.equal(click(), width <= 600, "generated swipe click is suppressed");
+  calendar.startSwipe(touches(touch(100, 200)));
+  calendar.endSwipe({ touches: [], changedTouches: [touch(100, 200)] });
+  assert.equal(click(), false, "next real tap resets suppression");
+  const beforeCancel = +calendar.visibleMonth;
+  calendar.startSwipe(touches(touch(100, 200)));
+  calendar.moveSwipe(touches(touch(100, 150), touch(120, 150, 2)));
+  calendar.moveSwipe(touches(touch(100, 100)));
+  calendar.endSwipe({ touches: [], changedTouches: [touch(100, 80)] });
+  assert.equal(
+    +calendar.visibleMonth,
+    beforeCancel,
+    "multi-touch cancels until all fingers lift"
+  );
+  calendar.startSwipe(touches(touch(100, 200)));
+  calendar.cancelSwipe();
+  calendar.endSwipe({ touches: [], changedTouches: [touch(100, 80)] });
+  assert.equal(
+    +calendar.visibleMonth,
+    beforeCancel,
+    "touchcancel cannot navigate"
+  );
+  calendar.startSwipe(touches(touch(100, 200)));
+  calendar.nextMonth();
+  const afterNavigation = +calendar.visibleMonth;
+  calendar.endSwipe({ touches: [], changedTouches: [touch(100, 80)] });
+  assert.equal(
+    +calendar.visibleMonth,
+    afterNavigation,
+    "month changes invalidate gesture"
+  );
+  swipe(0, 100);
+  await flush();
+  assert.equal(
+    calendar.visibleMonth.getMonth(),
+    10,
+    "downward swipe moves back on mobile"
   );
   calendar.willDestroy();
 }
 
-const h = await harness();
-const calendar = new h.Calendar();
-await flush();
-calendar.nextMonth();
-await flush();
-assert.equal(calendar.selectedDate, "2026-02-28");
-assert.equal(calendar.mobileAnchorDay, 31, "February keeps the preferred day");
-calendar.nextMonth();
-await flush();
-assert.equal(calendar.selectedDate, "2026-03-31");
-calendar.previousMonth();
-await flush();
-assert.equal(calendar.selectedDate, "2026-02-28");
-assertGrid(calendar, 35);
-assertQueries(h, calendar);
-const start = calendar.viewRange.from.getTime();
-const month = calendar.visibleMonth.getTime();
-const spillover = calendar.monthCells.find((cell) => !cell.inMonth);
-const count = h.calls.length;
-calendar.selectDate(spillover.key);
-await flush();
-assert.equal(calendar.selectedDate, spillover.key);
-assert.equal(calendar.visibleMonth.getTime(), month);
-assert.equal(
-  calendar.viewRange.from.getTime(),
-  start,
-  "taps keep the grid stationary"
-);
-assert.equal(
-  h.calls.length,
-  count,
-  "already loaded spillover needs no request"
-);
-h.resize(1024);
-await flush();
-assertGrid(calendar, 42);
-assertQueries(h, calendar);
-h.resize(390);
-await flush();
-assertGrid(calendar, 35);
-assertQueries(h, calendar);
-
-calendar.goToday();
-await flush();
-h.setNow("2026-02-01T00:00:01");
-assert.equal(h.timers.size, 1, "one midnight refresh is scheduled");
-const timer = [...h.timers.values()][0];
-assert.ok(timer.delay > 0 && timer.delay <= 86400000);
-h.timers.clear();
-timer.callback();
-await flush();
-assert.equal(calendar.todayKey, "2026-02-01");
-assert.equal(calendar.selectedDate, "2026-02-01");
-assert.equal(
-  Math.floor(calendar.monthCells.findIndex((cell) => cell.isToday) / 7),
-  2
-);
-calendar.nextMonth();
-await flush();
-const browsed = calendar.viewRange.from.getTime();
-h.document.hidden = true;
-h.document.visibilityState = "hidden";
-h.document.emit("visibilitychange");
-h.setNow("2026-02-02T08:00:00");
-h.document.hidden = false;
-h.document.visibilityState = "visible";
-h.document.emit("visibilitychange");
-h.window.emit("focus");
-await flush();
-assert.equal(calendar.todayKey, "2026-02-02");
-assert.equal(
-  calendar.viewRange.from.getTime(),
-  browsed,
-  "rollover preserves a browsed window"
-);
-assert.ok(!calendar.monthCells.some((cell) => cell.isToday));
-calendar.goToday();
-await flush();
-assert.equal(calendar.selectedDate, "2026-02-02");
-assertGrid(calendar, 35);
-h.setNow("2026-02-09T08:00:00");
-h.window.emit("focus");
-await flush();
-assert.equal(calendar.selectedDate, "2026-02-09");
-assert.equal(
-  Math.floor(calendar.monthCells.findIndex((cell) => cell.isToday) / 7),
-  2,
-  "focus catches up a following-today window after a sleeping tab"
-);
-assertQueries(h, calendar);
-
-h.setHandler((path) => {
-  if (path === "/isbf/api/entries/9.json") {
-    return {
-      entry: { id: 9, starts_at: "2027-12-31T00:00:00Z", all_day: true },
-    };
+// Current requests win over late requests, including a late supplemental probe.
+{
+  const h = await harness(390, "2026-10-20T12:00:00");
+  const calendar = new h.Calendar();
+  await flush();
+  const deferred = [];
+  h.setHandler(
+    (path, options) =>
+      new Promise((resolve) => deferred.push({ path, options, resolve }))
+  );
+  const older = calendar.loadMonth();
+  const base = deferred.splice(0);
+  for (const request of base) {
+    request.resolve(
+      isCommunity(request.path)
+        ? {
+            events: Array.from({ length: 200 }, (_, i) =>
+              event(i + 10, fifth.starts_at, fifth.ends_at)
+            ),
+          }
+        : { entries: [] }
+    );
   }
-  return path.includes("events.json") ? { events: [] } : { entries: [] };
-});
-h.router.currentURL = "/calendar?entry_id=9";
-await calendar.focusFromRoute();
-await flush();
-assert.equal(calendar.selectedDate, "2027-12-31");
-assert.equal(calendar.mobileFocusDate, "2027-12-31");
-assert.equal(calendar.focusedEntryId, 9);
-assertGrid(calendar, 35);
-assertQueries(h, calendar);
-h.resize(1440);
-await flush();
-assertGrid(calendar, 42);
-calendar.nextMonth();
-await flush();
-assert.equal(
-  calendar.selectedDate,
-  "2028-01-01",
-  "desktop arrows select month start"
-);
-
-const deferred = [];
-h.setHandler(
-  (path) =>
-    new Promise((resolve, reject) => deferred.push({ path, resolve, reject }))
-);
-const older = calendar.loadMonth();
-calendar.nextMonth();
-const current = deferred.splice(2);
-for (const request of current) {
-  request.resolve(
-    request.path.includes("events.json")
-      ? { events: [] }
-      : { entries: [{ id: 22 }] }
+  await flush();
+  const probes = deferred.splice(0);
+  assert.equal(probes.length, 1);
+  h.setHandler(empty);
+  calendar.previousMonth();
+  await flush();
+  for (const request of probes) {
+    request.resolve({ events: [sixthEvent] });
+  }
+  await older;
+  assert.equal(key(calendar.visibleMonth), "2026-09-01");
+  assert.equal(
+    calendar.communityEvents.length,
+    0,
+    "late probe cannot replace current month"
+  );
+  assertGrid(calendar, 35);
+  h.setHandler(
+    (path) => new Promise((resolve) => deferred.push({ path, resolve }))
+  );
+  const priorOwner = calendar.loadMonth();
+  calendar.currentUser = { id: 8 };
+  h.setHandler(empty);
+  await calendar.loadMonth();
+  for (const request of deferred.splice(0)) {
+    request.resolve(
+      isCommunity(request.path)
+        ? { events: [sixthEvent] }
+        : { entries: [sixth] }
+    );
+  }
+  await priorOwner;
+  assert.equal(
+    calendar.personalEntries.length,
+    0,
+    "old owner cannot replace personal data"
+  );
+  assert.equal(calendar.communityEvents.length, 0);
+  // Owner changes must also clear previously learned expansion decisions.
+  calendar.nextMonth();
+  await flush();
+  h.setHandler((path) =>
+    isCommunity(path) ? { events: [] } : { entries: [sixth] }
+  );
+  await calendar.loadMonth();
+  assertGrid(calendar, 42);
+  calendar.currentUser = { id: 9 };
+  h.setHandler(async () => {
+    throw new Error("offline");
+  });
+  await calendar.loadMonth();
+  assertGrid(calendar, 35);
+  assert.equal(calendar.personalEntries.length, 0);
+  h.setHandler(
+    (path) => new Promise((resolve) => deferred.push({ path, resolve }))
+  );
+  const pending = calendar.loadMonth();
+  calendar.isDestroying = true;
+  calendar.willDestroy();
+  for (const request of deferred) {
+    request.resolve(
+      isCommunity(request.path)
+        ? { events: [sixthEvent] }
+        : { entries: [sixth] }
+    );
+  }
+  await pending;
+  assert.equal(
+    calendar.personalEntries.length,
+    0,
+    "disposed instance ignores pending results"
+  );
+  assert.equal(h.timers.size, 0);
+  assert.equal(
+    h.media.listenerCount + h.window.listenerCount + h.document.listenerCount,
+    0
   );
 }
-await flush();
-for (const request of deferred.splice(0)) {
-  request.resolve(
-    request.path.includes("events.json")
-      ? { events: [] }
-      : { entries: [{ id: 11 }] }
-  );
-}
-await older;
-assert.equal(
-  calendar.personalEntries[0].id,
-  22,
-  "late range responses cannot replace current data"
-);
-h.setHandler(async () => {
-  throw new Error("offline");
-});
-await calendar.loadMonth();
-assert.equal(calendar.loadError, true);
-assert.equal(calendar.isLoading, false);
-h.setHandler((path) =>
-  path.includes("events.json") ? { events: [] } : { entries: [] }
-);
-await calendar.loadMonth();
-assert.equal(calendar.loadError, false, "failed range can be retried");
-h.setHandler(
-  (path) => new Promise((resolve) => deferred.push({ path, resolve }))
-);
-const pending = calendar.loadMonth();
-calendar.isDestroying = true;
-calendar.willDestroy();
-for (const request of deferred) {
-  request.resolve(
-    request.path.includes("events.json")
-      ? { events: [] }
-      : { entries: [{ id: 99 }] }
-  );
-}
-await pending;
-assert.equal(
-  calendar.personalEntries.length,
-  0,
-  "disposal ignores pending range responses"
-);
-assert.equal(h.timers.size, 0);
-assert.equal(
-  h.media.listenerCount + h.window.listenerCount + h.document.listenerCount,
-  0
-);
 process.stdout.write(
-  "Calendar five-week windows, ranges, navigation, rollover and disposal OK\n"
+  "Calendar natural months, sixth-week decisions, gestures, ranges and lifecycle OK\n"
 );
