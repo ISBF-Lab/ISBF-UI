@@ -11,6 +11,7 @@ import { eq } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import I18n, { i18n } from "discourse-i18n";
+import { calendarMonthAnchor, calendarWindow } from "../lib/calendar-window";
 import {
   officialDateKey,
   officialOccursOn,
@@ -56,6 +57,10 @@ export default class ISBFV2Calendar extends Component {
   @tracked focusedEntryId = null;
   @tracked isLoading = false;
   @tracked loadError = false;
+  @tracked isCompact = false;
+  @tracked mobileAnchorDay;
+  @tracked mobileFocusDate = null;
+  @tracked todayKey;
   @tracked isEditing = false;
   @tracked editingId = null;
   @tracked title = "";
@@ -70,12 +75,24 @@ export default class ISBFV2Calendar extends Component {
   #updatesRequestNumber = 0;
   #focusRequestNumber = 0;
   #queryEntryId;
+  #disposed = false;
+  #followingToday = true;
+  #mediaQuery;
+  #midnightTimer;
 
   constructor() {
     super(...arguments);
     const today = new Date();
     this.visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     this.selectedDate = dateKey(today);
+    this.todayKey = this.selectedDate;
+    this.mobileAnchorDay = today.getDate();
+    this.#mediaQuery = window.matchMedia("(max-width: 600px)");
+    this.isCompact = this.#mediaQuery.matches;
+    this.#mediaQuery.addEventListener("change", this.onViewportChange);
+    window.addEventListener("focus", this.refreshToday);
+    document.addEventListener("visibilitychange", this.refreshToday);
+    this.#scheduleDayRefresh();
     this.appEvents.on("isbf:calendar-entry-changed", this.reloadEntries);
     this.router.on("routeDidChange", this.focusFromRoute);
     void this.reloadEntries();
@@ -84,6 +101,14 @@ export default class ISBFV2Calendar extends Component {
 
   willDestroy() {
     super.willDestroy(...arguments);
+    this.#disposed = true;
+    this.#requestNumber++;
+    this.#updatesRequestNumber++;
+    this.#focusRequestNumber++;
+    clearTimeout(this.#midnightTimer);
+    this.#mediaQuery.removeEventListener("change", this.onViewportChange);
+    window.removeEventListener("focus", this.refreshToday);
+    document.removeEventListener("visibilitychange", this.refreshToday);
     this.appEvents.off("isbf:calendar-entry-changed", this.reloadEntries);
     this.router.off("routeDidChange", this.focusFromRoute);
   }
@@ -117,28 +142,35 @@ export default class ISBFV2Calendar extends Component {
     return `/new-topic?category=${encodeURIComponent(slug || "campus-events")}`;
   }
 
-  get monthCells() {
-    const first = new Date(
-      this.visibleMonth.getFullYear(),
-      this.visibleMonth.getMonth(),
-      1
+  get viewRange() {
+    return calendarWindow(
+      this.visibleMonth,
+      this.isCompact,
+      this.mobileFocusDate
+        ? localDate(this.mobileFocusDate).getDate()
+        : this.mobileAnchorDay
     );
-    const offset = (first.getDay() + 6) % 7;
+  }
+
+  get monthCells() {
+    const { from, dayCount } = this.viewRange;
     const cells = [];
 
-    for (let index = 0; index < 42; index++) {
+    for (let index = 0; index < dayCount; index++) {
       const date = new Date(
-        first.getFullYear(),
-        first.getMonth(),
-        index + 1 - offset
+        from.getFullYear(),
+        from.getMonth(),
+        from.getDate() + index
       );
       const key = dateKey(date);
       cells.push({
         day: date.getDate(),
         key,
-        inMonth: date.getMonth() === first.getMonth(),
+        inMonth:
+          date.getFullYear() === this.visibleMonth.getFullYear() &&
+          date.getMonth() === this.visibleMonth.getMonth(),
         isSelected: key === this.selectedDate,
-        isToday: key === dateKey(new Date()),
+        isToday: key === this.todayKey,
         hasPersonal: this.personalEntries.some((entry) =>
           this.#occursOn(entry, key)
         ),
@@ -249,18 +281,7 @@ export default class ISBFV2Calendar extends Component {
   @action
   async loadMonth() {
     const request = ++this.#requestNumber;
-    const first = new Date(
-      this.visibleMonth.getFullYear(),
-      this.visibleMonth.getMonth(),
-      1
-    );
-    const offset = (first.getDay() + 6) % 7;
-    const from = new Date(first.getFullYear(), first.getMonth(), 1 - offset);
-    const to = new Date(
-      from.getFullYear(),
-      from.getMonth(),
-      from.getDate() + 42
-    );
+    const { from, to } = this.viewRange;
     const data = { from: from.toISOString(), to: to.toISOString() };
     const personalData = {
       from: new Date(from.getTime() - 86400000).toISOString(),
@@ -344,12 +365,87 @@ export default class ISBFV2Calendar extends Component {
     const today = new Date();
     this.visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     this.selectedDate = dateKey(today);
+    this.todayKey = this.selectedDate;
+    this.mobileAnchorDay = today.getDate();
+    this.mobileFocusDate = null;
+    this.#followingToday = true;
+    this.#scheduleDayRefresh();
     void this.loadMonth();
+  }
+
+  @action
+  onViewportChange(event) {
+    if (
+      this.#disposed ||
+      this.isDestroying ||
+      this.isCompact === event.matches
+    ) {
+      return;
+    }
+    const previous = this.viewRange;
+    this.isCompact = event.matches;
+    const selected = localDate(this.selectedDate);
+    const range = this.viewRange;
+    if (selected < range.from || selected >= range.to) {
+      if (this.isCompact) {
+        this.mobileFocusDate = this.selectedDate;
+        this.visibleMonth = new Date(
+          selected.getFullYear(),
+          selected.getMonth(),
+          1
+        );
+      } else {
+        this.visibleMonth = new Date(
+          selected.getFullYear(),
+          selected.getMonth(),
+          1
+        );
+      }
+    }
+    if (
+      previous.from.getTime() !== this.viewRange.from.getTime() ||
+      previous.to.getTime() !== this.viewRange.to.getTime()
+    ) {
+      void this.loadMonth();
+    }
+  }
+
+  @action
+  refreshToday() {
+    if (
+      this.#disposed ||
+      this.isDestroying ||
+      document.visibilityState === "hidden"
+    ) {
+      return;
+    }
+    const today = new Date();
+    const key = dateKey(today);
+    if (key !== this.todayKey) {
+      const selectedToday = this.selectedDate === this.todayKey;
+      this.todayKey = key;
+      if (this.#followingToday) {
+        this.visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        this.mobileAnchorDay = today.getDate();
+        this.mobileFocusDate = null;
+        if (selectedToday) {
+          this.selectedDate = key;
+        }
+        void this.loadMonth();
+      }
+    }
+    this.#scheduleDayRefresh();
   }
 
   @action
   selectDate(key) {
     this.selectedDate = key;
+    if (key !== this.todayKey) {
+      this.#followingToday = false;
+    }
+    if (this.isCompact) {
+      return;
+    }
     const date = localDate(key);
     if (
       date.getMonth() !== this.visibleMonth.getMonth() ||
@@ -530,6 +626,8 @@ export default class ISBFV2Calendar extends Component {
     const date = localDate(key);
     this.visibleMonth = new Date(date.getFullYear(), date.getMonth(), 1);
     this.selectedDate = key;
+    this.mobileFocusDate = key;
+    this.#followingToday = false;
     this.focusedEntryId = entry.id;
     this.filter = "all";
   }
@@ -544,8 +642,29 @@ export default class ISBFV2Calendar extends Component {
       this.visibleMonth.getMonth() + amount,
       1
     );
-    this.selectedDate = dateKey(this.visibleMonth);
+    this.mobileFocusDate = null;
+    this.#followingToday = false;
+    this.mobileAnchorDay = localDate(this.todayKey).getDate();
+    this.selectedDate = dateKey(
+      this.isCompact
+        ? calendarMonthAnchor(this.visibleMonth, this.mobileAnchorDay)
+        : this.visibleMonth
+    );
     void this.loadMonth();
+  }
+
+  #scheduleDayRefresh() {
+    clearTimeout(this.#midnightTimer);
+    const now = new Date();
+    const midnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1
+    );
+    this.#midnightTimer = setTimeout(
+      this.refreshToday,
+      midnight.getTime() - now.getTime() + 50
+    );
   }
 
   #focusEditor() {
