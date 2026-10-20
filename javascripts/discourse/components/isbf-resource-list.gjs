@@ -1,7 +1,8 @@
-import { fn } from "@ember/helper";
 import { themePrefix } from "virtual:theme";
 import DButton from "discourse/ui-kit/d-button";
+import dConcatClass from "discourse/ui-kit/helpers/d-concat-class";
 import { i18n } from "discourse-i18n";
+import ISBFLearningActionsMenu from "./isbf-learning-actions-menu";
 import ISBFResourceItem from "./isbf-resource-item";
 
 export default <template>
@@ -10,47 +11,23 @@ export default <template>
     aria-label={{@page.contentTitle}}
     class="isbf-learning__content"
   >
-    <div class="isbf-learning__content-header">
-      <h2>{{@page.contentTitle}}</h2>
-      {{#unless @page.isLibrary}}{{#if @page.canManageResources}}{{#unless
-            @page.myContributions
-          }}{{#unless @page.searching}}{{#if @page.selectedCourse}}
-                <DButton
-                  class="btn-flat isbf-learning__edit-course"
-                  @action={{fn @page.editCourse @page.selectedCourse}}
-                  @icon="pencil"
-                  @translatedLabel={{i18n
-                    (themePrefix "isbf_v2.learning_edit_course")
-                  }}
-                />
-              {{/if}}{{/unless}}{{/unless}}{{/if}}{{/unless}}
-      {{#if @page.canManageCollectionForm}}<DButton
-          class="btn-flat isbf-learning__collection-settings"
-          @action={{@page.editCollectionForm}}
-          @translatedLabel={{i18n
-            (themePrefix "isbf_v2.learning_collection_settings")
-          }}
-        />{{/if}}
-      {{#unless @page.isLibrary}}<DButton
-          class="btn-flat isbf-learning__contributions"
-          @action={{@page.toggleContributions}}
-          @ariaPressed={{@page.myContributions}}
-          @translatedLabel={{i18n
-            (themePrefix
-              (if
-                @page.myContributions
-                "isbf_v2.learning_all_resources"
-                "isbf_v2.learning_my_contributions"
-              )
-            )
-          }}
-        />{{/unless}}
-      <DButton
-        class="btn-primary isbf-learning__share"
-        @action={{@page.share}}
-        @disabled={{@page.shareDisabled}}
-        @translatedLabel={{@page.shareLabel}}
-      />
+    <div
+      class={{dConcatClass
+        "isbf-learning__content-header"
+        (unless @page.isLibrary "has-actions-menu")
+      }}
+    >
+      <h2 title={{@page.contentTitle}}>{{@page.contentTitle}}</h2>
+      {{#if @page.isLibrary}}
+        <DButton
+          class="btn-primary isbf-learning__share"
+          @action={{@page.share}}
+          @disabled={{@page.shareDisabled}}
+          @translatedLabel={{@page.shareLabel}}
+        />
+      {{else}}
+        <ISBFLearningActionsMenu @page={{@page}} />
+      {{/if}}
     </div>
     {{#unless @page.config.link_sharing}}<p
         class="isbf-learning__notice"
