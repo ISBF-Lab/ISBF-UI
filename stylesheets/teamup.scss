@@ -1,3 +1,7 @@
+.isbf-teamup > .isbf-feed-card {
+  border-bottom: var(--isbf-v2-border-width) solid var(--isbf-v2-border);
+}
+
 html.composer-open
   body:has(.isbf-v2-shell)
   #reply-control.open:has(.isbf-teamup-composer) {
