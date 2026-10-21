@@ -84,6 +84,8 @@ const common = {
   fn() {},
   getOwner() {},
   secondaryMenuFor,
+  pinningMeta: (value) => value?.isbf_home_pinning,
+  saveHomePin() {},
   compactNumber: (number) => (number ? String(number) : ""),
   openQuotedRepost: async (options) => {
     quoteOptions = options;
