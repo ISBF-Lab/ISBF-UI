@@ -124,7 +124,7 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
     min-height: 44px;
     margin-top: var(--isbf-v2-space-2);
     border-radius: var(--isbf-v2-radius-sm);
-    text-align: left;
+    text-align: center;
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -287,16 +287,31 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--isbf-v2-space-2);
+
+  h3:only-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.isbf-learning-resource__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .isbf-learning-resource__metadata {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--isbf-v2-space-2);
+  margin-top: var(--isbf-v2-space-2);
   color: var(--isbf-v2-muted);
   font-size: var(--isbf-v2-font-xs);
-  white-space: nowrap;
+
+  time {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 .isbf-learning-resource__more.btn {
@@ -328,10 +343,9 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
 }
 
 .isbf-learning-resource p.isbf-learning-resource__credit {
-  margin-top: var(--isbf-v2-space-2);
-  color: var(--isbf-v2-muted);
-  font-size: var(--isbf-v2-font-xs);
-  text-align: right;
+  min-width: 0;
+  margin-inline-start: auto;
+  text-align: end;
   overflow-wrap: anywhere;
 }
 

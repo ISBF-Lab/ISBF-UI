@@ -1,0 +1,9 @@
+# Resource sidebar and card layout
+
+On 2026-10-22 the user supplied desktop and phone screenshots and specified three local changes for both `/isbf/learning` and `/isbf/library`: center wrapped sidebar item names, move each resource date to the left of its contributor in the bottom metadata row, and let the title use the space up to the existing action menu. When no contributor is entered, omit the contributor label and value.
+
+The source is ISBF-UI `a879538508a820fa7181a67f5440423d60c76006` and the matching active theme 4 fields captured before this change. The screenshots approve these layout changes only. Preserve the current sidebar width, selected state, typography, colors, card spacing, links, actions, permissions and directory dialogs. Reuse the existing space-2, muted and font-xs tokens for the moved metadata. No new global visual tokens or dialog rules are introduced.
+
+The two pages share `ISBFResourceItem` and the catalog stylesheet. Explicit contributor text is trimmed before display; the resource author does not replace an omitted contributor. Dates remain available when contributor text is empty. The matching ISBF-Learning delta starts from `844e0ead4883b86afe31959e89f474c89ce13d2c`: creation, editing and both resource serializers preserve an omitted or whitespace-only contributor as an empty string; actual Topic/Post authors and contribution associations remain intact. Keep titles and action controls in the header, and render no empty action or metadata container.
+
+Verify wrapped Chinese and mixed Latin sidebar names, long titles, normal and absent contributors, administrator and member menus, and desktop/phone widths on both routes. The user has authorized independent testing followed by direct publication without another acceptance cycle. Exact hashes, fresh backups and release receipts remain private task records.

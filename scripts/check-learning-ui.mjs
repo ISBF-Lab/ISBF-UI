@@ -1181,11 +1181,11 @@ assert.equal(
   undefined,
   "File-only cards must not navigate to a topic"
 );
-assert.equal(card.contributor, "isbf_v2.learning_unknown_contributor");
+assert.equal(card.contributor, "");
 card.args.resource.author = { username: "legacy", name: "Legacy Author" };
-assert.equal(card.contributor, "Legacy Author");
+assert.equal(card.contributor, "");
 card.args.resource.author.name = "";
-assert.equal(card.contributor, "legacy");
+assert.equal(card.contributor, "");
 card.args.resource.contributor = "<script>credit</script>";
 assert.equal(card.contributor, "<script>credit</script>");
 let deletedCards = 0;
@@ -2095,7 +2095,7 @@ assert.match(
 );
 assert.match(
   learningStyles,
-  /\.isbf-learning-resource p\.isbf-learning-resource__credit\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/
+  /\.isbf-learning-resource__metadata\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/
 );
 const reviewSource = read(
   "javascripts/discourse/components/reviewable-isbf-learning-course.gjs"

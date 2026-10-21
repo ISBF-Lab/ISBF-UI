@@ -58,12 +58,8 @@ export default class ISBFResourceItem extends Component {
   }
 
   get contributor() {
-    return (
-      this.args.resource.contributor ||
-      this.args.resource.author?.name ||
-      this.args.resource.author?.username ||
-      i18n(themePrefix("isbf_v2.learning_unknown_contributor"))
-    );
+    const value = this.args.resource.contributor;
+    return typeof value === "string" ? value.trim() : "";
   }
 
   get menuIdentifier() {
@@ -281,9 +277,8 @@ export default class ISBFResourceItem extends Component {
               rel="noopener noreferrer"
               target="_blank"
             >{{@resource.title}}</a>{{else}}{{@resource.title}}{{/if}}</h3>
-        <div class="isbf-learning-resource__metadata">
-          <time datetime={{@resource.created_at}}>{{this.createdAtLabel}}</time>
-          {{#if this.canDelete}}
+        {{#if this.canDelete}}
+          <div class="isbf-learning-resource__actions">
             <DMenu
               @ariaLabel={{i18n "more"}}
               @autofocus={{false}}
@@ -330,8 +325,8 @@ export default class ISBFResourceItem extends Component {
                 </DDropdownMenu>
               </:content>
             </DMenu>
-          {{/if}}
-        </div>
+          </div>
+        {{/if}}
       </div>
       {{#if @resource.description}}<p
           class="isbf-learning-resource__description"
@@ -391,9 +386,20 @@ export default class ISBFResourceItem extends Component {
               >{{url}}</a></li>{{/each}}
         </ul>
       {{/if}}
-      <p class="isbf-learning-resource__credit"><span>{{i18n
-            (themePrefix "isbf_v2.learning_contributor_credit")
-          }}</span>{{this.contributor}}</p>
+      {{#if (or this.createdAtLabel this.contributor)}}
+        <footer class="isbf-learning-resource__metadata">
+          {{#if this.createdAtLabel}}
+            <time
+              datetime={{@resource.created_at}}
+            >{{this.createdAtLabel}}</time>
+          {{/if}}
+          {{#if this.contributor}}
+            <p class="isbf-learning-resource__credit"><span>{{i18n
+                  (themePrefix "isbf_v2.learning_contributor_credit")
+                }}</span>{{this.contributor}}</p>
+          {{/if}}
+        </footer>
+      {{/if}}
     </article>
   </template>
 }
