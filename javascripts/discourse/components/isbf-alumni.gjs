@@ -252,7 +252,9 @@ export default class ISBFAlumni extends Component {
               <article class="isbf-alumni__person"><a
                   href={{user.href}}
                 >{{user.display_name}}</a><span>{{user.location}}</span><span
-                >{{user.industry}}</span></article>
+                >{{user.industry}}</span>{{#if user.bio}}<p
+                    class="isbf-alumni__bio"
+                  >{{user.bio}}</p>{{/if}}</article>
             {{/each}}
             {{#if this.loading}}<p role="status">{{i18n
                   (themePrefix "isbf_v2.learning_loading")

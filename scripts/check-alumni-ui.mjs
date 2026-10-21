@@ -8,14 +8,15 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 const context = vm.createContext({});
 const helpers = new vm.SourceTextModule(
   read("javascripts/discourse/lib/alumni.js"),
-  { context },
+  { context }
 );
 await helpers.link(() => {});
 await helpers.evaluate();
-const { alumniConfig, alumniRegions, alumniLocation } = helpers.namespace;
+const { alumniConfig, alumniRegions, alumniCities, alumniLocation } =
+  helpers.namespace;
 const labels = new vm.SourceTextModule(
   read("javascripts/discourse/lib/alumni-map-labels.js"),
-  { context },
+  { context }
 );
 await labels.link(() => {});
 await labels.evaluate();
@@ -31,10 +32,10 @@ assert.deepEqual(
         { layer: "separate", box: { ...box, left: 80, right: 140 } },
         { layer: "outside", box: { ...box, left: -10 } },
       ],
-      { x: 200, y: 100 },
-    ),
+      { x: 200, y: 100 }
+    )
   ),
-  ["selected marker", "separate"],
+  ["selected marker", "separate"]
 );
 const config = {
   enabled: true,
@@ -71,7 +72,7 @@ const config = {
 };
 assert.equal(
   alumniConfig({ isbf_alumni: { ...config, enabled: false } }),
-  null,
+  null
 );
 assert.equal(alumniConfig({ isbf_alumni: config }), config);
 assert.equal(alumniRegions(config, "CN")[0].code, "GD");
@@ -83,7 +84,7 @@ assert.equal(
     region_name: "广东省",
     city_name: "珠海",
   }),
-  "中国 · 广东省",
+  "中国 · 广东省 · 珠海"
 );
 
 function componentClass(name, globals = {}) {
@@ -92,7 +93,7 @@ function componentClass(name, globals = {}) {
   const body = source
     .slice(
       source.indexOf("export default class"),
-      source.indexOf("  <template>"),
+      source.indexOf("  <template>")
     )
     .replace("export default class", "class")
     .replace(/@service (\w+);/g, "$1;")
@@ -117,7 +118,7 @@ const Page = componentClass("isbf-alumni", {
   alumniLocation,
   ajax: (url, options) =>
     new Promise((resolve, reject) =>
-      pending.push({ url, options, resolve, reject }),
+      pending.push({ url, options, resolve, reject })
     ),
 });
 const page = new Page();
@@ -170,6 +171,7 @@ let failProfile;
 const requests = [];
 const Profile = componentClass("isbf-alumni-profile", {
   alumniRegions,
+  alumniCities,
   ajax: (url, options) =>
     new Promise((resolve, reject) => {
       requests.push({ url, options });
@@ -198,12 +200,16 @@ assert.equal(profile.profile.display_name, "Member");
 assert.equal(profile.disabled, false);
 profile.change("country_code", { target: { value: "US" } });
 assert.equal(profile.profile.region_code, "");
-assert.equal(profile.profile.city_code, undefined);
+assert.equal(profile.profile.city_code, "");
+assert.equal(profile.profile.city_name, "");
 const save = profile.save({ preventDefault() {} });
 assert.deepEqual(plain(requests.at(-1).options.data), {
   display_name: "Member",
   country_code: "US",
   region_code: "",
+  city_code: "",
+  city_name: "",
+  bio: "",
   industry: "Education",
   visible: true,
 });
@@ -413,18 +419,18 @@ assert.ok(
     .filter(
       (item) =>
         ["US", "TW", "XK", "EH"].includes(item.feature.properties.code) &&
-        item.label !== "台湾省",
+        item.label !== "台湾省"
     )
-    .every((item) => !item.tooltip),
+    .every((item) => !item.tooltip)
 );
 assert.ok(
   featureLayers
     .filter(
       (item) =>
         ["TW", "XK", "EH"].includes(item.feature.properties.code) &&
-        item.label !== "台湾省",
+        item.label !== "台湾省"
     )
-    .every((item) => !item.click),
+    .every((item) => !item.click)
 );
 featureLayers.find((item) => item.feature.properties.code === "US").click();
 assert.deepEqual(plain(selections.at(-1)), { country: "US" });
@@ -433,7 +439,7 @@ mapEvents.zoomend();
 assert.equal(labelSizes.at(-1), "13px");
 assert.equal(
   [...featureLayers, ...markers].filter((item) => item.open).length,
-  1,
+  1
 );
 markers[0].openTooltip();
 fakeMap.zoom = 3;
@@ -474,7 +480,7 @@ assert.equal(
     region_name: "California",
     city_name: "LA",
   }),
-  "美国",
+  "美国 · LA"
 );
 
 const mapSource = read("javascripts/discourse/components/isbf-alumni-map.gjs");
@@ -488,5 +494,52 @@ const pageSource = read("javascripts/discourse/components/isbf-alumni.gjs");
 assert.ok(pageSource.includes("isbf_alumni_member"));
 assert.ok(pageSource.includes("this.profileSaved"));
 process.stdout.write(
-  "Alumni capability, directory races/pagination, profile failures, China-only labels, zoom threshold/font bounds, collision priority, TW/HK/MO selection, cleanup and map initialization failure OK\n",
+  "Alumni capability, directory races/pagination, profile failures, China-only labels, zoom threshold/font bounds, collision priority, TW/HK/MO selection, cleanup and map initialization failure OK\n"
+);
+
+assert.equal(
+  alumniLocation({
+    country_name: "中国",
+    country_code: "CN",
+    region_name: "上海",
+    city_name: "上海",
+  }),
+  "中国 · 上海"
+);
+assert.equal(
+  alumniLocation({
+    country_name: "美国",
+    country_code: "US",
+    city_name: "New York",
+  }),
+  "美国 · New York"
+);
+assert.deepEqual(
+  plain(
+    alumniCities(
+      { cities: { GD: [{ code: "4403", name: "深圳市" }] } },
+      "CN",
+      "GD"
+    )
+  ),
+  [{ code: "4403", name: "深圳市" }]
+);
+assert.deepEqual(plain(alumniCities(config, "US", "CA")), []);
+profile.profile = {
+  ...profile.profile,
+  country_code: "CN",
+  region_code: "GD",
+  city_code: "4403",
+  city_name: "深圳市",
+};
+profile.change("region_code", { target: { value: "JS" } });
+assert.equal(profile.profile.city_code, "");
+assert.equal(profile.profile.city_name, "");
+assert.match(
+  read("javascripts/discourse/components/isbf-alumni-profile.gjs"),
+  /maxlength="500"/
+);
+assert.match(
+  read("javascripts/discourse/components/isbf-alumni.gjs"),
+  /{{user.bio}}/
 );
