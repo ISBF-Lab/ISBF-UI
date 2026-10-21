@@ -29,12 +29,6 @@ export default <template>
             )
           }}
         />{{/if}}
-      {{#if @page.isLibrary}}{{#if @page.canSubmitCourses}}<DButton
-            class="btn-flat"
-            @action={{fn @page.openCourseDialog "category"}}
-            @icon="plus"
-            @translatedTitle={{@page.categoryActionLabel}}
-          />{{/if}}{{/if}}
     </div>
     {{#if @page.coursesLoading}}<p role="status">{{i18n
           (themePrefix "isbf_v2.learning_loading")
@@ -71,12 +65,11 @@ export default <template>
         {{/each}}
       </nav>
     {{/if}}
-    {{#if @page.canSubmitCourses}}<DButton
+    {{#if @page.canAddDirectories}}<DButton
         class="btn-flat isbf-learning__add-course"
-        @action={{@page.openCourseDialog}}
-        @disabled={{@page.groupSubmitDisabled}}
+        @action={{@page.openAddDialog}}
         @icon="plus"
-        @translatedLabel={{@page.courseActionLabel}}
+        @translatedLabel={{i18n (themePrefix "isbf_v2.resource_add")}}
       />{{/if}}
     {{#if @page.coursePending}}<p
         class="isbf-learning__notice"

@@ -18,6 +18,7 @@ import ISBFLearningCollectionFormDialog from "./isbf-learning-collection-form-di
 import ISBFLearningDirectoryDeletion from "./isbf-learning-directory-deletion";
 import ISBFLearningDirectoryEditor from "./isbf-learning-directory-editor";
 import ISBFLearningManagementDialog from "./isbf-learning-management-dialog";
+import ISBFResourceAddDialog from "./isbf-resource-add-dialog";
 import ISBFResourceCatalog from "./isbf-resource-catalog";
 import ISBFResourceDirectoryDialog from "./isbf-resource-directory-dialog";
 import ISBFResourceList from "./isbf-resource-list";
@@ -37,6 +38,7 @@ export default class ISBFResourcePage extends Component {
   @tracked directoryKind = "group";
   @tracked selectedCourseId = null;
   @tracked showCourseDialog = false;
+  @tracked showAddDialog = false;
   @tracked query = "";
   @tracked resources = [];
   @tracked resourcesError = false;
@@ -105,11 +107,7 @@ export default class ISBFResourcePage extends Component {
   }
 
   get parentLabel() {
-    return i18n(
-      themePrefix(
-        this.isLibrary ? "isbf_v2.library_category" : "isbf_v2.learning_grade"
-      )
-    );
+    return i18n(themePrefix("isbf_v2.library_category"));
   }
 
   get directoryLabel() {
@@ -121,7 +119,11 @@ export default class ISBFResourcePage extends Component {
   }
 
   get groupSubmitDisabled() {
-    return this.isLibrary && !this.grade;
+    return !this.grade;
+  }
+
+  get canAddDirectories() {
+    return this.currentUser?.admin === true;
   }
 
   get categoryActionLabel() {
@@ -445,16 +447,38 @@ export default class ISBFResourcePage extends Component {
   }
 
   @action
+  openAddDialog() {
+    if (
+      !this.canAddDirectories ||
+      this.showAddDialog ||
+      this.showCourseDialog
+    ) {
+      return;
+    }
+    this.#courseTrigger = document.activeElement;
+    this.showAddDialog = true;
+  }
+
+  @action
+  closeAddDialog() {
+    this.showAddDialog = false;
+    this.#courseTrigger?.focus();
+  }
+
+  @action
   openCourseDialog(kind = "group") {
-    if (!this.canSubmitCourses || this.showCourseDialog) {
+    if (!this.canAddDirectories || this.showCourseDialog) {
       return;
     }
     this.directoryKind = typeof kind === "string" ? kind : "group";
-    if (this.isLibrary && this.directoryKind === "group" && !this.grade) {
+    if (this.directoryKind === "group" && !this.grade) {
       return;
     }
     this.coursePending = false;
-    this.#courseTrigger = document.activeElement;
+    if (!this.showAddDialog) {
+      this.#courseTrigger = document.activeElement;
+    }
+    this.showAddDialog = false;
     this.showCourseDialog = true;
   }
 
@@ -683,6 +707,13 @@ export default class ISBFResourcePage extends Component {
             @onClose={{this.closeDirectoryDeletion}}
             @onDeleted={{this.directoryDeleted}}
           />{{/if}}
+        {{#if this.showAddDialog}}
+          <ISBFResourceAddDialog
+            @courseDisabled={{this.groupSubmitDisabled}}
+            @onChoose={{this.openCourseDialog}}
+            @onClose={{this.closeAddDialog}}
+          />
+        {{/if}}
         {{#if this.showCourseDialog}}<ISBFResourceDirectoryDialog
             @grade={{this.grade}}
             @grades={{this.parents}}
@@ -690,7 +721,7 @@ export default class ISBFResourcePage extends Component {
             @library={{this.isLibrary}}
             @onClose={{this.closeCourseDialog}}
             @onSubmitted={{this.courseSubmitted}}
-            @request={{not this.canManageCourses}}
+            @request={{false}}
           />{{/if}}
         <div class="isbf-learning__body">
           <ISBFResourceCatalog @page={{this}} />

@@ -154,6 +154,12 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   overflow-y: auto;
 }
 
+.isbf-resource-add-dialog__choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--isbf-v2-space-3);
+}
+
 .isbf-learning__content-header {
   display: flex;
   flex-wrap: wrap;

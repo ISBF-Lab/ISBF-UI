@@ -7,7 +7,6 @@ export function learningConfig(site) {
       (grade) =>
         Number.isSafeInteger(grade?.id) &&
         grade.id >= 1 &&
-        grade.id <= 4 &&
         typeof grade.label === "string"
     ) &&
     new Set(config.grades.map((grade) => grade.id)).size ===
