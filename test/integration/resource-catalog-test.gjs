@@ -10,6 +10,7 @@ import { themePrefix } from "virtual:theme";
 import { setupRenderingTest } from "discourse/tests/helpers/component-test";
 import pretender, { response } from "discourse/tests/helpers/create-pretender";
 import { i18n } from "discourse-i18n";
+import LearningDirectoryEditor from "../../discourse/components/isbf-learning-directory-editor";
 import ResourceAddDialog from "../../discourse/components/isbf-resource-add-dialog";
 import ResourceCatalog from "../../discourse/components/isbf-resource-catalog";
 import ResourceDirectoryDialog from "../../discourse/components/isbf-resource-directory-dialog";
@@ -25,6 +26,28 @@ module("ISBF | Integration | Component | ResourceCatalog", function (hooks) {
     ];
     this.onClose = () => {};
     this.onSubmitted = () => {};
+  });
+
+  test("directory editing escapes the page column layout", async function (assert) {
+    this.entry = { id: "group-a", name: "已有课程", category_id: 1 };
+    await render(
+      <template>
+        <div class="resource-page-column">
+          <LearningDirectoryEditor
+            @entry={{this.entry}}
+            @grades={{this.grades}}
+            @kind="course"
+            @library={{true}}
+            @onClose={{this.onClose}}
+            @onSaved={{this.onSubmitted}}
+          />
+        </div>
+      </template>
+    );
+    assert.dom(".resource-page-column .d-modal").doesNotExist();
+    assert
+      .dom(".d-modal .form-kit")
+      .exists("editing uses the shared modal container");
   });
 
   test("the sidebar exposes one add entry only to administrators", async function (assert) {
