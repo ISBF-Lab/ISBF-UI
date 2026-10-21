@@ -34,6 +34,7 @@ en:
     alumni_all: "All areas"
     alumni_directory: "Alumni directory"
     alumni_name: "Display name"
+    alumni_bio: "About me (optional, up to 500 characters)"
     alumni_industry: "Industry"
     alumni_select: "Select an area"
     alumni_city_optional: "Leave city unspecified"

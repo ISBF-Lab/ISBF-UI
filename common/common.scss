@@ -1,4 +1,5 @@
 @use "lib/viewport";
+@use "alumni";
 
 @mixin isbf-card-content {
   color: var(--isbf-v2-text);

@@ -34,6 +34,7 @@ zh_CN:
     alumni_all: "全部地区"
     alumni_directory: "校友名单"
     alumni_name: "展示姓名"
+    alumni_bio: "自我介绍（可选，最多500字）"
     alumni_industry: "行业"
     alumni_select: "请选择"
     alumni_city_optional: "暂不填写城市"
