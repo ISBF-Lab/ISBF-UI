@@ -31,7 +31,9 @@ export default class ISBFResourceParentPicker extends Component {
       @constrainHeightToViewport={{true}}
       @contentClass="isbf-learning-grade-menu"
       @crossAxisShift={{false}}
+      @disabled={{@disabled}}
       @icon="chevron-down"
+      @inline={{@inline}}
       @label={{this.label}}
       @matchTriggerMinWidth={{true}}
       @modalForMobile={{false}}

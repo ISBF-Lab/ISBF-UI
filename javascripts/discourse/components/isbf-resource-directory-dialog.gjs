@@ -1,11 +1,13 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { on } from "@ember/modifier";
 import { action } from "@ember/object";
-import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { themePrefix } from "virtual:theme";
+import Form from "discourse/components/form";
 import { ajax } from "discourse/lib/ajax";
+import { not } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
+import DModal from "discourse/ui-kit/d-modal";
+import dUniqueId from "discourse/ui-kit/helpers/d-unique-id";
 import { i18n } from "discourse-i18n";
 import ISBFResourceParentPicker from "./isbf-resource-parent-picker";
 
@@ -14,6 +16,9 @@ export default class ISBFResourceDirectoryDialog extends Component {
   @tracked grade;
   @tracked name = "";
   @tracked saving = false;
+
+  formData = { name: "", grade: this.args.grade };
+  formId = dUniqueId();
 
   #closed = false;
 
@@ -30,18 +35,22 @@ export default class ISBFResourceDirectoryDialog extends Component {
   get endpoint() {
     return this.args.library
       ? `/isbf/library/${this.args.kind === "category" ? "categories" : "groups"}`
-      : "/isbf/learning/courses";
+      : `/isbf/learning/${this.isCategory ? "grades" : "courses"}`;
+  }
+
+  get isCategory() {
+    return this.args.kind === "category";
   }
 
   get title() {
     return i18n(
       themePrefix(
-        this.args.library
-          ? `isbf_v2.library_${this.args.request ? "request" : "add"}_${this.args.kind}`
+        this.isCategory
+          ? "isbf_v2.library_add_category"
           : this.args.request
             ? "isbf_v2.learning_request_course"
-            : "isbf_v2.learning_add_course",
-      ),
+            : "isbf_v2.learning_add_course"
+      )
     );
   }
 
@@ -50,31 +59,28 @@ export default class ISBFResourceDirectoryDialog extends Component {
       themePrefix(
         this.args.request
           ? "isbf_v2.learning_submit_request"
-          : "isbf_v2.learning_save",
-      ),
+          : "isbf_v2.learning_save"
+      )
     );
   }
 
   get saveDisabled() {
     const length = [...this.name.trim()].length;
     return (
-      this.saving ||
-      !length ||
-      length > 80 ||
-      (this.args.library && this.args.kind === "group" && !this.grade)
+      this.saving || !length || length > 80 || (!this.isCategory && !this.grade)
     );
   }
 
   @action
-  changeGrade(id) {
-    if (!this.saving) {
-      this.grade = id;
+  formChanged(name, value) {
+    if (this.saving) {
+      return;
     }
-  }
-
-  @action
-  changeName(event) {
-    this.name = event.target.value;
+    if (name === "name") {
+      this.name = value;
+    } else if (name === "grade") {
+      this.grade = value;
+    }
   }
 
   @action
@@ -87,21 +93,7 @@ export default class ISBFResourceDirectoryDialog extends Component {
   }
 
   @action
-  focusName(element) {
-    element.focus();
-  }
-
-  @action
-  handleKeydown(event) {
-    if (event.key === "Escape" && !this.saving) {
-      event.stopPropagation();
-      this.close();
-    }
-  }
-
-  @action
-  async save(event) {
-    event.preventDefault();
+  async save() {
     if (this.#closed || this.saveDisabled) {
       return;
     }
@@ -112,11 +104,13 @@ export default class ISBFResourceDirectoryDialog extends Component {
         type: "POST",
         data: {
           name: this.name.trim(),
-          ...(this.args.library
-            ? this.args.kind === "group"
-              ? { category_id: this.grade }
-              : {}
-            : { grade: this.grade }),
+          ...(this.isCategory
+            ? {}
+            : this.args.library
+              ? this.args.kind === "group"
+                ? { category_id: this.grade }
+                : {}
+              : { grade: this.grade }),
         },
       });
       if (this.#closed || this.isDestroying) {
@@ -125,6 +119,7 @@ export default class ISBFResourceDirectoryDialog extends Component {
       if (
         !this.args.request &&
         !this.args.library &&
+        !this.isCategory &&
         response?.course?.id &&
         response.success === undefined &&
         response.pending === undefined
@@ -138,16 +133,20 @@ export default class ISBFResourceDirectoryDialog extends Component {
           ? !response.reviewable_id
           : !(this.args.library
               ? response[this.args.kind]?.id
-              : response.course?.id))
+              : this.isCategory
+                ? response.grade?.id
+                : response.course?.id))
       ) {
         throw new Error("Unexpected learning course response");
       }
       this.#closed = true;
       this.args.onSubmitted(
         response,
-        this.args.library && this.args.kind === "category" && !response.pending
-          ? response.category.id
-          : this.grade,
+        this.isCategory && !response.pending
+          ? this.args.library
+            ? response.category.id
+            : response.grade.id
+          : this.grade
       );
     } catch (error) {
       if (!this.#closed && !this.isDestroying) {
@@ -157,8 +156,8 @@ export default class ISBFResourceDirectoryDialog extends Component {
             themePrefix(
               this.args.library
                 ? "isbf_v2.library_directory_error"
-                : "isbf_v2.learning_course_save_error",
-            ),
+                : "isbf_v2.learning_course_save_error"
+            )
           );
       }
     } finally {
@@ -169,55 +168,81 @@ export default class ISBFResourceDirectoryDialog extends Component {
   }
 
   <template>
-    <section
-      aria-label={{this.title}}
+    <DModal
       class="isbf-learning-course-dialog"
-      role="dialog"
-      tabindex="-1"
-      {{on "keydown" this.handleKeydown}}
+      ...attributes
+      @closeModal={{this.close}}
+      @dismissable={{not this.saving}}
+      @title={{this.title}}
     >
-      <h2>{{this.title}}</h2>
-      <form {{on "submit" this.save}}>
-        <label>
-          <span>{{i18n
+      <:body>
+        <Form
+          id={{this.formId}}
+          @data={{this.formData}}
+          @onSet={{this.formChanged}}
+          @onSubmit={{this.save}}
+          as |form|
+        >
+          <form.Field
+            @disabled={{this.saving}}
+            @format="full"
+            @name="name"
+            @title={{i18n
               (themePrefix
                 (if
-                  @library
+                  this.isCategory
                   "isbf_v2.library_directory_name"
                   "isbf_v2.learning_course_name"
                 )
               )
-            }}</span>
-          <input
-            disabled={{this.saving}}
-            maxlength="80"
-            required
-            type="text"
-            value={{this.name}}
-            {{on "input" this.changeName}}
-            {{didInsert this.focusName}}
-          />
-        </label>
-        {{#unless @library}}<ISBFResourceParentPicker
-            @grades={{@grades}}
-            @onChange={{this.changeGrade}}
-            @value={{this.grade}}
-          />{{/unless}}
-        {{#if this.error}}<p role="alert">{{this.error}}</p>{{/if}}
-        <div class="isbf-learning-course-dialog__actions">
-          <DButton
-            @action={{this.close}}
-            @disabled={{this.saving}}
-            @translatedLabel={{i18n (themePrefix "isbf_v2.compose_cancel")}}
-          />
-          <DButton
-            class="btn-primary"
-            @disabled={{this.saveDisabled}}
-            @translatedLabel={{this.submitLabel}}
-            @type="submit"
-          />
-        </div>
-      </form>
-    </section>
+            }}
+            @type="input-text"
+            @validation="required"
+            as |field|
+          >
+            <field.Control maxlength="80" />
+          </form.Field>
+          {{#unless this.isCategory}}
+            <form.Field
+              @disabled={{this.saving}}
+              @format="full"
+              @name="grade"
+              @title={{i18n (themePrefix "isbf_v2.library_category")}}
+              @type="custom"
+              as |field|
+            >
+              <field.Control>
+                <ISBFResourceParentPicker
+                  @disabled={{this.saving}}
+                  @grades={{@grades}}
+                  @inline={{true}}
+                  @label={{i18n (themePrefix "isbf_v2.library_category")}}
+                  @onChange={{field.set}}
+                  @value={{field.value}}
+                />
+              </field.Control>
+            </form.Field>
+          {{/unless}}
+          {{#if this.error}}
+            <form.Alert @type="error">{{this.error}}</form.Alert>
+          {{/if}}
+        </Form>
+      </:body>
+      <:footer>
+        <DButton
+          class="btn-primary"
+          @disabled={{this.saveDisabled}}
+          @form={{this.formId}}
+          @translatedLabel={{this.submitLabel}}
+          @type="submit"
+        />
+        <DButton
+          class="btn-default"
+          @action={{this.close}}
+          @disabled={{this.saving}}
+          @translatedLabel={{i18n (themePrefix "isbf_v2.compose_cancel")}}
+        />
+      </:footer>
+    </DModal>
   </template>
 }

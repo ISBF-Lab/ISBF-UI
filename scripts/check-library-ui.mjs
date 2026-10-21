@@ -51,6 +51,7 @@ function componentClass(path, globals = {}) {
     },
     URL,
     Intl,
+    dUniqueId: () => "library-test-form",
     services: {},
     themePrefix: (key) => key,
     i18n: (key) => key,
@@ -85,11 +86,20 @@ assert.equal(page.shareDisabled, false);
 page.openCourseDialog();
 assert.equal(page.showCourseDialog, false);
 page.openCourseDialog("category");
+assert.equal(
+  page.showCourseDialog,
+  false,
+  "Members cannot open category creation"
+);
+page.currentUser = { admin: true };
+page.openAddDialog();
+assert.equal(page.showAddDialog, true);
+page.openCourseDialog("category");
 assert.equal(page.showCourseDialog, true);
 page.courseSubmitted({ success: true, pending: true }, null);
 assert.equal(page.categories.length, 0);
 assert.equal(page.coursePending, true);
-assert.equal(page.categoryActionLabel, "isbf_v2.library_request_category");
+assert.equal(page.categoryActionLabel, "isbf_v2.library_add_category");
 page.categories = [{ id: "parent", name: "分类" }];
 page.courses = [{ id: "group", name: "分组", category_id: "parent" }];
 page.changeGrade("parent");
@@ -275,6 +285,7 @@ const Workbench = componentClass("isbf-v2-workbench", {
   teamupConfig: () => false,
 });
 const workbench = new Workbench();
+workbench.siteSettings = { isbf_resume_enabled: true };
 workbench.site = { isbf_library: config };
 assert.equal(workbench.cards[1].href, "/isbf/library");
 workbench.site = {};
