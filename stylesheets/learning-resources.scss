@@ -374,6 +374,10 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   }
 }
 
+.d-modal.isbf-learning-directory-editor {
+  align-items: center;
+}
+
 .isbf-learning-share-dialog {
   form,
   label {
