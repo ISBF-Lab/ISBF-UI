@@ -1,5 +1,5 @@
 import Component from "@glimmer/component";
-import { fn } from "@ember/helper";
+import { array, fn, hash } from "@ember/helper";
 import { action } from "@ember/object";
 import { themePrefix } from "virtual:theme";
 import DMenu from "discourse/float-kit/components/d-menu";
@@ -25,6 +25,11 @@ export default class ISBFLearningActionsMenu extends Component {
       @placement="bottom-end"
       @title={{i18n "more"}}
       @triggerClass="btn-transparent isbf-learning__actions-trigger"
+      @triggers={{hash desktop=(array "hover" "click") mobile=(array "click")}}
+      @untriggers={{hash
+        desktop=(array "hover" "click")
+        mobile=(array "click")
+      }}
     >
       <:content as |menu|>
         <DDropdownMenu as |dropdown|>
@@ -42,7 +47,13 @@ export default class ISBFLearningActionsMenu extends Component {
                         @page.selectedCourse
                       }}
                       @translatedLabel={{i18n
-                        (themePrefix "isbf_v2.learning_edit_course")
+                        (themePrefix
+                          (if
+                            @page.isLibrary
+                            "isbf_v2.library_edit_group"
+                            "isbf_v2.learning_edit_course"
+                          )
+                        )
                       }}
                     />
                   </dropdown.item>
@@ -75,14 +86,6 @@ export default class ISBFLearningActionsMenu extends Component {
                   )
                 )
               }}
-            />
-          </dropdown.item>
-          <dropdown.item>
-            <DButton
-              class="isbf-learning-actions-menu__item isbf-learning__share"
-              @action={{fn this.performAction menu @page.share}}
-              @disabled={{@page.shareDisabled}}
-              @translatedLabel={{@page.shareLabel}}
             />
           </dropdown.item>
         </DDropdownMenu>

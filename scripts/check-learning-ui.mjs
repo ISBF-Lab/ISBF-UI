@@ -85,12 +85,20 @@ for (const grades of [config.grades.slice(1), []]) {
 }
 for (const grades of [
   [config.grades[0], config.grades[0]],
-  [{ id: 5, label: "Invalid" }],
+  [{ id: 0, label: "Invalid" }],
   [null],
 ]) {
   assert.equal(learningConfig({ isbf_learning: { ...config, grades } }), null);
 }
 assert.equal(learningConfig({}), null);
+const customCategories = {
+  ...config,
+  grades: [...config.grades, { id: 5, label: "General studies" }],
+};
+assert.equal(
+  learningConfig({ isbf_learning: customCategories }),
+  customCategories
+);
 assert.equal(
   learningConfig({ isbf_learning: { ...config, category_id: 0 } }),
   null
@@ -400,6 +408,7 @@ function componentClass(path, globals = {}) {
     },
     URL,
     Intl,
+    dUniqueId: () => "learning-test-form",
     services: {},
     themePrefix: (key) => key,
     i18n: (key) => key,
@@ -420,7 +429,10 @@ const Workbench = componentClass("isbf-v2-workbench", {
   marketplaceConfig: () => true,
   careersConfig: () => false,
   teamupConfig: () => true,
-  services: { site: { isbf_learning: config } },
+  services: {
+    site: { isbf_learning: config },
+    siteSettings: { isbf_resume_enabled: true },
+  },
 });
 const cards = new Workbench().cards;
 assert.deepEqual(plain(cards.map((card) => card.key)), [
@@ -1169,11 +1181,11 @@ assert.equal(
   undefined,
   "File-only cards must not navigate to a topic"
 );
-assert.equal(card.contributor, "isbf_v2.learning_unknown_contributor");
+assert.equal(card.contributor, "");
 card.args.resource.author = { username: "legacy", name: "Legacy Author" };
-assert.equal(card.contributor, "Legacy Author");
+assert.equal(card.contributor, "");
 card.args.resource.author.name = "";
-assert.equal(card.contributor, "legacy");
+assert.equal(card.contributor, "");
 card.args.resource.contributor = "<script>credit</script>";
 assert.equal(card.contributor, "<script>credit</script>");
 let deletedCards = 0;
@@ -1658,7 +1670,7 @@ assert.equal(staffForm.title, "isbf_v2.learning_add_course");
 assert.equal(staffForm.submitLabel, "isbf_v2.learning_save");
 saving = requestForm.save(submitEvent);
 await requestForm.save(submitEvent);
-requestForm.changeGrade(2);
+requestForm.formChanged("grade", 2);
 assert.equal(requestForm.grade, 1, "Saving must retain submitted grade");
 assert.equal(
   courseSubmissions.length,
@@ -1775,8 +1787,13 @@ page.grade = 1;
 assert.equal(page.courseActionLabel, "isbf_v2.learning_request_course");
 page.courses = [{ id: courseId, grade: 1, name: "Economics" }];
 page.openCourseDialog();
+assert.equal(
+  page.showCourseDialog,
+  false,
+  "Only administrators can open the add form"
+);
 page.courseSubmitted({ success: true, pending: true }, 2);
-assert.equal(page.coursePending, true);
+assert.equal(page.coursePending, false);
 assert.equal(page.grade, 1);
 assert.equal(
   page.courses.length,
@@ -1794,7 +1811,20 @@ page.currentUser = {
 page.site.isbf_learning.course_requests = false;
 assert.equal(page.canSubmitCourses, true);
 assert.equal(page.courseActionLabel, "isbf_v2.learning_add_course");
+assert.equal(
+  page.canAddDirectories,
+  false,
+  "Delegated managers do not see the administrator add entry"
+);
+page.currentUser = { admin: true };
+page.openAddDialog();
+assert.equal(page.showAddDialog, true);
 page.openCourseDialog();
+assert.equal(
+  page.showAddDialog,
+  false,
+  "Choosing a form replaces the first dialog"
+);
 page.courseSubmitted({ success: true, pending: false }, 1);
 assert.equal(page.coursePending, false);
 assert.equal(listRequests[0].url, "/isbf/learning/courses");
@@ -2065,7 +2095,7 @@ assert.match(
 );
 assert.match(
   learningStyles,
-  /\.isbf-learning-resource p\.isbf-learning-resource__credit\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/
+  /\.isbf-learning-resource__metadata\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/
 );
 const reviewSource = read(
   "javascripts/discourse/components/reviewable-isbf-learning-course.gjs"

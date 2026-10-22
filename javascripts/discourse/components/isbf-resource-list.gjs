@@ -1,6 +1,5 @@
 import { themePrefix } from "virtual:theme";
 import DButton from "discourse/ui-kit/d-button";
-import dConcatClass from "discourse/ui-kit/helpers/d-concat-class";
 import { i18n } from "discourse-i18n";
 import ISBFLearningActionsMenu from "./isbf-learning-actions-menu";
 import ISBFResourceItem from "./isbf-resource-item";
@@ -11,23 +10,17 @@ export default <template>
     aria-label={{@page.contentTitle}}
     class="isbf-learning__content"
   >
-    <div
-      class={{dConcatClass
-        "isbf-learning__content-header"
-        (unless @page.isLibrary "has-actions-menu")
-      }}
-    >
+    <div class="isbf-learning__content-header has-actions-menu">
       <h2 title={{@page.contentTitle}}>{{@page.contentTitle}}</h2>
-      {{#if @page.isLibrary}}
+      <div class="isbf-learning__header-actions">
         <DButton
           class="btn-primary isbf-learning__share"
           @action={{@page.share}}
           @disabled={{@page.shareDisabled}}
-          @translatedLabel={{@page.shareLabel}}
+          @translatedLabel={{i18n (themePrefix "isbf_v2.resource_apply_share")}}
         />
-      {{else}}
         <ISBFLearningActionsMenu @page={{@page}} />
-      {{/if}}
+      </div>
     </div>
     {{#unless @page.config.link_sharing}}<p
         class="isbf-learning__notice"

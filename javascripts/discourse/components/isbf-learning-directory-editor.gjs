@@ -20,7 +20,9 @@ export default class ISBFLearningDirectoryEditor extends Component {
     super(...arguments);
     this.data = {
       name: this.args.entry.name || this.args.entry.label,
-      grade: this.args.entry.grade,
+      grade: this.args.library
+        ? this.args.entry.category_id
+        : this.args.entry.grade,
     };
   }
 
@@ -32,9 +34,13 @@ export default class ISBFLearningDirectoryEditor extends Component {
   get title() {
     return i18n(
       themePrefix(
-        this.args.kind === "grade"
-          ? "isbf_v2.learning_edit_grade"
-          : "isbf_v2.learning_edit_course"
+        this.args.library
+          ? this.args.kind === "grade"
+            ? "isbf_v2.library_edit_category"
+            : "isbf_v2.library_edit_group"
+          : this.args.kind === "grade"
+            ? "isbf_v2.learning_edit_grade"
+            : "isbf_v2.learning_edit_course"
       )
     );
   }
@@ -55,7 +61,7 @@ export default class ISBFLearningDirectoryEditor extends Component {
     this.error = null;
     try {
       const response = await ajax(
-        `/isbf/learning/${this.args.kind === "grade" ? "grades" : "courses"}/${encodeURIComponent(this.args.entry.id)}`,
+        `/isbf/${this.args.library ? "library" : "learning"}/${this.args.library ? (this.args.kind === "grade" ? "categories" : "groups") : this.args.kind === "grade" ? "grades" : "courses"}/${encodeURIComponent(this.args.entry.id)}`,
         { type: "PUT", data }
       );
       if (response.success !== true) {
@@ -64,7 +70,11 @@ export default class ISBFLearningDirectoryEditor extends Component {
       if (!this.#closed) {
         this.args.onSaved(
           response,
-          this.args.kind === "grade" ? this.args.entry.id : Number(data.grade)
+          this.args.kind === "grade"
+            ? this.args.entry.id
+            : this.args.library
+              ? data.grade
+              : Number(data.grade)
         );
       }
     } catch (error) {
@@ -82,9 +92,8 @@ export default class ISBFLearningDirectoryEditor extends Component {
 
   <template>
     <DModal
-      class="isbf-learning-share-dialog"
+      class="isbf-learning-share-dialog isbf-learning-directory-editor"
       @closeModal={{this.close}}
-      @inline={{true}}
       @title={{this.title}}
     >
       <:body>
@@ -103,7 +112,13 @@ export default class ISBFLearningDirectoryEditor extends Component {
             <form.Field
               @disabled={{this.saving}}
               @name="grade"
-              @title={{i18n (themePrefix "isbf_v2.learning_grade")}}
+              @title={{i18n
+                (themePrefix
+                  (if
+                    @library "isbf_v2.library_category" "isbf_v2.learning_grade"
+                  )
+                )
+              }}
               @type="select"
               @validation="required"
               as |field|

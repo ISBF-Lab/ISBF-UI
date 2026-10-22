@@ -15,20 +15,20 @@ export default <template>
           @value={{@page.grade}}
         />
       </div>
-      {{#unless @page.isLibrary}}{{#if @page.canManageResources}}<DButton
-            class="btn-flat isbf-learning__edit-grade"
-            @action={{@page.editGrade}}
-            @icon="pencil"
-            @translatedTitle={{i18n
-              (themePrefix "isbf_v2.learning_edit_grade")
-            }}
-          />{{/if}}{{/unless}}
-      {{#if @page.isLibrary}}{{#if @page.canSubmitCourses}}<DButton
-            class="btn-flat"
-            @action={{fn @page.openCourseDialog "category"}}
-            @icon="plus"
-            @translatedTitle={{@page.categoryActionLabel}}
-          />{{/if}}{{/if}}
+      {{#if @page.canManageResources}}<DButton
+          class="btn-flat isbf-learning__edit-grade"
+          @action={{@page.editGrade}}
+          @icon="pencil"
+          @translatedTitle={{i18n
+            (themePrefix
+              (if
+                @page.isLibrary
+                "isbf_v2.library_edit_category"
+                "isbf_v2.learning_edit_grade"
+              )
+            )
+          }}
+        />{{/if}}
     </div>
     {{#if @page.coursesLoading}}<p role="status">{{i18n
           (themePrefix "isbf_v2.learning_loading")
@@ -65,12 +65,11 @@ export default <template>
         {{/each}}
       </nav>
     {{/if}}
-    {{#if @page.canSubmitCourses}}<DButton
+    {{#if @page.canAddDirectories}}<DButton
         class="btn-flat isbf-learning__add-course"
-        @action={{@page.openCourseDialog}}
-        @disabled={{@page.groupSubmitDisabled}}
+        @action={{@page.openAddDialog}}
         @icon="plus"
-        @translatedLabel={{@page.courseActionLabel}}
+        @translatedLabel={{i18n (themePrefix "isbf_v2.resource_add")}}
       />{{/if}}
     {{#if @page.coursePending}}<p
         class="isbf-learning__notice"

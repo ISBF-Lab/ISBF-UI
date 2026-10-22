@@ -124,7 +124,7 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
     min-height: 44px;
     margin-top: var(--isbf-v2-space-2);
     border-radius: var(--isbf-v2-radius-sm);
-    text-align: left;
+    text-align: center;
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -154,6 +154,12 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   overflow-y: auto;
 }
 
+.isbf-resource-add-dialog__choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--isbf-v2-space-3);
+}
+
 .isbf-learning__content-header {
   display: flex;
   flex-wrap: wrap;
@@ -176,14 +182,22 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: start;
   }
+}
+
+.isbf-learning__header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--isbf-v2-space-2);
+  margin-inline-start: auto;
 }
 
 .isbf-learning__actions-trigger {
   flex: 0 0 auto;
   min-inline-size: 44px;
   min-block-size: 44px;
-  margin-inline-start: auto;
 }
 
 .isbf-learning-actions-menu {
@@ -273,16 +287,31 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--isbf-v2-space-2);
+
+  h3:only-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.isbf-learning-resource__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .isbf-learning-resource__metadata {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--isbf-v2-space-2);
+  margin-top: var(--isbf-v2-space-2);
   color: var(--isbf-v2-muted);
   font-size: var(--isbf-v2-font-xs);
-  white-space: nowrap;
+
+  time {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 .isbf-learning-resource__more.btn {
@@ -314,10 +343,9 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
 }
 
 .isbf-learning-resource p.isbf-learning-resource__credit {
-  margin-top: var(--isbf-v2-space-2);
-  color: var(--isbf-v2-muted);
-  font-size: var(--isbf-v2-font-xs);
-  text-align: right;
+  min-width: 0;
+  margin-inline-start: auto;
+  text-align: end;
   overflow-wrap: anywhere;
 }
 
@@ -360,38 +388,11 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   }
 }
 
-.isbf-learning-course-dialog {
-  flex: 0 0 auto;
-  max-height: 50%;
-  padding: var(--isbf-v2-space-4);
-  border-bottom: 1px solid var(--isbf-v2-border);
-  background: var(--isbf-v2-hover);
-  overflow-y: auto;
-
-  label,
-  input {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  form {
-    margin-top: var(--isbf-v2-space-3);
-  }
-}
-
-.isbf-learning-course-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--isbf-v2-space-2);
+.d-modal.isbf-learning-directory-editor {
+  align-items: center;
 }
 
 .isbf-learning-share-dialog {
-  .modal-inner-container {
-    background: var(--isbf-v2-surface);
-    color: var(--isbf-v2-text);
-  }
-
   form,
   label {
     display: flex;
@@ -429,45 +430,6 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
 
 html.isbf-learning-collection-open {
   scrollbar-gutter: auto;
-}
-
-.isbf-learning-collection-modal.d-modal {
-  box-sizing: border-box;
-  align-items: center;
-  justify-content: center;
-  inset: 0;
-  inline-size: 100vw;
-  block-size: 100dvh;
-  margin: 0;
-  padding: var(--isbf-v2-space-4);
-
-  .d-modal__container {
-    box-sizing: border-box;
-    position: relative;
-    inset: auto;
-    inline-size: min(600px, 100%);
-    min-inline-size: 0;
-    max-inline-size: 100%;
-    max-block-size: 100%;
-    margin: 0;
-    border: 1px solid var(--isbf-v2-border);
-    border-radius: var(--isbf-v2-radius-md);
-    background: var(--isbf-v2-surface);
-    color: var(--isbf-v2-text);
-  }
-
-  .d-modal__header,
-  .d-modal__body,
-  .d-modal__footer {
-    background: var(--isbf-v2-surface);
-    color: var(--isbf-v2-text);
-    border-color: var(--isbf-v2-border);
-  }
-
-  + .d-modal__backdrop {
-    inline-size: 100vw;
-    block-size: 100dvh;
-  }
 }
 
 .isbf-learning-share-dialog__collection-link {
