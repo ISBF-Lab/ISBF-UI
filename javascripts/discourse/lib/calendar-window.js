@@ -5,15 +5,21 @@ export function calendarMonthAnchor(month, day) {
   return new Date(year, index, Math.min(day, lastDay), 12);
 }
 
-export function calendarWindow(month, compact, anchorDay) {
-  const anchor = calendarMonthAnchor(month, compact ? anchorDay : 1);
+export function calendarWindow(month, compact, expanded = false) {
+  const anchor = calendarMonthAnchor(month, 1);
   const mondayOffset = (anchor.getDay() + 6) % 7;
   const from = new Date(
     anchor.getFullYear(),
     anchor.getMonth(),
-    anchor.getDate() - mondayOffset - (compact ? 14 : 0)
+    anchor.getDate() - mondayOffset
   );
-  const dayCount = compact ? 35 : 42;
+  const monthDays = new Date(
+    anchor.getFullYear(),
+    anchor.getMonth() + 1,
+    0
+  ).getDate();
+  const dayCount =
+    compact && !expanded && mondayOffset + monthDays <= 35 ? 35 : 42;
   const to = new Date(
     from.getFullYear(),
     from.getMonth(),

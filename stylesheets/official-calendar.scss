@@ -395,6 +395,10 @@ body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
 }
 
 @media (width <= 600px) {
+  .isbf-v2-calendar__days {
+    touch-action: pan-x pinch-zoom;
+  }
+
   .isbf-v2-feature .isbf-v2-calendar__heading {
     flex-wrap: nowrap;
     align-items: center;
