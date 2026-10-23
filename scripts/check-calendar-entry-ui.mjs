@@ -223,7 +223,7 @@ assert.match(editorSource, /maxlength="255"/);
 const css = read("common/common.scss");
 assert.match(
   css,
-  /\.isbf-v2-calendar__item--personal\s*\{\s*border-left-color: var\(--isbf-calendar-personal-card-border, #ed9b45\)/
+  /\.isbf-v2-calendar__item--personal\s*\{\s*border-left-color: var\(--isbf-v2-personal\)/
 );
 assert.match(
   css,

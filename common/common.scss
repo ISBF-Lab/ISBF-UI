@@ -5390,7 +5390,7 @@ body:has(.isbf-v2-shell) {
 }
 
 .isbf-v2-calendar__item--personal {
-  border-left-color: var(--isbf-calendar-personal-card-border, #ed9b45);
+  border-left-color: var(--isbf-v2-personal);
 }
 
 .isbf-v2-calendar__item--official {
