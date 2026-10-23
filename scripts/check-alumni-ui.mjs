@@ -87,6 +87,13 @@ assert.equal(
   "中国 · 广东省 · 珠海"
 );
 
+const distributionModule = new vm.SourceTextModule(
+  read("javascripts/discourse/lib/alumni-distribution.js"),
+  { context }
+);
+await distributionModule.link(() => {});
+await distributionModule.evaluate();
+
 function componentClass(name, globals = {}) {
   const source = read(`javascripts/discourse/components/${name}.gjs`);
   const className = source.match(/export default class (\w+)/)[1];
@@ -107,23 +114,36 @@ function componentClass(name, globals = {}) {
 
       willDestroy() {}
     },
+    ...distributionModule.namespace,
     ...globals,
   });
 }
 
 const pending = [];
+const distributions = [];
+const tick = () => new Promise((resolve) => setImmediate(resolve));
+const distributionResponse = (country, region, count = 1) => ({
+  country,
+  region,
+  total: count,
+  countries: [{ code: country || "CN", count }],
+  regions: region ? [{ code: region, count }] : [],
+  cities: [],
+});
 const Page = componentClass("isbf-alumni", {
   alumniConfig,
   alumniRegions,
   alumniLocation,
   ajax: (url, options) =>
-    new Promise((resolve, reject) =>
-      pending.push({ url, options, resolve, reject })
-    ),
+    new Promise((resolve, reject) => {
+      const queue =
+        url === "/isbf/alumni/distribution" ? distributions : pending;
+      queue.push({ url, options, resolve, reject });
+    }),
 });
 const page = new Page();
 page.site = { isbf_alumni: config };
-page.currentUser = { username: "member" };
+page.currentUser = { id: 1, username: "member" };
 page.geography = { countries: config.countries };
 page.selectLocation({ country: "CN", region: "GD", city: "ZH" });
 assert.deepEqual(plain(pending[0].options.data), {
@@ -131,21 +151,31 @@ assert.deepEqual(plain(pending[0].options.data), {
   region: "GD",
   page: 1,
 });
+assert.deepEqual(plain(distributions[0].options.data), {
+  country: "CN",
+  region: "GD",
+});
 page.selectLocation({ country: "US", region: "CA" });
 assert.equal(page.region, "");
 pending[0].resolve({ users: [{ id: 1 }], has_more: true });
-await new Promise((resolve) => setImmediate(resolve));
+distributions[0].resolve(distributionResponse("CN", "GD", 9));
+await tick();
 assert.equal(page.users.length, 0);
 assert.equal(page.loading, true);
+assert.equal(page.distribution, null);
+assert.equal(page.distributionLoading, true);
 pending[1].resolve({
   users: [
     { id: 2, username: "a", display_name: "A", country_name: "United States" },
   ],
   has_more: true,
 });
-await new Promise((resolve) => setImmediate(resolve));
+distributions[1].resolve(distributionResponse("US", "", 3));
+await tick();
 assert.equal(page.users[0].id, 2);
 assert.equal(page.loading, false);
+assert.equal(page.distribution.total, 3);
+assert.equal(page.distributionLoading, false);
 const next = page.loadDirectory(true);
 assert.equal(pending[2].options.data.page, 2);
 await page.loadDirectory(true);
@@ -157,14 +187,67 @@ assert.equal(page.users.length, 1);
 page.retry();
 assert.equal(pending[3].options.data.page, 2);
 pending[3].resolve({ users: [{ id: 3 }], has_more: false });
-await new Promise((resolve) => setImmediate(resolve));
+await tick();
 assert.deepEqual(plain(page.users.map((user) => user.id)), [2, 3]);
+const failedRefresh = page.loadDistribution();
+assert.equal(page.distribution.total, 3);
+distributions[2].reject(new Error("offline"));
+await failedRefresh;
+assert.equal(page.distributionError, true);
+assert.equal(page.distribution.total, 3);
+const duplicateFirst = page.loadDistribution();
+const duplicateSecond = page.loadDistribution();
+assert.equal(distributions.length, 4);
+distributions[3].resolve(distributionResponse("US", "", 4));
+await Promise.all([duplicateFirst, duplicateSecond]);
+assert.equal(page.distribution.total, 4);
+assert.equal(page.distributionError, false);
+const wrongContext = page.loadDistribution();
+distributions[4].resolve(distributionResponse("CN", "", 99));
+await wrongContext;
+assert.equal(page.distributionError, true);
+assert.equal(page.distribution.total, 4);
+page.profileSaved();
+assert.equal(page.distribution, null);
+assert.equal(page.distributionLoading, true);
+pending[4].resolve({ users: [], has_more: false });
+distributions[5].resolve(distributionResponse("US", "", 5));
+await tick();
+assert.equal(page.distribution.total, 5);
+const formerAccount = page.loadDistribution();
+page.currentUser = { id: 2, username: "another" };
+page.accountChanged();
+assert.equal(page.distribution, null);
+assert.equal(page.users.length, 0);
+distributions[6].resolve(distributionResponse("US", "", 99));
+await formerAccount;
+assert.equal(page.distribution, null);
+distributions[7].resolve(distributionResponse("US", "", 2));
+pending[5].resolve({ users: [{ id: 8 }], has_more: false });
+await tick();
+assert.equal(page.distribution.total, 2);
+assert.equal(page.users[0].id, 8);
+const lateDirectory = page.loadDirectory();
+const lateDistribution = page.loadDistribution();
+page.currentUser = null;
+page.accountChanged();
+assert.equal(page.distribution, null);
+assert.equal(page.users.length, 0);
+assert.equal(page.distributionLoading, false);
+pending[6].resolve({ users: [{ id: 9 }], has_more: false });
+distributions[8].resolve(distributionResponse("US", "", 99));
+await Promise.all([lateDirectory, lateDistribution]);
+assert.equal(page.users.length, 0);
+assert.equal(page.distribution, null);
+page.currentUser = { id: 3 };
 page.selectLocation({ country: "CN" });
 page.willDestroy();
 page.isDestroying = true;
-pending[4].resolve({ users: [{ id: 4 }], has_more: true });
-await new Promise((resolve) => setImmediate(resolve));
+pending[7].resolve({ users: [{ id: 4 }], has_more: true });
+distributions[9].resolve(distributionResponse("CN", "", 20));
+await tick();
 assert.equal(page.users.length, 0);
+assert.equal(page.distribution, null);
 
 let finishProfile;
 let failProfile;
@@ -265,12 +348,29 @@ const fakeMap = {
   },
   invalidateSize() {},
 };
+function pathElement() {
+  const classes = new Set();
+  const attributes = new Map();
+  return {
+    classes,
+    attributes,
+    classList: {
+      add: (...values) => values.forEach((value) => classes.add(value)),
+      remove: (...values) => values.forEach((value) => classes.delete(value)),
+      toggle: (value, enabled) =>
+        enabled ? classes.add(value) : classes.delete(value),
+    },
+    setAttribute: (name, value) => attributes.set(name, value),
+  };
+}
 const L = {
   map: () => fakeMap,
   geoJSON(data, options) {
     const layers = data.features.map((feature) => {
+      const element = pathElement();
       const layer = {
         feature,
+        getElement: () => element,
         bindTooltip(label, tooltipOptions) {
           this.label = label.textContent;
           this.tooltipOptions = tooltipOptions;
@@ -360,6 +460,8 @@ const WorkingMap = componentClass("isbf-alumni-map", {
   COUNTRY_VIEWS: { CN: { center: [35, 105], zoom: 3 } },
   labelFontSize,
   visibleLabelLayers,
+  i18n: (_key, values) => `${values.name} · ${values.count}人`,
+  themePrefix: (key) => key,
   leaflet: async () => L,
   window: { L },
   document: {
@@ -470,6 +572,52 @@ await workingMap.updateSelection();
 assert.deepEqual(mapRequests, ["/world.json", "/cn.json"]);
 workingMap.returnToChina();
 assert.deepEqual(plain(selections.at(-1)), { country: "CN" });
+workingMap.args.country = "CN";
+workingMap.args.region = "GD";
+workingConfig.countries[0].regions[0].cities = [
+  { code: "SZ", name: "深圳市", lat: 22.54, lng: 114.06 },
+];
+await workingMap.updateSelection();
+const viewBeforeDistribution = { center: fakeMap.center, zoom: fakeMap.zoom };
+workingMap.args.distribution = {
+  country: "CN",
+  region: "GD",
+  countries: [{ code: "CN", count: 5 }],
+  regions: [{ code: "GD", count: 5 }],
+  cities: [{ code: "SZ", count: 4 }],
+};
+workingMap.updateDistribution();
+assert.deepEqual(
+  { center: fakeMap.center, zoom: fakeMap.zoom },
+  viewBeforeDistribution
+);
+assert.equal(markers.at(-1).label, "深圳市 · 4人");
+assert.equal(markers.at(-1).options.radius, 9);
+assert.equal(markers.at(-1).options.cityCode, "SZ");
+assert.equal(markers.at(-1).options.distributionCount, 4);
+const selectedProvince = featureLayers
+  .filter((layer) => layer.feature.properties.code === "GD")
+  .at(-1);
+assert.ok(
+  selectedProvince.getElement().classes.has("isbf-alumni-map__selected-region")
+);
+assert.equal(
+  selectedProvince.getElement().attributes.get("aria-pressed"),
+  "true"
+);
+assert.ok(selectedProvince.getElement().classes.has("isbf-alumni-map__bin-1"));
+assert.ok(featureLayers.some((layer) => layer.label === "广东省 · 5人"));
+const countBeforeCityClick = selections.length;
+markers.at(-1).click();
+assert.equal(markers.at(-1).open, true);
+assert.equal(selections.length, countBeforeCityClick);
+workingMap.args.distribution = {
+  ...workingMap.args.distribution,
+  region: "BJ",
+};
+workingMap.updateDistribution();
+assert.equal(workingMap.distributionReady, false);
+assert.equal(groups.at(-1).visible, false);
 workingMap.willDestroy();
 assert.equal(fakeMap.removed, true);
 assert.equal(disconnected, true);

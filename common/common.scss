@@ -1,5 +1,6 @@
 @use "lib/viewport";
 @use "alumni";
+@use "alumni-map-distribution";
 
 @mixin isbf-card-content {
   color: var(--isbf-v2-text);
