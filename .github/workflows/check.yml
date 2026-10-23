@@ -39,6 +39,7 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-workbench-topic-pages.mjs
       - run: node --experimental-vm-modules scripts/check-content-images.mjs
       - run: node scripts/check-profile-ui.mjs
+      - run: node scripts/check-profile-summary.mjs
       - run: node --experimental-vm-modules scripts/check-topic-pinning-ui.mjs
       - run: node scripts/check-topic-detail-pinning-ui.mjs
       - run: node --experimental-vm-modules scripts/check-solved-ui.mjs
