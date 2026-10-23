@@ -3,6 +3,7 @@ import { tracked } from "@glimmer/tracking";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
+import didUpdate from "@ember/render-modifiers/modifiers/did-update";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
@@ -28,16 +29,25 @@ export default class ISBFAlumni extends Component {
   @tracked editing = false;
   @tracked geography = null;
   @tracked geographyError = false;
+  @tracked distribution = null;
+  @tracked distributionError = false;
+  @tracked distributionLoading = false;
 
   #page = 0;
   #request = 0;
   #trigger;
+  #distributionRequest = 0;
+  #distributionOwner;
+  #distributionCache = new Map();
+  #distributionInFlight = new Map();
 
   constructor() {
     super(...arguments);
     if (this.config && this.currentUser) {
+      this.#distributionOwner = this.currentUser.id;
       this.loadGeography();
       this.loadDirectory();
+      this.loadDistribution();
     } else if (this.config) {
       this.login();
     }
@@ -46,6 +56,10 @@ export default class ISBFAlumni extends Component {
   willDestroy() {
     super.willDestroy(...arguments);
     this.#request++;
+    this.#distributionRequest++;
+    this.#distributionCache.clear();
+    this.#distributionInFlight.clear();
+    this.distribution = null;
   }
 
   get config() {
@@ -109,6 +123,7 @@ export default class ISBFAlumni extends Component {
     this.country = country;
     this.region = country === "CN" ? region : "";
     this.loadDirectory();
+    this.loadDistribution();
   }
 
   @action
@@ -116,6 +131,7 @@ export default class ISBFAlumni extends Component {
     if (!this.currentUser || !this.config || (append && this.loading)) {
       return;
     }
+    const owner = this.currentUser.id;
     const request = ++this.#request;
     const page = append ? this.#page + 1 : 1;
     this.loading = true;
@@ -132,7 +148,7 @@ export default class ISBFAlumni extends Component {
           page,
         },
       });
-      if (request !== this.#request) {
+      if (request !== this.#request || owner !== this.currentUser?.id) {
         return;
       }
       this.users = append
@@ -141,12 +157,107 @@ export default class ISBFAlumni extends Component {
       this.hasMore = response.has_more === true;
       this.#page = page;
     } catch {
-      if (request === this.#request) {
+      if (request === this.#request && owner === this.currentUser?.id) {
         this.error = true;
       }
     } finally {
-      if (request === this.#request) {
+      if (request === this.#request && owner === this.currentUser?.id) {
         this.loading = false;
+      }
+    }
+  }
+
+  @action
+  accountChanged() {
+    if (this.#distributionOwner === this.currentUser?.id) {
+      return;
+    }
+    this.#distributionOwner = this.currentUser?.id;
+    this.#request++;
+    this.#distributionRequest++;
+    this.#distributionCache.clear();
+    this.#distributionInFlight.clear();
+    this.distribution = null;
+    this.distributionError = false;
+    this.distributionLoading = false;
+    this.loading = false;
+    this.error = false;
+    this.editing = false;
+    this.#trigger = null;
+    this.users = [];
+    this.hasMore = false;
+    if (this.currentUser && this.config) {
+      this.loadDirectory();
+      this.loadDistribution();
+    }
+  }
+
+  @action
+  async loadDistribution() {
+    if (!this.currentUser || !this.config || this.isDestroying) {
+      return;
+    }
+    const owner = this.currentUser.id;
+    const country = this.country;
+    const region = this.region;
+    const key = `${country}:${region}`;
+    const request = ++this.#distributionRequest;
+    this.distribution = this.#distributionCache.get(key) || null;
+    this.distributionError = false;
+    this.distributionLoading = true;
+    let pending = this.#distributionInFlight.get(key);
+    if (!pending) {
+      pending = ajax("/isbf/alumni/distribution", {
+        data: { country, region },
+      });
+      this.#distributionInFlight.set(key, pending);
+    }
+    try {
+      const response = await pending;
+      if (
+        request !== this.#distributionRequest ||
+        owner !== this.currentUser?.id ||
+        this.isDestroying
+      ) {
+        return;
+      }
+      if (
+        response?.country !== country ||
+        response?.region !== region ||
+        ![response.countries, response.regions, response.cities].every(
+          Array.isArray
+        )
+      ) {
+        throw new Error("Invalid alumni distribution response");
+      }
+      if (
+        this.#distributionCache.size >= 40 &&
+        !this.#distributionCache.has(key)
+      ) {
+        this.#distributionCache.delete(
+          this.#distributionCache.keys().next().value
+        );
+      }
+      this.#distributionCache.set(key, response);
+      this.distribution = response;
+    } catch {
+      if (
+        request === this.#distributionRequest &&
+        owner === this.currentUser?.id &&
+        !this.isDestroying
+      ) {
+        this.distributionError = true;
+      }
+    } finally {
+      if (this.#distributionInFlight.get(key) === pending) {
+        this.#distributionInFlight.delete(key);
+      }
+      if (
+        request === this.#distributionRequest &&
+        owner === this.currentUser?.id &&
+        !this.isDestroying
+      ) {
+        this.distributionLoading = false;
       }
     }
   }
@@ -171,11 +282,17 @@ export default class ISBFAlumni extends Component {
   @action
   profileSaved() {
     this.closeProfile();
+    this.#distributionCache.clear();
+    this.#distributionInFlight.clear();
     this.loadDirectory();
+    this.loadDistribution();
   }
 
   <template>
-    <main class="isbf-alumni">
+    <main
+      class="isbf-alumni"
+      {{didUpdate this.accountChanged this.currentUser.id}}
+    >
       <header class="isbf-alumni__header">
         <a class="isbf-alumni__back" href="/isbf/workbench">
           {{dIcon "arrow-left"}}<h1>{{i18n
@@ -234,6 +351,10 @@ export default class ISBFAlumni extends Component {
           {{#if this.mapConfig}}<ISBFAlumniMap
               @config={{this.mapConfig}}
               @country={{this.country}}
+              @distribution={{this.distribution}}
+              @distributionError={{this.distributionError}}
+              @distributionLoading={{this.distributionLoading}}
+              @onRetryDistribution={{this.loadDistribution}}
               @onSelect={{this.selectLocation}}
               @region={{this.region}}
             />{{else if this.geographyError}}<p
