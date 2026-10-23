@@ -34,3 +34,11 @@
 本次在编辑器内部统一表单、分组、字段及输入包装层宽度，改为拉伸布局；toggle 的标签和开关容器各自使用合适的伸缩宽度，日期和时间输入覆盖原生最小宽度。移除分组 margin 与 FormKit gap 叠加，纠正两处不存在的背景 token，并加入编辑器 token 引用检查。
 
 静态依据是当前 Core `132cc95d043db01251eedf9c93b3927cd5ffee91` 的 `form-kit/_form-kit.scss`、`_container.scss`、`_field.scss` 和 `_control-input.scss`，未修改 Core。范围限表单样式，不调整月历、右侧栏或数据逻辑；静态检查不等同于真机布局验收。
+
+## 2026-10-23 日期文字居中与移动端顶部打开
+
+- 开始、结束标签与日期、时间值垂直居中，日期与时间文字在控件内水平居中；保留44px点击高度和原生选择器。
+- 当前 Core 的通用输入框规则将日期、时间输入改为 `inline-block`，FormKit 的 `padding: 0 0.5em !important` 又覆盖了编辑器原有垂直 padding。恢复日期、时间控件的 `inline-flex` 与 `align-items: center`，使 Safari 的原生值按控件中心布局，不用固定偏移补偿。
+- 依据 [WebKit 原生日期输入样式](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/css/html.css) 的居中规则，以及 [WebKit 日期输入对齐问题记录](https://bugs.webkit.org/show_bug.cgi?id=139848)。这两处链接说明选择该实现的依据，不代表已在用户真机验证。
+- 仅≤600px的行程编辑器改为顶部对齐，顶部保留 `safe-area-inset-top`；内容继续在原生弹窗中滚动。生产现有 `dialog-consistency` 保留水平边距、相对定位和高度限制；本次作用域与其匹配，只覆盖该编辑器的顶部位置。
+- 保留三组字段、桌面弹窗位置、月历及侧栏、个人卡片绿色、数据保存流程。此次运行相关静态检查和实际 CI，发布后确认 HTTP 与公开资源；没有新增浏览器或 iPhone 真机测试。
