@@ -113,6 +113,7 @@ export default class ISBFCalendarUpdateDialog extends Component {
           <h3>{{i18n (themePrefix "isbf_v2.schedule_current")}}</h3>
           <strong>{{this.entry.title}}</strong>
           <p>{{this.currentTime}}</p>
+          {{#if this.entry.location}}<p>{{this.entry.location}}</p>{{/if}}
           {{#if this.entry.note}}<p>{{this.entry.note}}</p>{{/if}}
         </div>
         <div class="isbf-calendar-update-dialog__latest">
@@ -124,6 +125,12 @@ export default class ISBFCalendarUpdateDialog extends Component {
           {{else}}
             <strong>{{this.entry.latest_source.title}}</strong>
             <p>{{this.latestTime}}</p>
+            <p>{{i18n (themePrefix "isbf_v2.calendar_location_label")}}:
+              {{if
+                this.entry.latest_source.location
+                this.entry.latest_source.location
+                (i18n (themePrefix "isbf_v2.calendar_location_empty"))
+              }}</p>
           {{/if}}
           {{#if this.entry.source_url}}<a href={{this.entry.source_url}}>{{i18n
                 (themePrefix "isbf_v2.schedule_source")

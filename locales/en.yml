@@ -2,6 +2,15 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    calendar_location_label: "Location"
+    calendar_location_empty: "Not specified"
+    calendar_official: "Official activities"
+    calendar_location: "Location (optional)"
+    calendar_note_action: "Note"
+    calendar_start_date: "Start date"
+    calendar_start_time: "Start time"
+    calendar_end_date: "End date"
+    calendar_end_time: "End time"
     review_pending: "Review, pending items require attention"
     poll_button: "Poll"
     poll_button_title: "Create poll"
