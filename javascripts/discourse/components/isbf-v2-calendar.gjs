@@ -11,12 +11,10 @@ import { eq } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import I18n, { i18n } from "discourse-i18n";
+import { calendarEntryKind, calendarEntryTime } from "../lib/calendar-entry";
 import { calendarMonthAnchor, calendarWindow } from "../lib/calendar-window";
-import {
-  officialDateKey,
-  officialOccursOn,
-  officialTimeLabel,
-} from "../lib/official-calendar";
+import { officialDateKey, officialOccursOn } from "../lib/official-calendar";
+import ISBFCalendarEntryEditor from "./isbf-calendar-entry-editor";
 import ISBFCalendarNoteEditor from "./isbf-calendar-note-editor";
 import ISBFCalendarSubscribe from "./isbf-calendar-subscribe";
 import ISBFCalendarUpdateDialog from "./isbf-calendar-update-dialog";
@@ -31,27 +29,19 @@ function localDate(key) {
   return new Date(`${key}T12:00:00`);
 }
 
-function displayTime(value, allDay) {
-  return allDay
-    ? i18n(themePrefix("isbf_v2.calendar_all_day"))
-    : new Intl.DateTimeFormat(I18n.currentLocale().replace("_", "-"), {
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(value));
-}
-
 export default class ISBFV2Calendar extends Component {
   @service appEvents;
   @service currentUser;
   @service dialog;
   @service modal;
   @service router;
+  @service site;
 
   @tracked visibleMonth;
   @tracked selectedDate;
   @tracked filter = "all";
   @tracked personalEntries = [];
-  @tracked communityEvents = [];
+  @tracked officialEntries = [];
   @tracked pendingUpdates = [];
   @tracked updatesError = false;
   @tracked focusedEntryId = null;
@@ -61,16 +51,10 @@ export default class ISBFV2Calendar extends Component {
   @tracked mobileAnchorDay;
   @tracked mobileFocusDate = null;
   @tracked todayKey;
-  @tracked isEditing = false;
-  @tracked editingId = null;
-  @tracked title = "";
-  @tracked note = "";
-  @tracked startInput = "";
-  @tracked endInput = "";
-  @tracked allDay = false;
-  @tracked saveError = false;
 
   weekdays = WEEKDAYS.map((day) => i18n(themePrefix(`isbf_v2.week_${day}`)));
+  #actor;
+  #actorId;
   #requestNumber = 0;
   #updatesRequestNumber = 0;
   #focusRequestNumber = 0;
@@ -128,18 +112,31 @@ export default class ISBFV2Calendar extends Component {
     }).format(localDate(this.selectedDate));
   }
 
-  get canCreateCommunity() {
+  get canCreateOfficial() {
     return Boolean(
-      (this.currentUser?.admin ||
-        this.currentUser?.academy_moderator_permissions?.publish_activities) &&
-      this.currentUser?.can_create_discourse_post_event &&
-      Number(settings.calendar_category_id) > 0
+      this.currentUser?.academy_official_member &&
+      this.officialCategory?.canCreateTopic
     );
   }
 
-  get communityComposeHref() {
-    const slug = settings.calendar_category_path.split("/").filter(Boolean)[1];
-    return `/new-topic?category=${encodeURIComponent(slug || "campus-events")}`;
+  get officialCategory() {
+    const id =
+      this.site?.isbf_calendar?.official_category_id ??
+      Number(settings.official_path?.split("/")[3]);
+    return this.site?.categories?.find(
+      (category) => Number(category.id) === Number(id)
+    );
+  }
+
+  get officialComposeHref() {
+    return `/new-topic?category=${encodeURIComponent(this.officialCategory?.id || "")}`;
+  }
+
+  get allEntries() {
+    return this.currentUser === this.#actor &&
+      this.currentUser?.id === this.#actorId
+      ? [...this.personalEntries, ...this.officialEntries]
+      : [];
   }
 
   get viewRange() {
@@ -171,11 +168,11 @@ export default class ISBFV2Calendar extends Component {
           date.getMonth() === this.visibleMonth.getMonth(),
         isSelected: key === this.selectedDate,
         isToday: key === this.todayKey,
-        hasPersonal: this.personalEntries.some((entry) =>
-          this.#occursOn(entry, key)
+        hasPersonal: this.allEntries.some(
+          (entry) => entry.kind === "personal" && this.#occursOn(entry, key)
         ),
-        hasCommunity: this.communityEvents.some((event) =>
-          this.#occursOn(event, key)
+        hasOfficial: this.allEntries.some(
+          (entry) => entry.kind === "official" && this.#occursOn(entry, key)
         ),
       });
     }
@@ -184,20 +181,26 @@ export default class ISBFV2Calendar extends Component {
   }
 
   get selectedItems() {
-    const entries = this.filter === "community" ? [] : this.personalEntries;
-    const events = this.filter === "personal" ? [] : this.communityEvents;
-    return [...entries, ...events]
-      .filter((item) => this.#occursOn(item, this.selectedDate))
+    return this.allEntries
+      .filter(
+        (item) =>
+          (this.filter === "all" || this.filter === item.kind) &&
+          this.#occursOn(item, this.selectedDate)
+      )
       .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-      .map((item) => ({
-        ...item,
-        isFocused: item.id === this.focusedEntryId && item.kind === "personal",
-      }));
+      .map((item) => ({ ...item, isFocused: item.id === this.focusedEntryId }));
+  }
+
+  get currentPendingUpdates() {
+    return this.currentUser === this.#actor &&
+      this.currentUser?.id === this.#actorId
+      ? this.pendingUpdates
+      : [];
   }
 
   get updatesLabel() {
     return i18n(themePrefix("isbf_v2.schedule_pending_count"), {
-      count: this.pendingUpdates.length,
+      count: this.currentPendingUpdates.length,
     });
   }
 
@@ -209,17 +212,26 @@ export default class ISBFV2Calendar extends Component {
   @action
   async loadUpdates() {
     const request = ++this.#updatesRequestNumber;
-    if (!this.currentUser) {
+    const actor = this.currentUser;
+    const actorId = actor?.id;
+    if (!actor) {
+      this.pendingUpdates = [];
+      this.updatesError = false;
       return;
     }
+    const current = () =>
+      request === this.#updatesRequestNumber &&
+      !this.isDestroying &&
+      actor === this.currentUser &&
+      actorId === this.currentUser?.id;
     try {
       const { entries } = await ajax("/isbf/api/entry-updates.json");
-      if (request === this.#updatesRequestNumber && !this.isDestroying) {
+      if (current()) {
         this.pendingUpdates = entries;
         this.updatesError = false;
       }
     } catch {
-      if (request === this.#updatesRequestNumber && !this.isDestroying) {
+      if (current()) {
         this.updatesError = true;
       }
     }
@@ -241,9 +253,16 @@ export default class ISBFV2Calendar extends Component {
     }
     this.#queryEntryId = id;
     const request = ++this.#focusRequestNumber;
+    const actor = this.currentUser;
+    const actorId = actor?.id;
     try {
       const { entry } = await ajax(`/isbf/api/entries/${id}.json`);
-      if (request !== this.#focusRequestNumber || this.isDestroying) {
+      if (
+        request !== this.#focusRequestNumber ||
+        this.isDestroying ||
+        actor !== this.currentUser ||
+        actorId !== this.currentUser?.id
+      ) {
         return;
       }
       this.#selectEntry(entry);
@@ -281,73 +300,53 @@ export default class ISBFV2Calendar extends Component {
   @action
   async loadMonth() {
     const request = ++this.#requestNumber;
+    const actor = this.currentUser;
+    const actorId = actor?.id;
+    if (actor !== this.#actor || actorId !== this.#actorId) {
+      this.personalEntries = [];
+      this.officialEntries = [];
+      this.pendingUpdates = [];
+      this.updatesError = false;
+    }
+    this.#actor = actor;
+    this.#actorId = actorId;
     const { from, to } = this.viewRange;
-    const data = { from: from.toISOString(), to: to.toISOString() };
-    const personalData = {
+    const data = {
       from: new Date(from.getTime() - 86400000).toISOString(),
       to: new Date(to.getTime() + 86400000).toISOString(),
     };
+    const current = () =>
+      request === this.#requestNumber &&
+      !this.isDestroying &&
+      actor === this.currentUser &&
+      actorId === this.currentUser?.id;
     this.isLoading = true;
     this.loadError = false;
-
-    const [personal, community] = await Promise.allSettled([
-      this.currentUser
-        ? ajax("/isbf/api/entries.json", { data: personalData })
-        : Promise.resolve({ entries: [] }),
-      Number(settings.calendar_category_id) > 0
-        ? ajax("/discourse-post-event/events.json", {
-            data: {
-              after: data.from,
-              before: data.to,
-              category_id: settings.calendar_category_id,
-              limit: 200,
-            },
-          })
-        : Promise.resolve({ events: [] }),
-    ]);
-
-    if (request !== this.#requestNumber || this.isDestroying) {
-      return;
+    try {
+      const { entries } = actor
+        ? await ajax("/isbf/api/entries.json", { data })
+        : { entries: [] };
+      if (current()) {
+        const classified = entries.map((entry) => ({
+          ...entry,
+          kind: calendarEntryKind(entry),
+        }));
+        this.personalEntries = classified.filter(
+          (entry) => entry.kind === "personal"
+        );
+        this.officialEntries = classified.filter(
+          (entry) => entry.kind === "official"
+        );
+      }
+    } catch {
+      if (current()) {
+        this.loadError = true;
+      }
+    } finally {
+      if (current()) {
+        this.isLoading = false;
+      }
     }
-
-    this.personalEntries =
-      personal.status === "fulfilled"
-        ? personal.value.entries.map((entry) => ({
-            ...entry,
-            kind: "personal",
-          }))
-        : [];
-    this.communityEvents =
-      community.status === "fulfilled"
-        ? community.value.events.flatMap((event) =>
-            (event.occurrences || []).map((occurrence) => {
-              const end =
-                occurrence.ends_at ||
-                (event.all_day
-                  ? occurrence.starts_at
-                  : new Date(
-                      new Date(occurrence.starts_at).getTime() + 3600000
-                    ).toISOString());
-              return {
-                id: event.id,
-                title: event.name || event.post?.topic?.title,
-                starts_at: occurrence.starts_at,
-                ends_at: event.all_day
-                  ? new Date(
-                      new Date(`${end.slice(0, 10)}T00:00:00.000Z`).getTime() +
-                        86400000
-                    ).toISOString()
-                  : end,
-                all_day: event.all_day,
-                href: event.post?.url,
-                kind: "community",
-              };
-            })
-          )
-        : [];
-    this.loadError =
-      personal.status === "rejected" || community.status === "rejected";
-    this.isLoading = false;
   }
 
   @action
@@ -463,15 +462,9 @@ export default class ISBFV2Calendar extends Component {
 
   @action
   newEntry() {
-    this.editingId = null;
-    this.title = "";
-    this.note = "";
-    this.startInput = `${this.selectedDate}T09:00`;
-    this.endInput = `${this.selectedDate}T10:00`;
-    this.allDay = false;
-    this.saveError = false;
-    this.isEditing = true;
-    scheduleOnce("afterRender", this, this.#focusEditor);
+    this.modal.show(ISBFCalendarEntryEditor, {
+      model: { selectedDate: this.selectedDate, onSaved: this.loadMonth },
+    });
   }
 
   @action
@@ -482,116 +475,9 @@ export default class ISBFV2Calendar extends Component {
       });
       return;
     }
-    this.editingId = entry.id;
-    this.title = entry.title;
-    this.note = entry.note || "";
-    this.allDay = entry.all_day;
-    this.startInput = entry.all_day
-      ? entry.starts_at.slice(0, 10)
-      : this.#localInput(entry.starts_at);
-    this.endInput = entry.all_day
-      ? new Date(new Date(entry.ends_at).getTime() - 86400000)
-          .toISOString()
-          .slice(0, 10)
-      : this.#localInput(entry.ends_at);
-    this.saveError = false;
-    this.isEditing = true;
-    scheduleOnce("afterRender", this, this.#focusEditor);
-  }
-
-  @action
-  closeEditor() {
-    this.isEditing = false;
-  }
-
-  @action
-  editorKeydown(event) {
-    if (event.key === "Escape") {
-      this.closeEditor();
-    }
-  }
-
-  @action
-  updateTitle(event) {
-    this.title = event.target.value;
-  }
-
-  @action
-  updateNote(event) {
-    this.note = event.target.value;
-  }
-
-  @action
-  updateStart(event) {
-    this.startInput = event.target.value;
-  }
-
-  @action
-  updateEnd(event) {
-    this.endInput = event.target.value;
-  }
-
-  @action
-  toggleAllDay(event) {
-    this.allDay = event.target.checked;
-    this.startInput = this.allDay
-      ? this.startInput.slice(0, 10)
-      : `${this.startInput.slice(0, 10)}T09:00`;
-    this.endInput = this.allDay
-      ? this.endInput.slice(0, 10)
-      : `${this.endInput.slice(0, 10)}T10:00`;
-  }
-
-  @action
-  async saveEntry(event) {
-    event.preventDefault();
-    this.saveError = false;
-
-    let startsAt;
-    let endsAt;
-
-    try {
-      startsAt = this.allDay
-        ? `${this.startInput}T00:00:00.000Z`
-        : new Date(this.startInput).toISOString();
-      endsAt = this.allDay
-        ? new Date(
-            new Date(`${this.endInput}T00:00:00.000Z`).getTime() + 86400000
-          ).toISOString()
-        : new Date(this.endInput).toISOString();
-    } catch {
-      this.saveError = true;
-      return;
-    }
-
-    if (!this.title.trim() || endsAt <= startsAt) {
-      this.saveError = true;
-      return;
-    }
-
-    try {
-      await ajax(
-        this.editingId
-          ? `/isbf/api/entries/${this.editingId}.json`
-          : "/isbf/api/entries.json",
-        {
-          type: this.editingId ? "PATCH" : "POST",
-          data: {
-            entry: {
-              title: this.title.trim(),
-              note: this.note.trim(),
-              starts_at: startsAt,
-              ends_at: endsAt,
-              all_day: this.allDay,
-            },
-          },
-        }
-      );
-      this.isEditing = false;
-      await this.loadMonth();
-    } catch {
-      this.saveError = true;
-    }
+    this.modal.show(ISBFCalendarEntryEditor, {
+      model: { entry, onSaved: this.loadMonth },
+    });
   }
 
   @action
@@ -667,17 +553,6 @@ export default class ISBFV2Calendar extends Component {
     );
   }
 
-  #focusEditor() {
-    document
-      .querySelector(".isbf-v2-calendar__editor input[type=text]")
-      ?.focus();
-  }
-
-  #localInput(value) {
-    const date = new Date(value);
-    return `${dateKey(date)}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-  }
-
   #occursOn(item, key) {
     if (item.source_item_id) {
       return officialOccursOn(item, key);
@@ -734,10 +609,10 @@ export default class ISBFV2Calendar extends Component {
             {{on "click" (fn this.setFilter "personal")}}
           >{{i18n (themePrefix "isbf_v2.calendar_personal")}}</button>{{/if}}
         <button
-          class={{if (eq this.filter "community") "is-active"}}
+          class={{if (eq this.filter "official") "is-active"}}
           type="button"
-          {{on "click" (fn this.setFilter "community")}}
-        >{{i18n (themePrefix "isbf_v2.calendar_community")}}</button>
+          {{on "click" (fn this.setFilter "official")}}
+        >{{i18n (themePrefix "isbf_v2.calendar_official")}}</button>
       </div>
 
       {{#if this.updatesError}}
@@ -749,11 +624,11 @@ export default class ISBFV2Calendar extends Component {
           @label={{themePrefix "isbf_v2.official_retry"}}
         />
       {{/if}}
-      {{#if this.pendingUpdates.length}}
+      {{#if this.currentPendingUpdates.length}}
         <section aria-label={{this.updatesLabel}} class="isbf-calendar-updates">
           <h2>{{this.updatesLabel}}</h2>
           <p>{{i18n (themePrefix "isbf_v2.schedule_pending_hint")}}</p>
-          {{#each this.pendingUpdates key="id" as |entry|}}
+          {{#each this.currentPendingUpdates key="id" as |entry|}}
             <div class="isbf-calendar-updates__item" data-entry-id={{entry.id}}>
               <span>{{entry.title}}
                 ·
@@ -815,8 +690,8 @@ export default class ISBFV2Calendar extends Component {
                   aria-hidden="true"
                   class="isbf-v2-calendar__dots"
                 >{{#if cell.hasPersonal}}<i class="is-personal"></i>{{/if}}{{#if
-                    cell.hasCommunity
-                  }}<i class="is-community"></i>{{/if}}</span>
+                    cell.hasOfficial
+                  }}<i class="is-official"></i>{{/if}}</span>
               </button>
             {{/each}}
           </div>
@@ -825,8 +700,8 @@ export default class ISBFV2Calendar extends Component {
                   class="is-personal"
                 ></i>{{i18n
                   (themePrefix "isbf_v2.calendar_personal")
-                }}</span><span><i class="is-community"></i>{{i18n
-                  (themePrefix "isbf_v2.calendar_community")
+                }}</span><span><i class="is-official"></i>{{i18n
+                  (themePrefix "isbf_v2.calendar_official")
                 }}</span></div>
             <ISBFCalendarSubscribe />
           </div>
@@ -839,8 +714,8 @@ export default class ISBFV2Calendar extends Component {
           <div class="isbf-v2-calendar__agenda-heading"><div><small>{{i18n
                   (themePrefix "isbf_v2.calendar_selected")
                 }}</small><h2>{{this.selectedLabel}}</h2></div>{{#if
-              this.canCreateCommunity
-            }}<a href={{this.communityComposeHref}}>{{i18n
+              this.canCreateOfficial
+            }}<a href={{this.officialComposeHref}}>{{i18n
                   (themePrefix "isbf_v2.calendar_publish_event")
                 }}</a>{{/if}}</div>
           {{#if this.isLoading}}<p class="isbf-v2-calendar__empty">{{i18n
@@ -861,56 +736,47 @@ export default class ISBFV2Calendar extends Component {
                 <div class="isbf-v2-calendar__item-top"><span>{{if
                       (eq item.kind "personal")
                       (i18n (themePrefix "isbf_v2.calendar_personal"))
-                      (i18n (themePrefix "isbf_v2.calendar_community"))
-                    }}</span><time>{{#if
-                      item.source_item_id
-                    }}{{officialTimeLabel item}}{{else}}{{displayTime
-                        item.starts_at
-                        item.all_day
-                      }}{{/if}}</time></div>
+                      (i18n (themePrefix "isbf_v2.calendar_official"))
+                    }}</span><time>{{calendarEntryTime item}}</time></div>
                 {{#if item.href}}<h3><a
                       href={{item.href}}
                     >{{item.title}}</a></h3>{{else}}<h3
                   >{{item.title}}</h3>{{/if}}
+                {{#if item.location}}<p
+                    class="isbf-v2-calendar__item-location"
+                  >{{item.location}}</p>{{/if}}
                 {{#if item.note}}<p>{{item.note}}</p>{{/if}}
-                {{#if item.source_item_id}}
-                  <div class="isbf-v2-calendar__official">
-                    <span>{{i18n
-                        (themePrefix "isbf_v2.schedule_imported")
-                      }}</span>
-                    {{#if item.cancelled}}<strong>{{i18n
-                          (themePrefix "isbf_v2.schedule_cancelled")
-                        }}</strong>{{/if}}
-                    {{#if item.source_url}}<a href={{item.source_url}}>{{i18n
-                          (themePrefix "isbf_v2.schedule_source")
-                        }}</a>{{else if item.source_unavailable}}<span>{{i18n
-                          (themePrefix "isbf_v2.schedule_unavailable")
-                        }}</span>{{/if}}
-                    {{#if item.needs_update}}<DButton
-                        @action={{fn this.reviewUpdate item}}
-                        @label={{themePrefix "isbf_v2.schedule_review"}}
-                      />{{/if}}
-                  </div>
-                {{/if}}
-                {{#if (eq item.kind "personal")}}<div
-                    class="isbf-v2-calendar__item-actions"
-                  ><button
-                      type="button"
-                      {{on "click" (fn this.editEntry item)}}
-                    >{{i18n
-                        (themePrefix
-                          (if
-                            item.source_item_id
-                            "isbf_v2.schedule_edit_note"
-                            "isbf_v2.calendar_edit"
-                          )
+                {{#if item.cancelled}}<strong>{{i18n
+                      (themePrefix "isbf_v2.schedule_cancelled")
+                    }}</strong>{{/if}}
+                {{#if item.source_unavailable}}<small>{{i18n
+                      (themePrefix "isbf_v2.schedule_unavailable")
+                    }}</small>{{/if}}
+                {{#if item.needs_update}}<DButton
+                    @action={{fn this.reviewUpdate item}}
+                    @label={{themePrefix "isbf_v2.schedule_review"}}
+                  />{{/if}}
+                <div class="isbf-v2-calendar__item-actions">
+                  {{#if item.source_url}}<a href={{item.source_url}}>{{i18n
+                        (themePrefix "isbf_v2.schedule_source")
+                      }}</a>{{/if}}
+                  <button
+                    type="button"
+                    {{on "click" (fn this.editEntry item)}}
+                  >{{i18n
+                      (themePrefix
+                        (if
+                          item.source_item_id
+                          "isbf_v2.calendar_note_action"
+                          "isbf_v2.calendar_edit"
                         )
-                      }}</button><button
-                      type="button"
-                      {{on "click" (fn this.deleteEntry item)}}
-                    >{{i18n
-                        (themePrefix "isbf_v2.calendar_delete")
-                      }}</button></div>{{/if}}
+                      )
+                    }}</button>
+                  <button
+                    type="button"
+                    {{on "click" (fn this.deleteEntry item)}}
+                  >{{i18n (themePrefix "isbf_v2.calendar_delete")}}</button>
+                </div>
               </article>
             {{else}}
               <p class="isbf-v2-calendar__empty">{{i18n
@@ -921,70 +787,6 @@ export default class ISBFV2Calendar extends Component {
         </section>
       </div>
 
-      {{#if this.isEditing}}
-        <div
-          aria-label={{i18n (themePrefix "isbf_v2.calendar_personal")}}
-          aria-modal="true"
-          class="isbf-v2-calendar__editor-backdrop"
-          role="dialog"
-          tabindex="-1"
-          {{on "keydown" this.editorKeydown}}
-        >
-          <form class="isbf-v2-calendar__editor" {{on "submit" this.saveEntry}}>
-            <div class="isbf-v2-calendar__editor-heading"><h2>{{i18n
-                  (themePrefix "isbf_v2.calendar_personal")
-                }}</h2><button
-                aria-label={{i18n (themePrefix "isbf_v2.calendar_close")}}
-                type="button"
-                {{on "click" this.closeEditor}}
-              >{{dIcon "xmark"}}</button></div>
-            <label>{{i18n (themePrefix "isbf_v2.calendar_title")}}<input
-                maxlength="120"
-                required
-                type="text"
-                value={{this.title}}
-                {{on "input" this.updateTitle}}
-              /></label>
-            <label class="isbf-v2-calendar__checkbox"><input
-                checked={{this.allDay}}
-                type="checkbox"
-                {{on "change" this.toggleAllDay}}
-              />{{i18n (themePrefix "isbf_v2.calendar_all_day")}}</label>
-            <div class="isbf-v2-calendar__form-dates"><label>{{i18n
-                  (themePrefix "isbf_v2.calendar_start")
-                }}<input
-                  required
-                  type={{if this.allDay "date" "datetime-local"}}
-                  value={{this.startInput}}
-                  {{on "input" this.updateStart}}
-                /></label><label>{{i18n
-                  (themePrefix "isbf_v2.calendar_end")
-                }}<input
-                  required
-                  type={{if this.allDay "date" "datetime-local"}}
-                  value={{this.endInput}}
-                  {{on "input" this.updateEnd}}
-                /></label></div>
-            <label>{{i18n (themePrefix "isbf_v2.calendar_note")}}<textarea
-                maxlength="2000"
-                rows="3"
-                value={{this.note}}
-                {{on "input" this.updateNote}}
-              ></textarea></label>
-            {{#if this.saveError}}<p
-                class="isbf-v2-calendar__error"
-                role="alert"
-              >{{i18n (themePrefix "isbf_v2.calendar_save_error")}}</p>{{/if}}
-            <div class="isbf-v2-calendar__form-actions"><button
-                type="button"
-                {{on "click" this.closeEditor}}
-              >{{i18n (themePrefix "isbf_v2.calendar_cancel")}}</button><button
-                class="isbf-v2-calendar__primary"
-                type="submit"
-              >{{i18n (themePrefix "isbf_v2.calendar_save")}}</button></div>
-          </form>
-        </div>
-      {{/if}}
     </main>
   </template>
 }

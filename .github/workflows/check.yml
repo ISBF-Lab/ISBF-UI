@@ -52,3 +52,4 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-calendar-five-weeks.mjs
       - run: node --experimental-vm-modules scripts/check-review-shell.mjs
       - run: node --experimental-vm-modules scripts/check-review-queue.mjs
+      - run: node --experimental-vm-modules scripts/check-calendar-entry-ui.mjs

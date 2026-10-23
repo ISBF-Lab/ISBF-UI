@@ -2,6 +2,15 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    calendar_location_label: "地点"
+    calendar_location_empty: "未填写"
+    calendar_official: "官方活动"
+    calendar_location: "地点（可选）"
+    calendar_note_action: "备注"
+    calendar_start_date: "开始日期"
+    calendar_start_time: "开始时间"
+    calendar_end_date: "结束日期"
+    calendar_end_time: "结束时间"
     review_pending: "审核，有待处理事项"
     poll_button: "投票"
     poll_button_title: "创建投票"
