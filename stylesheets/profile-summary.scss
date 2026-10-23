@@ -1,0 +1,96 @@
+body:has(.isbf-v2-shell--profile):not(.admin-interface) #main-outlet {
+  #user-content:has(.isbf-profile-summary) {
+    > .replies-and-topics-section,
+    > .links-and-replied-to-section,
+    > .most-liked-section {
+      display: none;
+    }
+  }
+
+  .isbf-profile-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+
+    &__section.top-sub-section {
+      box-sizing: border-box;
+      float: none;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      margin: 0;
+      padding-block: var(--isbf-v2-space-4);
+      border-bottom: 1px solid var(--isbf-v2-border);
+      overflow-wrap: anywhere;
+
+      .stats-title {
+        margin: 0 0 var(--isbf-v2-space-3);
+        text-align: start;
+      }
+
+      ul {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      li {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+        margin: 0;
+        padding: var(--isbf-v2-space-3) 0;
+        border: 0;
+        border-bottom: 1px solid var(--isbf-v2-border);
+
+        &:last-child {
+          border-bottom: 0;
+        }
+      }
+
+      &.summary-user-list li {
+        height: auto;
+        min-height: 45px;
+      }
+
+      .user-info,
+      .user-detail {
+        min-width: 0;
+        max-width: 100%;
+      }
+    }
+
+    &__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--isbf-v2-space-2);
+      margin-block-start: var(--isbf-v2-space-2);
+    }
+
+    &__toggle,
+    &__more {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      margin: 0;
+      padding: 0 var(--isbf-v2-space-2);
+      border-radius: var(--isbf-v2-radius-sm);
+      color: var(--isbf-v2-accent);
+      font-size: inherit;
+
+      &:hover {
+        background: var(--isbf-v2-hover);
+        color: var(--isbf-v2-accent);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--isbf-v2-focus-ring);
+        outline-offset: -2px;
+      }
+    }
+  }
+}

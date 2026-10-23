@@ -2,6 +2,8 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    summary_expand: "展开更多"
+    summary_collapse: "收起"
     calendar_location_label: "地点"
     calendar_location_empty: "未填写"
     calendar_official: "官方活动"

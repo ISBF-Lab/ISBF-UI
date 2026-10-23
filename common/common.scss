@@ -5344,6 +5344,7 @@ body:has(.isbf-v2-shell) .pswp {
 @import "pinning";
 @import "solved";
 @import "poll";
+@import "profile-summary";
 
 body:has(.isbf-v2-shell--review) {
   #main-outlet {
