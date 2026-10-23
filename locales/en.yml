@@ -2,6 +2,7 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    review_pending: "Review, pending items require attention"
     poll_button: "Poll"
     poll_button_title: "Create poll"
     solved_accept: "Accept answer"

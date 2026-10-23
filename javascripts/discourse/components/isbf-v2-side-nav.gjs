@@ -13,6 +13,7 @@ import ISBFV2MoreMenu from "./isbf-v2-more-menu";
 
 export default class ISBFV2SideNav extends Component {
   @service currentUser;
+  @service isbfReviewQueue;
   @service router;
   @service site;
 
@@ -45,7 +46,7 @@ export default class ISBFV2SideNav extends Component {
     if (
       isFeedbackPath(
         path,
-        feedbackCategory(this.site, settings.feedback_category_id),
+        feedbackCategory(this.site, settings.feedback_category_id)
       )
     ) {
       return false;
@@ -63,13 +64,13 @@ export default class ISBFV2SideNav extends Component {
     if (
       isFeedbackPath(
         this.router.currentURL,
-        feedbackCategory(this.site, settings.feedback_category_id),
+        feedbackCategory(this.site, settings.feedback_category_id)
       )
     ) {
       return false;
     }
     return /^\/(search|categories|c|tag|tags)(\/|\?|$)/.test(
-      this.router.currentURL ?? "",
+      this.router.currentURL ?? ""
     );
   }
 
@@ -83,12 +84,16 @@ export default class ISBFV2SideNav extends Component {
 
   get workbenchActive() {
     return /^\/isbf\/(workbench|learning|alumni)(\/|\?|$)/.test(
-      this.router.currentURL ?? "",
+      this.router.currentURL ?? ""
     );
   }
 
   get bookmarksActive() {
     return /\/activity\/bookmarks(\/|\?|$)/.test(this.router.currentURL ?? "");
+  }
+
+  get reviewActive() {
+    return /^\/review(\/|\?|$)/.test(this.router.currentURL ?? "");
   }
 
   get profileActive() {
@@ -167,10 +172,23 @@ export default class ISBFV2SideNav extends Component {
           (themePrefix "isbf_v2.compose")
         }}</a>
 
-      {{#if this.currentUser.staff}}
+      {{#if this.isbfReviewQueue.canReview}}
         <a
-          aria-label={{i18n (themePrefix "isbf_v2.review")}}
-          class="isbf-v2-side__review"
+          aria-current={{if this.reviewActive "page"}}
+          aria-label={{i18n
+            (themePrefix
+              (if
+                this.isbfReviewQueue.hasPending
+                "isbf_v2.review_pending"
+                "isbf_v2.review"
+              )
+            )
+          }}
+          class={{if
+            this.isbfReviewQueue.hasPending
+            "isbf-v2-side__review has-pending"
+            "isbf-v2-side__review"
+          }}
           href="/review"
         >{{i18n (themePrefix "isbf_v2.review")}}</a>
       {{/if}}

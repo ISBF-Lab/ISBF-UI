@@ -2,6 +2,7 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    review_pending: "审核，有待处理事项"
     poll_button: "投票"
     poll_button_title: "创建投票"
     solved_accept: "采纳答案"

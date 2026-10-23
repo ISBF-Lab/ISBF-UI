@@ -34,3 +34,11 @@
 - `join_us_description` 配置纯文本招募说明和联系方式；留空显示“招募信息筹备中”。
 
 检查：`node --experimental-vm-modules scripts/check-sidebar-more-ui.mjs`。
+
+## 审核页与待处理提醒
+
+`/review` 及子页面复用主页左栏、页头和手机底部导航，内容保留原生审核列表、详情、筛选和操作；实际 `/admin` 布局保持原生。
+
+桌面与手机审核入口统一使用当前用户的 `can_review`，共享原生 `/review/count.json` 状态。有待处理事项时按钮为红色，全部处理后恢复蓝色，不显示数量。通过原生审核计数事件、页面导航及返回前台刷新，合并重复请求；失败保留上次确认状态，账号变化和销毁时丢弃旧响应，不增加定时轮询。
+
+检查：`node --experimental-vm-modules scripts/check-review-shell.mjs` 和 `node --experimental-vm-modules scripts/check-review-queue.mjs`。
