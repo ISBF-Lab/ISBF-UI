@@ -6,7 +6,7 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
-import { eq } from "discourse/truth-helpers";
+import { eq, or } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
@@ -249,12 +249,18 @@ export default class ISBFAlumni extends Component {
             class="isbf-alumni__directory"
           >
             {{#each this.directoryUsers key="id" as |user|}}
-              <article class="isbf-alumni__person"><a
-                  href={{user.href}}
-                >{{user.display_name}}</a><span>{{user.location}}</span><span
-                >{{user.industry}}</span>{{#if user.bio}}<p
+              <article class="isbf-alumni__person">
+                <a href={{user.href}}>{{user.display_name}}</a>
+                {{#if (or user.location user.industry)}}
+                  <div class="isbf-alumni__meta">
+                    {{#if user.location}}<span>{{user.location}}</span>{{/if}}
+                    {{#if user.industry}}<span>{{user.industry}}</span>{{/if}}
+                  </div>
+                {{/if}}
+                {{#if user.bio}}<p
                     class="isbf-alumni__bio"
-                  >{{user.bio}}</p>{{/if}}</article>
+                  >{{user.bio}}</p>{{/if}}
+              </article>
             {{/each}}
             {{#if this.loading}}<p role="status">{{i18n
                   (themePrefix "isbf_v2.learning_loading")

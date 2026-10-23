@@ -7,3 +7,9 @@ The existing country/province geography and map remain unchanged. Authenticated 
 Directory cards show country, province and resolved city, suppressing adjacent identical labels. Plain biography preserves line breaks below industry. Existing empty fields continue to return empty strings. Registration profile import does not use the legal name or enable public visibility.
 
 Verification: check-alumni-ui.mjs covers city resets, optional blank fields, geographic labels and biography template constraints alongside existing directory races/pagination. New plugin request specs cover persistence, province/city mismatch, bio length, overseas fields and registration import. Browser, role and plugin integration verification must be reported separately by the release owner.
+
+## Directory metadata alignment
+
+Location and industry share one wrapping row, with industry immediately to the right of the address. The shared metadata row spans the existing desktop location/industry columns and the full mobile column; long text wraps naturally. Empty fields do not leave a blank metadata row. Biography remains below both fields; data, visibility and map behavior are unchanged.
+
+This adjustment uses only the existing alumni component and stylesheet. Run existing alumni checks, formatting/lints and CI, then back up and source-hash patch those two theme fields. No browser or phone testing is implied by static checks.
