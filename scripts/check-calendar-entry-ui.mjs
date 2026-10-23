@@ -229,6 +229,17 @@ assert.match(
   css,
   /\.isbf-v2-calendar__item-actions\s*\{[\s\S]*?justify-content: flex-start/
 );
+const editorCss = css.slice(css.indexOf(".isbf-calendar-entry-editor {"));
+const definedTokens = new Set(
+  [...css.matchAll(/(--isbf-v2-[\w-]+)\s*:/g)].map((match) => match[1])
+);
+for (const [, token] of editorCss.matchAll(/var\((--isbf-v2-[\w-]+)\s*\)/g)) {
+  assert.ok(
+    definedTokens.has(token),
+    `Editor references undefined theme token: ${token}`
+  );
+}
+
 process.stdout.write(
   "Calendar entry source isolation, filters, location editor, retry and scoped layout checks passed."
 );

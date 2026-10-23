@@ -26,3 +26,11 @@
 运行全部主题 source checks、地点与来源分类 VM 回归、Prettier、Discourse ESLint、Stylelint及GitHub CI。检查390、430、600、601、768、1024、1440px的日期范围和源码布局约束。
 
 用户最新要求补做基本动态检测：发布后用独立 Edge 会话检查桌面、手机尺寸及明暗模式的表单、来源分类和卡片布局，不在正式账号新增或删除行程。尚未完成的浏览器检查与 iPhone 真机检查如实记录；静态检查不代表浏览器或键盘实测。
+
+## 2026-10-23 表单布局修复
+
+用户真机截图暴露了先前 source checks 没有覆盖的 FormKit 样式约束：原生 `.form-kit` 使用 `align-items: flex-start`，未设宽度的分组按内容收缩；`--full` 的内容容器仍有 `width: 100%` 和最小宽度，放进横向 toggle 后挤压标签。原生输入框还有 `min-width: auto !important`。
+
+本次在编辑器内部统一表单、分组、字段及输入包装层宽度，改为拉伸布局；toggle 的标签和开关容器各自使用合适的伸缩宽度，日期和时间输入覆盖原生最小宽度。移除分组 margin 与 FormKit gap 叠加，纠正两处不存在的背景 token，并加入编辑器 token 引用检查。
+
+静态依据是当前 Core `132cc95d043db01251eedf9c93b3927cd5ffee91` 的 `form-kit/_form-kit.scss`、`_container.scss`、`_field.scss` 和 `_control-input.scss`，未修改 Core。范围限表单样式，不调整月历、右侧栏或数据逻辑；静态检查不等同于真机布局验收。
