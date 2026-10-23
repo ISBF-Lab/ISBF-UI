@@ -399,38 +399,6 @@ body:has(.isbf-v2-shell):not(.admin-interface) {
       }
     }
 
-    .poll-voters-list {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--isbf-v2-space-1);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-
-      > li {
-        display: flex;
-        padding: 0;
-        font-size: inherit;
-      }
-
-      a {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 44px;
-        min-height: 44px;
-      }
-
-      img.avatar {
-        display: block;
-        width: 24px;
-        max-width: 24px;
-        height: 24px;
-        margin: 0;
-      }
-    }
-
     .poll-buttons {
       gap: var(--isbf-v2-space-2);
       padding: var(--isbf-v2-space-3) var(--isbf-v2-space-4);
@@ -463,6 +431,57 @@ body:has(.isbf-v2-shell):not(.admin-interface) {
     .ranked-choice-poll-options button,
     .poll-voters-toggle-expand {
       min-height: 44px;
+    }
+  }
+
+  #main-outlet .cooked .poll-voters-list {
+    &,
+    > ul {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--isbf-v2-space-1);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    > ul {
+      flex: 1 0 100%;
+    }
+
+    li {
+      display: flex;
+      flex: 0 0 auto;
+      width: auto;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    a[data-user-card] {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    img.avatar,
+    .avatar-placeholder {
+      display: block;
+      flex: none;
+      width: 24px;
+      min-width: 24px;
+      max-width: 24px;
+      height: 24px;
+      min-height: 24px;
+      max-height: 24px;
+      margin: 0;
+      border-radius: 50%;
+      object-fit: cover;
     }
   }
 
