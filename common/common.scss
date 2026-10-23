@@ -5573,17 +5573,21 @@ body:has(.isbf-v2-shell) {
     }
 
     > span {
+      line-height: 1.2;
       white-space: nowrap;
     }
 
     input {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       height: 44px;
-      padding: 6px 8px;
       border-radius: 999px;
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1.2;
 
       &::-webkit-date-and-time-value {
+        margin: 0;
         text-align: center;
       }
     }
@@ -5591,8 +5595,15 @@ body:has(.isbf-v2-shell) {
 }
 
 @media (width <= 600px) {
+  body:not(.admin-interface) .d-modal.isbf-calendar-entry-editor {
+    box-sizing: border-box;
+    align-items: flex-start;
+    padding-block-start: env(safe-area-inset-top, 0);
+  }
+
   .isbf-calendar-entry-editor {
     .d-modal__container {
+      position: relative;
       width: 100%;
       max-width: 100%;
     }
