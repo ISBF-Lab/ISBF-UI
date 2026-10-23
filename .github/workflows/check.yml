@@ -50,3 +50,5 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-official-mobile-composer.mjs
       - run: node --experimental-vm-modules scripts/check-calendar-subscription.mjs
       - run: node --experimental-vm-modules scripts/check-calendar-five-weeks.mjs
+      - run: node --experimental-vm-modules scripts/check-review-shell.mjs
+      - run: node --experimental-vm-modules scripts/check-review-queue.mjs

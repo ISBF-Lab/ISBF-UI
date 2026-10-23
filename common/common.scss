@@ -5344,3 +5344,47 @@ body:has(.isbf-v2-shell) .pswp {
 @import "pinning";
 @import "solved";
 @import "poll";
+
+body:has(.isbf-v2-shell--review) {
+  #main-outlet {
+    width: var(--isbf-v2-feature-width);
+    max-width: none;
+    padding: 60px var(--isbf-v2-space-4) var(--isbf-v2-space-6);
+  }
+
+  .isbf-v2-page-header {
+    width: var(--isbf-v2-feature-width);
+  }
+
+  @media (width <= 600px) {
+    #main-outlet {
+      padding-inline: var(--isbf-v2-space-3);
+      padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    }
+  }
+}
+
+body:has(.isbf-v2-shell) {
+  .isbf-v2-side__review,
+  .isbf-v2-mobile-review {
+    min-width: 44px;
+    min-height: 44px;
+
+    &.has-pending {
+      --isbf-v2-accent: var(--danger);
+      --isbf-v2-accent-contrast: var(
+        --d-button-danger-text-color,
+        var(--secondary)
+      );
+    }
+
+    &:hover {
+      filter: brightness(0.92);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--isbf-v2-accent);
+      outline-offset: 3px;
+    }
+  }
+}
