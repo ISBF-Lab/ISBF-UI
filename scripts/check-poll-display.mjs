@@ -398,7 +398,7 @@ assert.match(
   styles,
   /\.poll-voters-list \{[\s\S]*?display: flex;[\s\S]*?flex-wrap: wrap/
 );
-assert.match(styles, /img\.avatar \{[\s\S]*?width: 24px;[\s\S]*?margin: 0/);
+assert.match(styles, /img\.avatar,[\s\S]*?width: 24px;[\s\S]*?margin: 0/);
 assert.doesNotMatch(styles, /position:\s*fixed/);
 assert.match(
   source(".github/workflows/check.yml"),
