@@ -2,6 +2,9 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    review_filters: "Review categories"
+    review_all: "All reviews"
+    review_alumni: "Alumni review"
     summary_expand: "Show more"
     summary_collapse: "Show less"
     calendar_location_label: "Location"

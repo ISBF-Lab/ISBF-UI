@@ -42,3 +42,11 @@
 桌面与手机审核入口统一使用当前用户的 `can_review`，共享原生 `/review/count.json` 状态。有待处理事项时按钮为红色，全部处理后恢复蓝色，不显示数量。通过原生审核计数事件、页面导航及返回前台刷新，合并重复请求；失败保留上次确认状态，账号变化和销毁时丢弃旧响应，不增加定时轮询。
 
 检查：`node --experimental-vm-modules scripts/check-review-shell.mjs` 和 `node --experimental-vm-modules scripts/check-review-queue.mjs`。
+
+### 校友审核入口
+
+审核页顶部常驻“全部审核／校友审核”筛选导航，手机无需展开“选项”即可进入。使用 Theme API 的 `top-notices` outlet 接入原生审核列表，不替换审核模板或审批流程；通过原生 `type=ReviewableIsbfAlumni` 筛选，空队列时仍可进入。
+
+仅 `can_review` 为真且具有服务端 `academy_moderator_permissions.review_alumni` 权限的账号（或原生 admin 开发者）显示入口。“全部审核”显式清空类型；两个入口返回待处理状态。账号或路由变化时重新计算显示状态，不新增计数请求；后台现有“审核校友”开关及服务端权限校验保持不变。
+
+检查：`node --experimental-vm-modules scripts/check-alumni-review-nav.mjs`。生产只读确认，不提交申请、发送邮件或进行审批；未使用开发者会话代替普通管理员验收。
