@@ -5624,3 +5624,37 @@ body:has(.isbf-v2-shell) {
     }
   }
 }
+
+.isbf-alumni-review-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--isbf-v2-space-3);
+  margin-block: var(--isbf-v2-space-2) var(--isbf-v2-space-4);
+  border-bottom: 1px solid var(--isbf-v2-border);
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: var(--isbf-v2-space-2) var(--isbf-v2-space-3);
+    border-bottom: 3px solid transparent;
+    color: var(--isbf-v2-muted);
+    font-weight: 600;
+    text-decoration: none;
+
+    &[aria-current="page"] {
+      border-bottom-color: var(--isbf-v2-accent);
+      color: var(--isbf-v2-text);
+    }
+
+    &:hover {
+      background: var(--isbf-v2-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--isbf-v2-accent);
+      outline-offset: 2px;
+    }
+  }
+}

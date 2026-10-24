@@ -2,6 +2,9 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    review_filters: "审核分类"
+    review_all: "全部审核"
+    review_alumni: "校友审核"
     summary_expand: "展开更多"
     summary_collapse: "收起"
     calendar_location_label: "地点"
