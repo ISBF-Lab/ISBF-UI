@@ -356,6 +356,13 @@ html.composer-open
 }
 
 @media (width <= 600px) {
+  // FloatKit portals sit outside the full-screen mobile composer.
+  html.composer-open
+    body:has(.isbf-v2-shell):has(#reply-control.open .isbf-official-composer)
+    .fk-d-menu.isbf-official-picker__menu {
+    z-index: calc(z("mobile-composer") + 1);
+  }
+
   html.composer-open
     body:has(.isbf-v2-shell)
     #reply-control.open:has(.isbf-v2-composer):has(.isbf-official-composer) {
