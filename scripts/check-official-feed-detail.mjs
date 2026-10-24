@@ -245,7 +245,12 @@ assert.match(
   summary,
   /\{\{#if \(has-block\)\}\}[\s\S]*?yield group\.item[\s\S]*?yield group\.deadline/
 );
-assert.match(summary, /#if group\.showTitle/);
+assert.doesNotMatch(summary, /#if group\.showTitle/);
+assert.doesNotMatch(summary, /<(?:h3|strong)\b/);
+assert.equal(
+  (summary.match(/aria-label=\{\{group\.item\.title\}\}/g) || []).length,
+  2
+);
 assert.match(
   read("javascripts/discourse/components/isbf-v2-feed-card.gjs"),
   /@topicTitle=\{\{@topic\.title\}\}/

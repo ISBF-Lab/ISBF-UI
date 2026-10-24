@@ -5,7 +5,6 @@ import { i18n } from "discourse-i18n";
 import {
   officialActivityTimeLines,
   officialCalendarSummaryGroups,
-  officialCalendarTitleDuplicatesTopic,
   officialTimeLabel,
 } from "../lib/official-calendar";
 import { officialConfig, officialLocationLabel } from "../lib/official-filters";
@@ -16,10 +15,6 @@ export default class ISBFOfficialActivitySummary extends Component {
   get groups() {
     return officialCalendarSummaryGroups(this.args.items).map((group) => ({
       ...group,
-      showTitle: !officialCalendarTitleDuplicatesTopic(
-        group.item,
-        this.args.topicTitle
-      ),
       timeLines: officialActivityTimeLines(group.item),
       locationLabel: officialLocationLabel(
         group.item.location,
@@ -45,11 +40,6 @@ export default class ISBFOfficialActivitySummary extends Component {
               data-schedule-id={{group.item.id}}
               role="group"
             >
-              {{#if group.showTitle}}
-                <h3
-                  class="isbf-official-activity-summary__title"
-                >{{group.item.title}}</h3>
-              {{/if}}
               <dl class="isbf-official-activity-summary__fields">
                 <div class="isbf-official-activity-summary__field">
                   <dt>{{i18n
@@ -102,9 +92,6 @@ export default class ISBFOfficialActivitySummary extends Component {
               data-schedule-id={{group.item.id}}
               role="group"
             >
-              {{#if group.showTitle}}
-                <strong>{{group.item.title}}</strong>
-              {{/if}}
               <span>{{group.timeLabel}}</span>
               {{#if (has-block)}}
                 <div class="isbf-official-activity-summary__actions">
