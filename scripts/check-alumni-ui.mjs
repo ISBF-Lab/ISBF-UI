@@ -317,6 +317,27 @@ const featureLayers = [];
 const groups = [];
 let disconnected = false;
 const mapEvents = {};
+let resizeMap;
+let mapWidth = 600;
+let mapHeight = 360;
+let controlRect = { left: 110, right: 154, top: 60, bottom: 148 };
+let probeCount = 0;
+let measuredLabels = 0;
+let probeWidth = 72;
+const mapElement = {
+  clientLeft: 0,
+  clientTop: 0,
+  getBoundingClientRect: () => ({
+    left: 100,
+    top: 50,
+    width: mapWidth,
+    height: mapHeight,
+  }),
+  querySelectorAll: () => [{ getBoundingClientRect: () => controlRect }],
+  appendChild() {
+    probeCount++;
+  },
+};
 const bounds = {
   getNorthWest: () => ({ x: 0, y: 0 }),
   getSouthEast: () => ({ x: 100, y: 50 }),
@@ -336,7 +357,7 @@ const fakeMap = {
   getZoom() {
     return this.zoom;
   },
-  getSize: () => ({ x: 600, y: 360 }),
+  getSize: () => ({ x: mapWidth, y: mapHeight }),
   latLngToContainerPoint: () => ({ x: 150, y: 150 }),
   on(events, callback) {
     events.split(" ").forEach((event) => {
@@ -458,6 +479,7 @@ const workingConfig = {
 };
 const WorkingMap = componentClass("isbf-alumni-map", {
   COUNTRY_VIEWS: { CN: { center: [35, 105], zoom: 3 } },
+  MIN_PROVINCE_LABEL_ZOOM: 5,
   labelFontSize,
   visibleLabelLayers,
   i18n: (_key, values) => `${values.name} · ${values.count}人`,
@@ -466,12 +488,21 @@ const WorkingMap = componentClass("isbf-alumni-map", {
   window: { L },
   document: {
     createElement: () => ({
-      getContext: () => ({
-        measureText: (name) => ({ width: name.length * 13 }),
-      }),
+      style: {},
+      setAttribute() {},
+      getBoundingClientRect() {
+        measuredLabels++;
+        return { width: probeWidth, height: 28 };
+      },
+      remove() {
+        probeCount--;
+      },
     }),
   },
   ResizeObserver: class {
+    constructor(callback) {
+      resizeMap = callback;
+    }
     observe() {}
     disconnect() {
       disconnected = true;
@@ -505,6 +536,7 @@ const workingMap = new WorkingMap({
 });
 const labelSizes = [];
 workingMap.insert({
+  ...mapElement,
   style: { setProperty: (name, value) => labelSizes.push(value) },
 });
 await new Promise((resolve) => setImmediate(resolve));
@@ -539,10 +571,17 @@ assert.deepEqual(plain(selections.at(-1)), { country: "US" });
 fakeMap.zoom = 4;
 mapEvents.zoomend();
 assert.equal(labelSizes.at(-1), "13px");
+assert.ok([...featureLayers, ...markers].every((item) => !item.open));
+assert.equal(measuredLabels, 0);
+fakeMap.zoom = 5;
+mapEvents.zoomend();
+assert.equal(labelSizes.at(-1), "14px");
 assert.equal(
   [...featureLayers, ...markers].filter((item) => item.open).length,
   1
 );
+assert.ok(measuredLabels > 0);
+assert.equal(probeCount, 0);
 markers[0].openTooltip();
 fakeMap.zoom = 3;
 mapEvents.zoomend();
@@ -618,6 +657,54 @@ workingMap.args.distribution = {
 workingMap.updateDistribution();
 assert.equal(workingMap.distributionReady, false);
 assert.equal(groups.at(-1).visible, false);
+workingMap.args.region = "";
+workingMap.args.distribution = {
+  country: "CN",
+  region: "",
+  countries: [{ code: "CN", count: 5 }],
+  regions: [{ code: "GD", count: 5 }],
+  cities: [],
+};
+await workingMap.updateSelection();
+const activeProvince = featureLayers
+  .filter((layer) => layer.feature.properties.code === "GD")
+  .at(-1);
+assert.equal(workingMap.distributionReady, true);
+assert.equal(activeProvince.open, false);
+for (const zoom of [3, 4, 4.99]) {
+  const measurements = measuredLabels;
+  fakeMap.zoom = zoom;
+  mapEvents.zoomend();
+  assert.equal(activeProvince.open, false);
+  assert.equal(measuredLabels, measurements);
+}
+fakeMap.zoom = 5;
+mapEvents.zoomend();
+assert.equal(activeProvince.open, true);
+controlRect = { left: 220, right: 300, top: 170, bottom: 230 };
+mapEvents.moveend();
+assert.equal(activeProvince.open, false);
+controlRect = { left: 110, right: 154, top: 60, bottom: 148 };
+mapEvents.moveend();
+assert.equal(activeProvince.open, true);
+probeWidth = 700;
+mapEvents.moveend();
+assert.equal(activeProvince.open, false);
+probeWidth = 72;
+for (const width of [390, 430, 1024, 1440]) {
+  mapWidth = width;
+  resizeMap();
+  assert.equal(activeProvince.open, true);
+  assert.equal(probeCount, 0);
+}
+fakeMap.zoom = 4;
+mapEvents.zoomend();
+assert.equal(activeProvince.open, false);
+activeProvince.getElement().onfocus();
+assert.equal(activeProvince.open, true);
+activeProvince.getElement().onblur();
+assert.equal(activeProvince.open, false);
+assert.equal(probeCount, 0);
 workingMap.willDestroy();
 assert.equal(fakeMap.removed, true);
 assert.equal(disconnected, true);

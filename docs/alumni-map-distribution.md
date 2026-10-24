@@ -9,3 +9,9 @@ The visible legend uses five exact bins: 0, 1–5, 6–10, 11–20 and 21+. All 
 The geography endpoint supplies only verified static city centers matching stable city IDs; it performs no runtime geocoding. Historical profiles without cities contribute to province/country totals. Missing verified coordinates suppress only the city marker, not its counts.
 
 The confirmation preview uses illustrative people counts. No preview data is included in the theme or plugin. The feature branches target the existing theme release branch and the plugin main branch; release requires actual CI, native backup and source-hash checks. Browser/phone interaction validation is reported separately from static and HTTP/resource checks.
+
+## Province labels and zoom
+
+Automatic province labels require Leaflet zoom level 5 regardless of whether distribution counts have loaded. Zooming out closes them immediately. Country/city behavior, manual hover/focus tooltips and province selection remain available.
+
+Label boxes use measured DOM text with the same Leaflet/theme class, font and padding, and polygon centers matching Leaflet tooltip placement. A hidden temporary measuring node avoids firing tooltip-open events and is always removed. Selected regions take priority, followed by higher counts, with at least eight CSS pixels between rendered boxes and map controls. Resize, zoom and pan recalculate the choices without changing map state.
