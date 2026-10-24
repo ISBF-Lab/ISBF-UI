@@ -17,6 +17,7 @@ import {
 import { labelFontSize, visibleLabelLayers } from "../lib/alumni-map-labels";
 
 let leafletPromise;
+const MIN_PROVINCE_LABEL_ZOOM = 5;
 const COUNTRY_VIEWS = {
   CN: { center: [35, 105], zoom: 3 },
   US: { center: [39, -98], zoom: 3 },
@@ -144,7 +145,10 @@ export default class ISBFAlumniMap extends Component {
       }).addTo(this.#map);
       this.#map.on("zoomend moveend", () => this.#refreshLabels());
       this.#observer?.disconnect();
-      this.#observer = new ResizeObserver(() => this.#map?.invalidateSize());
+      this.#observer = new ResizeObserver(() => {
+        this.#map?.invalidateSize();
+        this.#refreshLabels();
+      });
       this.#observer.observe(this.#element);
       this.loading = false;
       await this.updateSelection();
@@ -430,29 +434,66 @@ export default class ISBFAlumniMap extends Component {
       "--isbf-alumni-label-size",
       `${fontSize}px`
     );
-    this.#world?.eachLayer((layer) => layer.closeTooltip());
-    this.#detail?.eachLayer((layer) => layer.closeTooltip());
-    this.#regionMarkers?.eachLayer((layer) => layer.closeTooltip());
+    for (const group of [
+      this.#world,
+      this.#detail,
+      this.#regionMarkers,
+      this.#cityMarkers,
+    ]) {
+      group?.eachLayer((layer) => layer.closeTooltip());
+    }
     const candidates = [];
     const bounds = this.#map.getBounds();
-    const context = document.createElement("canvas").getContext("2d");
-    context.font = `${fontSize}px sans-serif`;
-    const collect = (layer) => {
-      layer.closeTooltip();
-      if (!layer.getTooltip?.() || (zoom < 4 && !this.distributionReady)) {
+    const mapRect = this.#element.getBoundingClientRect();
+    const origin = {
+      x: mapRect.left + this.#element.clientLeft,
+      y: mapRect.top + this.#element.clientTop,
+    };
+    const controls = [
+      ...this.#element.querySelectorAll(".leaflet-control"),
+    ].map((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left - origin.x,
+        right: rect.right - origin.x,
+        top: rect.top - origin.y,
+        bottom: rect.bottom - origin.y,
+      };
+    });
+    let probe;
+    const collect = (layer, province = false) => {
+      if (
+        !layer.getTooltip?.() ||
+        (province
+          ? zoom < MIN_PROVINCE_LABEL_ZOOM
+          : zoom < 4 && !this.distributionReady)
+      ) {
         return;
       }
       const center =
         layer.getLatLng?.() ||
-        layer.getBounds?.().getCenter?.() ||
-        layer.getCenter();
-      if (!bounds.contains(center)) {
+        layer.getCenter?.() ||
+        layer.getBounds?.().getCenter?.();
+      if (!center || !bounds.contains(center)) {
         return;
       }
+      if (!probe) {
+        probe = document.createElement("div");
+        probe.className =
+          "leaflet-tooltip isbf-alumni-map__china-label isbf-alumni-map__label-measure";
+        probe.setAttribute("aria-hidden", "true");
+        Object.assign(probe.style, {
+          visibility: "hidden",
+          pointerEvents: "none",
+          transform: "none",
+          left: "0",
+          top: "0",
+        });
+        this.#element.appendChild(probe);
+      }
       const point = this.#map.latLngToContainerPoint(center);
-      const name = layer.getTooltip().getContent().textContent;
-      const width = context.measureText(name).width + 10;
-      const height = fontSize * 1.25 + 6;
+      probe.textContent = layer.getTooltip().getContent().textContent;
+      const { width, height } = probe.getBoundingClientRect();
       candidates.push({
         layer,
         count: layer.options?.distributionCount || 0,
@@ -467,17 +508,20 @@ export default class ISBFAlumniMap extends Component {
         },
       });
     };
-    if (!this.#detail) {
-      this.#world?.eachLayer(collect);
+    try {
+      if (!this.#detail) {
+        this.#world?.eachLayer((layer) => collect(layer));
+      }
+      if (!this.#cityMarkers) {
+        this.#detail?.eachLayer((layer) => collect(layer, true));
+        this.#regionMarkers?.eachLayer((layer) => collect(layer, true));
+      }
+      this.#cityMarkers?.eachLayer((layer) => collect(layer));
+    } finally {
+      probe?.remove();
     }
-    if (!this.#cityMarkers) {
-      this.#detail?.eachLayer(collect);
-      this.#regionMarkers?.eachLayer(collect);
-    }
-    this.#cityMarkers?.eachLayer(collect);
-    candidates.sort((left, right) => right.count - left.count);
-    visibleLabelLayers(candidates, this.#map.getSize()).forEach((layer) =>
-      layer.openTooltip()
+    visibleLabelLayers(candidates, this.#map.getSize(), controls).forEach(
+      (layer) => layer.openTooltip()
     );
   }
 
