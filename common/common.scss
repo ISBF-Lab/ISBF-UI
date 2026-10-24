@@ -5638,6 +5638,26 @@ body:has(.isbf-v2-shell) {
       display: none;
     }
   }
+
+  html.keyboard-visible
+    body:not(.admin-interface)
+    .d-modal.isbf-calendar-entry-editor {
+    height: calc(var(--composer-vh, 1dvh) * 100);
+    max-height: calc(var(--composer-vh, 1dvh) * 100);
+    padding-block-end: 0;
+    overflow: hidden;
+
+    .d-modal__container {
+      min-height: 0;
+      height: 100%;
+      max-height: 100%;
+    }
+
+    .d-modal__body {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+  }
 }
 
 .isbf-alumni-review-nav {
