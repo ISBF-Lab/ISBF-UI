@@ -78,6 +78,10 @@ export default class ISBFExplore extends Component {
     return this.accountReady && this.categoryFilterAvailable;
   }
 
+  get showPreferenceStatus() {
+    return !this.preferencesReady || this.saveState !== "idle";
+  }
+
   get selectedCategory() {
     if (this.preferences.category_ids.length !== 1) {
       return null;
@@ -496,15 +500,17 @@ export default class ISBFExplore extends Component {
             }}</button>
         </div>
       {{else if this.currentUser}}
-        <p class="isbf-explore__status" role="status">
-          {{#if (eq this.saveState "saved")}}{{i18n
-              (themePrefix "isbf_v2.explore_saved")
-            }}{{else if (eq this.saveState "idle")}}
-            {{#unless this.preferencesReady}}{{i18n
-                (themePrefix "isbf_v2.explore_loading")
-              }}{{/unless}}
-          {{else}}{{i18n (themePrefix "isbf_v2.explore_saving")}}{{/if}}
-        </p>
+        {{#if this.showPreferenceStatus}}
+          <p class="isbf-explore__status" role="status">
+            {{#if (eq this.saveState "saved")}}{{i18n
+                (themePrefix "isbf_v2.explore_saved")
+              }}{{else if (eq this.saveState "idle")}}
+              {{#unless this.preferencesReady}}{{i18n
+                  (themePrefix "isbf_v2.explore_loading")
+                }}{{/unless}}
+            {{else}}{{i18n (themePrefix "isbf_v2.explore_saving")}}{{/if}}
+          </p>
+        {{/if}}
       {{else}}
         <p class="isbf-explore__status">{{i18n
             (themePrefix "isbf_v2.explore_guest_preferences")

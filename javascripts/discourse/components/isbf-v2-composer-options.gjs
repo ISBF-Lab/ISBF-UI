@@ -8,6 +8,7 @@ import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import { i18n } from "discourse-i18n";
 import { canPublishAnonymously } from "../lib/anonymous-post-scope";
 import { isQuickPost } from "../lib/quick-post-scope";
+import ISBFOfficialComposer from "./isbf-official-composer";
 
 export default class ISBFV2ComposerOptions extends Component {
   @service currentUser;
@@ -46,6 +47,7 @@ export default class ISBFV2ComposerOptions extends Component {
   }
 
   <template>
+    <ISBFOfficialComposer @model={{this.model}} />
     <span aria-hidden="true" class="isbf-v2-composer"></span>
     {{#if this.isQuickPost}}
       <div class="isbf-v2-composer-options">

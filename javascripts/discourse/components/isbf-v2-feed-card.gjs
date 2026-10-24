@@ -1,51 +1,82 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
-import { scheduleOnce } from "@ember/runloop";
+import { schedule } from "@ember/runloop";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
-import { themePrefix } from "virtual:theme";
+import { settings, themePrefix } from "virtual:theme";
+import PluginOutlet from "discourse/components/plugin-outlet";
+import lazyHash from "discourse/helpers/lazy-hash";
 import { ajax } from "discourse/lib/ajax";
 import Composer from "discourse/models/composer";
 import Draft from "discourse/models/draft";
 import { loadTopicView } from "discourse/models/topic";
+import DDecoratedHtml from "discourse/ui-kit/d-decorated-html";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { loadCookedPost, loadRepostCount } from "../lib/feed-post-loader";
 import { recordVisibleView } from "../lib/feed-view-tracker";
+import { isOfficialCalendarPath } from "../lib/official-calendar";
+import { isPinningContext, pinningMeta, saveHomePin } from "../lib/pinning";
+import { extractFeedPolls } from "../lib/poll-preview";
 import {
   compactNumber,
   openQuotedRepost,
   plainText,
   postCardTitle,
 } from "../lib/post-card-helpers";
+import { isReportedHidden, openPostReport } from "../lib/report-post";
+import { ISBFCareersSalary } from "./isbf-careers-card";
+import ISBFHomePinDialog from "./isbf-home-pin-dialog";
+import { ISBFMarketplacePrice } from "./isbf-marketplace-card";
+import ISBFOfficialActivitySummary from "./isbf-official-activity-summary";
+import ISBFOfficialCalendarItems from "./isbf-official-calendar-items";
+import ISBFPollPreviews from "./isbf-poll-previews";
 
 export default class ISBFV2FeedCard extends Component {
+  @service appEvents;
   @service composer;
   @service currentUser;
   @service dialog;
+  @service modal;
   @service router;
+  @service site;
+  @service siteSettings;
+  @service store;
 
   @tracked body = null;
   @tracked bodyFailed = false;
   @tracked bookmarked;
   @tracked expanded = false;
+  @tracked hidden = false;
+  @tracked isFlagging = false;
   @tracked isLiking = false;
+  @tracked isPinning = false;
   @tracked isReplying = false;
   @tracked liked;
   @tracked likeCount;
   @tracked menuOpen = false;
+  @tracked pinNow = Date.now();
   @tracked repostCount = null;
   @tracked viewCount = null;
 
+  #bodyRequest = 0;
   #observer;
+  #pollBody;
+  #pollContent;
   #rootElement;
   #viewInFlight = false;
   #viewObserver;
 
   constructor() {
     super(...arguments);
+    this.hidden =
+      isReportedHidden(this.args.topic.first_post_id) ||
+      Boolean(this.args.topic.hidden);
+    this.appEvents.on("isbf:post-hidden", this.onPostHidden);
+    this.appEvents.on("isbf:home-pins-changed", this.onHomePinsChanged);
     this.bookmarked = Boolean(this.args.topic.bookmarked);
     this.liked = Boolean(this.args.topic.op_liked);
     this.likeCount = Number(this.args.topic.op_like_count) || 0;
@@ -53,6 +84,8 @@ export default class ISBFV2FeedCard extends Component {
 
   willDestroy() {
     super.willDestroy(...arguments);
+    this.appEvents.off("isbf:post-hidden", this.onPostHidden);
+    this.appEvents.off("isbf:home-pins-changed", this.onHomePinsChanged);
     this.#observer?.disconnect();
     this.#viewObserver?.disconnect();
     document.removeEventListener(
@@ -68,8 +101,11 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   get bodyHtml() {
+    if (this.hidden) {
+      return null;
+    }
     if (this.body) {
-      return trustHTML(this.body);
+      return trustHTML(this.pollContent.html);
     }
     if (this.args.topic.excerpt) {
       return trustHTML(`<p>${this.args.topic.excerpt}</p>`);
@@ -77,14 +113,30 @@ export default class ISBFV2FeedCard extends Component {
     return null;
   }
 
+  get pollContent() {
+    return this.#pollContentFor(this.hidden ? "" : this.body || "");
+  }
+
   get contentReady() {
     return this.body !== null || this.bodyFailed;
+  }
+
+  get officialLayout() {
+    return (
+      this.args.officialLayout ||
+      isOfficialCalendarPath(this.router.currentURL, settings.official_path)
+    );
   }
 
   get canFlag() {
     return (
       Boolean(this.currentUser) &&
-      this.currentUser.id !== this.args.topic.creator?.id
+      !this.hidden &&
+      (((this.site.isbf_severe_reports_enabled ??
+        this.siteSettings.isbf_severe_reports_enabled) === true &&
+        this.args.topic.isbf_can_severe_report) ||
+        this.args.topic.op_can_flag === true ||
+        this.currentUser.id !== this.args.topic.creator?.id)
     );
   }
 
@@ -94,11 +146,38 @@ export default class ISBFV2FeedCard extends Component {
     );
   }
 
+  get pinMetadata() {
+    return pinningMeta(this.args.topic, this.pinNow);
+  }
+
+  get showHomePin() {
+    return (
+      !this.hidden &&
+      isPinningContext(this.router, this.site, this.siteSettings) &&
+      this.pinMetadata?.active === true
+    );
+  }
+
+  get canManageHomePin() {
+    const config = this.site.isbf_pinning;
+    return (
+      !this.hidden &&
+      this.currentUser?.admin === true &&
+      config?.enabled === true &&
+      config?.home_actions_enabled === true &&
+      isPinningContext(this.router, this.site, this.siteSettings) &&
+      this.pinMetadata?.can_manage === true
+    );
+  }
+
   get creatorName() {
     return this.args.topic.creator?.name || this.args.topic.creator?.username;
   }
 
   get displayTitle() {
+    if (this.hidden) {
+      return null;
+    }
     return postCardTitle(this.args.topic.title, this.body);
   }
 
@@ -129,7 +208,10 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   get showExpand() {
-    return plainText(this.body || this.args.topic.excerpt).length > 900;
+    return (
+      !this.hidden &&
+      plainText(this.pollContent.html || this.args.topic.excerpt).length > 900
+    );
   }
 
   get relativeTime() {
@@ -392,24 +474,116 @@ export default class ISBFV2FeedCard extends Component {
 
   @action
   async flag() {
-    this.#closeMenu();
-    await this.router.transitionTo(this.topicUrl);
-    scheduleOnce("afterRender", this, this.#openFlagMenu);
+    if (this.isFlagging) {
+      return;
+    }
+    if (!this.currentUser) {
+      this.appEvents.trigger("show-login");
+      return;
+    }
+    this.isFlagging = true;
+    try {
+      const post = await this.store.find("post", this.args.topic.first_post_id);
+      if (this.isDestroying) {
+        return;
+      }
+      post.set("topic", this.args.topic);
+      this.#closeMenu();
+      this.#rootElement
+        ?.querySelector(".isbf-feed-card__menu-trigger")
+        ?.focus();
+      openPostReport({
+        post,
+        modal: this.modal,
+        siteSettings: this.siteSettings,
+        site: this.site,
+        appEvents: this.appEvents,
+      });
+    } catch (error) {
+      await this.#showError(error);
+    } finally {
+      this.isFlagging = false;
+    }
   }
 
-  #openFlagMenu() {
-    document
-      .querySelector(".topic-post[data-post-number='1'] .show-more-actions")
-      ?.click();
-    scheduleOnce("afterRender", this, this.#clickFlagButton);
+  @action
+  onHomePinsChanged() {
+    this.pinNow = Date.now();
   }
 
-  #clickFlagButton() {
-    document
-      .querySelector(
-        ".topic-post[data-post-number='1'] button.flag, .topic-post[data-post-number='1'] button.create-flag, .topic-post[data-post-number='1'] [data-key='flag']"
-      )
-      ?.click();
+  @action
+  async openHomePin() {
+    if (!this.canManageHomePin || this.isPinning) {
+      return;
+    }
+    this.isPinning = true;
+    try {
+      await this.#closePinMenu();
+      if (this.isDestroying || !this.canManageHomePin) {
+        return;
+      }
+      this.modal.show(ISBFHomePinDialog, {
+        model: { topic: this.args.topic, onSaved: this.onHomePinSaved },
+      });
+    } finally {
+      if (!this.isDestroying) {
+        this.isPinning = false;
+      }
+    }
+  }
+
+  @action
+  onHomePinSaved() {
+    if (!this.isDestroying) {
+      this.pinNow = Date.now();
+      this.appEvents.trigger("isbf:home-pin-saved");
+    }
+  }
+
+  @action
+  async cancelHomePin() {
+    if (!this.canManageHomePin || this.isPinning) {
+      return;
+    }
+    this.isPinning = true;
+    try {
+      await this.#closePinMenu();
+      if (this.isDestroying) {
+        return;
+      }
+      await saveHomePin(this.args.topic, { enabled: false });
+      this.onHomePinSaved();
+    } catch (error) {
+      if (!this.isDestroying) {
+        await this.#showError(error);
+      }
+    } finally {
+      if (!this.isDestroying) {
+        this.isPinning = false;
+      }
+    }
+  }
+
+  @action
+  onPostHidden(postId, hidden = true) {
+    if (Number(postId) === Number(this.args.topic.first_post_id)) {
+      this.hidden = hidden;
+      this.#bodyRequest += 1;
+      this.body = null;
+      this.bodyFailed = false;
+      this.#closeMenu();
+      if (!hidden) {
+        this.#loadContent();
+      }
+    }
+  }
+
+  #pollContentFor(body) {
+    if (body !== this.#pollBody) {
+      this.#pollBody = body;
+      this.#pollContent = extractFeedPolls(body);
+    }
+    return this.#pollContent;
   }
 
   async #recordView() {
@@ -433,7 +607,11 @@ export default class ISBFV2FeedCard extends Component {
   }
 
   async #loadContent() {
+    const request = ++this.#bodyRequest;
     const postId = this.args.topic.first_post_id;
+    if (this.hidden) {
+      return;
+    }
     if (!postId) {
       this.bodyFailed = true;
       return;
@@ -444,7 +622,12 @@ export default class ISBFV2FeedCard extends Component {
         ? Promise.resolve(null)
         : loadRepostCount(this.args.topic.id),
     ]);
-    if (this.isDestroying) {
+    if (
+      this.isDestroying ||
+      this.hidden ||
+      isReportedHidden(postId) ||
+      request !== this.#bodyRequest
+    ) {
       return;
     }
     if (body.status === "fulfilled") {
@@ -455,6 +638,12 @@ export default class ISBFV2FeedCard extends Component {
     if (count.status === "fulfilled") {
       this.repostCount = count.value;
     }
+  }
+
+  async #closePinMenu() {
+    this.#closeMenu();
+    this.#rootElement?.querySelector(".isbf-feed-card__menu-trigger")?.focus();
+    await new Promise((resolve) => schedule("afterRender", resolve));
   }
 
   #closeMenu() {
@@ -479,7 +668,7 @@ export default class ISBFV2FeedCard extends Component {
       {{didInsert this.observeVisibleView}}
       {{on "click" this.openTopic}}
     >
-      <a class="isbf-feed-card__avatar" href={{this.profileUrl}}>
+      <a class="isbf-feed-card__avatar isbf-avatar" href={{this.profileUrl}}>
         <img
           alt=""
           height="42"
@@ -487,8 +676,17 @@ export default class ISBFV2FeedCard extends Component {
           src={{this.avatarUrl}}
           width="42"
         />
+        <PluginOutlet
+          @name="user-avatar-frame"
+          @outletArgs={{lazyHash user=@topic.creator motion="static"}}
+        />
       </a>
       <div class="isbf-feed-card__main">
+        {{#if this.showHomePin}}
+          <div class="isbf-feed-card__pin">
+            {{dIcon "thumbtack"}}{{i18n (themePrefix "isbf_v2.pinned")}}
+          </div>
+        {{/if}}
         <header class="isbf-feed-card__header">
           <a
             class="isbf-feed-card__author"
@@ -514,7 +712,32 @@ export default class ISBFV2FeedCard extends Component {
             >{{dIcon "ellipsis"}}</button>
             {{#if this.menuOpen}}
               <div class="isbf-feed-card__menu" role="menu">
+                {{#if this.canManageHomePin}}
+                  <button
+                    class="isbf-feed-card__pin-action"
+                    disabled={{this.isPinning}}
+                    role="menuitem"
+                    type="button"
+                    {{on "click" this.openHomePin}}
+                  >{{dIcon "thumbtack"}}{{i18n
+                      (themePrefix
+                        (if this.showHomePin "isbf_v2.pin_update" "isbf_v2.pin")
+                      )
+                    }}</button>
+                  {{#if this.showHomePin}}
+                    <button
+                      class="isbf-feed-card__pin-action"
+                      disabled={{this.isPinning}}
+                      role="menuitem"
+                      type="button"
+                      {{on "click" this.cancelHomePin}}
+                    >{{dIcon "thumbtack"}}{{i18n
+                        (themePrefix "isbf_v2.pin_cancel")
+                      }}</button>
+                  {{/if}}
+                {{/if}}
                 {{#if this.canFlag}}<button
+                    disabled={{this.isFlagging}}
                     role="menuitem"
                     type="button"
                     {{on "click" this.flag}}
@@ -535,7 +758,13 @@ export default class ISBFV2FeedCard extends Component {
             "isbf-feed-card__body is-expanded"
             "isbf-feed-card__body"
           }}
-        >{{this.bodyHtml}}</div>
+        >{{#if this.hidden}}{{i18n
+              (themePrefix "isbf_v2.report_hidden")
+            }}{{else}}<DDecoratedHtml
+              @className="isbf-content-images"
+              @html={{this.bodyHtml}}
+              @preservePointerTarget={{true}}
+            />{{/if}}</div>
         {{#if this.bodyFailed}}<a
             class="isbf-feed-card__fallback"
             href={{this.topicUrl}}
@@ -549,30 +778,58 @@ export default class ISBFV2FeedCard extends Component {
                 (if this.expanded "isbf_v2.show_less" "isbf_v2.show_more")
               )
             }}</button>{{/if}}
+        {{#if this.pollContent.polls.length}}
+          <ISBFPollPreviews
+            @cooked={{this.body}}
+            @measureOnly={{@measureOnly}}
+            @postId={{@topic.first_post_id}}
+            @topicUrl={{this.topicUrl}}
+          />
+        {{/if}}
+        {{#unless this.hidden}}
+          {{#if this.officialLayout}}
+            <ISBFOfficialActivitySummary
+              @campusIds={{@topic.isbf_official_campuses}}
+              @items={{@topic.isbf_official_calendar_items}}
+              @topicTitle={{@topic.title}}
+            />
+          {{else}}
+            <ISBFOfficialCalendarItems
+              @items={{@topic.isbf_official_calendar_items}}
+              @readOnly={{true}}
+            />
+          {{/if}}
+        {{/unless}}
+        {{#unless this.hidden}}<ISBFMarketplacePrice
+            @metadata={{@topic.isbf_marketplace}}
+          /><ISBFCareersSalary @metadata={{@topic.isbf_careers}} />{{/unless}}
         <footer class="isbf-feed-card__actions">
           <button
             aria-label={{i18n (themePrefix "isbf_v2.reply")}}
             disabled={{this.isReplying}}
             type="button"
             {{on "click" this.reply}}
-          >{{dIcon "comment"}}<span>{{this.formattedReplyCount}}</span></button>
+          >{{dIcon "comment"}}{{#if this.formattedReplyCount}}<span
+              >{{this.formattedReplyCount}}</span>{{/if}}</button>
           <button
             aria-label={{i18n (themePrefix "isbf_v2.repost")}}
             type="button"
             {{on "click" this.repost}}
-          >{{dIcon "retweet"}}<span
-            >{{this.formattedRepostCount}}</span></button>
+          >{{dIcon "retweet"}}{{#if this.formattedRepostCount}}<span
+              >{{this.formattedRepostCount}}</span>{{/if}}</button>
           <button
             aria-label={{i18n (themePrefix "isbf_v2.like")}}
             class={{if this.liked "is-liked"}}
             disabled={{this.isLiking}}
             type="button"
             {{on "click" this.toggleLike}}
-          >{{dIcon "heart"}}<span>{{this.formattedLikeCount}}</span></button>
+          >{{dIcon "heart"}}{{#if this.formattedLikeCount}}<span
+              >{{this.formattedLikeCount}}</span>{{/if}}</button>
           <span
             aria-label={{this.viewLabel}}
             class="isbf-feed-card__views"
-          >{{dIcon "chart-bar"}}<span>{{this.formattedViewCount}}</span></span>
+          >{{dIcon "chart-bar"}}{{#if this.formattedViewCount}}<span
+              >{{this.formattedViewCount}}</span>{{/if}}</span>
           <button
             aria-label={{i18n (themePrefix "isbf_v2.bookmark_action")}}
             class={{if this.bookmarked "is-bookmarked"}}

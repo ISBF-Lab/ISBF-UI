@@ -1,17 +1,24 @@
 import Component from "@glimmer/component";
-import EmberObject, { action } from "@ember/object";
-import { service } from "@ember/service";
 import { tracked } from "@glimmer/tracking";
 import { on } from "@ember/modifier";
+import EmberObject, { action } from "@ember/object";
+import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import DPopupInputTip from "discourse/ui-kit/d-popup-input-tip";
 import DTextField from "discourse/ui-kit/d-text-field";
 import { i18n } from "discourse-i18n";
-import { isQuickPost } from "../lib/quick-post-scope";
+import {
+  officialCalendarNeedsTitle,
+  officialCalendarTopicTitle,
+} from "../lib/official-calendar";
 import { setOptionalTopicTitle } from "../lib/optional-topic-title";
+import { isQuickPost } from "../lib/quick-post-scope";
 
 export default class ISBFV2ComposerTitle extends Component {
+  @service composer;
+  @service site;
   @service siteSettings;
+
   @tracked focused = false;
 
   get model() {
@@ -26,12 +33,32 @@ export default class ISBFV2ComposerTitle extends Component {
     return this.model.loading || this.model.disableTitleInput;
   }
 
+  get titleRequired() {
+    return officialCalendarNeedsTitle(this.model, this.site);
+  }
+
   get label() {
-    return i18n(themePrefix("isbf_v2.optional_title"));
+    return i18n(
+      themePrefix(
+        this.titleRequired
+          ? "isbf_v2.schedule_post_title"
+          : "isbf_v2.optional_title",
+      ),
+    );
   }
 
   get validation() {
-    if (this.focused || !this.model.isbf_optional_title?.trim()) {
+    if (this.focused) {
+      return;
+    }
+    if (this.titleRequired && !officialCalendarTopicTitle(this.model)) {
+      return EmberObject.create({
+        failed: true,
+        reason: i18n(themePrefix("isbf_v2.schedule_title_required")),
+        lastShownAt: this.composer.get("lastValidatedAt"),
+      });
+    }
+    if (!this.model.isbf_optional_title?.trim()) {
       return;
     }
 
@@ -49,7 +76,11 @@ export default class ISBFV2ComposerTitle extends Component {
     }
 
     if (reason) {
-      return EmberObject.create({ failed: true, reason });
+      return EmberObject.create({
+        failed: true,
+        reason,
+        lastShownAt: this.composer.get("lastValidatedAt"),
+      });
     }
   }
 
@@ -73,6 +104,7 @@ export default class ISBFV2ComposerTitle extends Component {
       <div class="isbf-v2-composer-title">
         <div class="title-input">
           <DTextField
+            aria-required={{if this.titleRequired "true" "false"}}
             @aria-label={{this.label}}
             @autocomplete="off"
             @disabled={{this.disabled}}

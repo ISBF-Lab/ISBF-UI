@@ -1,11 +1,13 @@
 import { apiInitializer } from "discourse/lib/api";
-import ISBFTopicMetadata from "../components/isbf-topic-metadata";
+import solvedActionFor from "../components/isbf-solved-action";
+import ISBFSolvedSummary from "../components/isbf-solved-summary";
 import {
   ISBFTopicBookmark,
   ISBFTopicLike,
   ISBFTopicReply,
   ISBFTopicRepost,
 } from "../components/isbf-topic-actions";
+import ISBFTopicMetadata from "../components/isbf-topic-metadata";
 import ISBFTopicMore from "../components/isbf-topic-more";
 import ISBFTopicViews from "../components/isbf-topic-views";
 import {
@@ -14,9 +16,11 @@ import {
   rememberSecondaryMenu,
 } from "../lib/topic-card-scope";
 
-export default apiInitializer((api) => {
+const initializer = apiInitializer((api) => {
   const router = api.container.lookup("service:router");
+  const siteSettings = api.container.lookup("service:site-settings");
   api.renderInOutlet("post-metadata", ISBFTopicMetadata);
+  api.renderAfterWrapperOutlet("post-content-cooked-html", ISBFSolvedSummary);
 
   for (const [name, className] of [
     ["post-class", "isbf-topic-card"],
@@ -67,9 +71,16 @@ export default apiInitializer((api) => {
       buttonKeys.SHOW_MORE,
     ];
     const entries = value.entries();
+    const nativeSolved = siteSettings.solved_enabled
+      ? entries.find(([key]) => key === "solved")
+      : null;
+    const SolvedAction = nativeSolved ? solvedActionFor(nativeSolved[1]) : null;
     rememberSecondaryMenu(
       context.post,
-      entries.filter(([key]) => !primaryKeys.includes(key))
+      entries.filter(
+        ([key]) =>
+          !primaryKeys.includes(key) && !(SolvedAction && key === "solved")
+      )
     );
     entries.forEach(([key]) => value.delete(key));
 
@@ -87,6 +98,13 @@ export default apiInitializer((api) => {
       before: "isbfBookmark",
     });
     value.add("isbfBookmark", ISBFTopicBookmark, { after: "isbfViews" });
+    if (SolvedAction) {
+      value.add("solved", SolvedAction, { after: "isbfBookmark" });
+    }
     value.add(buttonKeys.SHOW_MORE, ISBFTopicMore);
   });
 });
+
+initializer.after = ["inject-objects", "extend-for-solved-button"];
+
+export default initializer;
