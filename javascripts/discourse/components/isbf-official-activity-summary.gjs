@@ -4,7 +4,7 @@ import { themePrefix } from "virtual:theme";
 import { i18n } from "discourse-i18n";
 import {
   officialActivityTimeLines,
-  officialCalendarGroups,
+  officialCalendarSummaryGroups,
   officialCalendarTitleDuplicatesTopic,
   officialTimeLabel,
 } from "../lib/official-calendar";
@@ -14,7 +14,7 @@ export default class ISBFOfficialActivitySummary extends Component {
   @service site;
 
   get groups() {
-    return officialCalendarGroups(this.args.items).map((group) => ({
+    return officialCalendarSummaryGroups(this.args.items).map((group) => ({
       ...group,
       showTitle: !officialCalendarTitleDuplicatesTopic(
         group.item,

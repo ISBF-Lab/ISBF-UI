@@ -49,6 +49,9 @@ const {
   officialCalendarItemTitle,
   officialCalendarTitleDuplicatesTopic,
   officialCalendarGroups,
+  officialCalendarSummaryGroups,
+  canonicalCalendarItems,
+  calendarEditorSections,
 } = helper.namespace;
 
 const topicTitle = "校园讲座";
@@ -145,6 +148,85 @@ assert.equal(indexedGroups[0].item, indexedEvent);
 assert.equal(indexedGroups[0].deadline, deadline);
 assert.equal(indexedGroups[1].item, independent);
 
+const loneEvent = Object.freeze({
+  id: "single-event",
+  title: topicTitle,
+  schedule_kind: "event",
+  registration_deadline_id: null,
+  starts_at: "2026-10-24T01:00:00Z",
+  ends_at: "2026-10-31T09:13:00Z",
+  added: true,
+});
+const loneDeadline = Object.freeze({
+  id: "single-deadline",
+  title: topicTitle,
+  schedule_kind: "deadline",
+  starts_at: "2026-10-24T09:14:00Z",
+  ends_at: "2026-10-24T09:14:00Z",
+  busy: true,
+});
+for (const source of [
+  Object.freeze([loneEvent, loneDeadline]),
+  Object.freeze([loneDeadline, loneEvent]),
+]) {
+  const original = plain(source);
+  const display = officialCalendarSummaryGroups(source);
+  assert.equal(
+    display.length,
+    1,
+    "A single post deadline uses the activity deadline cell"
+  );
+  assert.equal(display[0].item, loneEvent);
+  assert.equal(display[0].deadline, loneDeadline);
+  assert.equal(display[0].item.added, true);
+  assert.equal(display[0].deadline.busy, true);
+  assert.equal(
+    officialCalendarGroups(source).length,
+    2,
+    "Editing keeps independent records"
+  );
+  assert.equal(calendarEditorSections(source).deadlines[0].related_event, "");
+  assert.equal(
+    canonicalCalendarItems(source).find(
+      (item) => item.schedule_kind === "event"
+    ).registration_deadline_index,
+    null
+  );
+  assert.deepEqual(
+    plain(source),
+    original,
+    "Display grouping must not write a relationship"
+  );
+}
+for (const source of [
+  [loneEvent],
+  [loneDeadline],
+  [loneEvent, loneDeadline, historical],
+  [loneEvent, loneDeadline, independent],
+  [{ ...loneEvent, registration_deadline_id: "missing" }, loneDeadline],
+  [{ ...loneEvent, registration_deadline_index: 7 }, loneDeadline],
+  [{ ...loneEvent, cancelled: true }, loneDeadline],
+  [loneEvent, { ...loneDeadline, cancelled: true }],
+]) {
+  assert.deepEqual(
+    plain(officialCalendarSummaryGroups(source)),
+    plain(officialCalendarGroups(source)),
+    "Ambiguous, missing or cancelled relationships keep their existing display"
+  );
+}
+assert.deepEqual(plain(officialCalendarSummaryGroups(items)), plain(groups));
+const linkedDisplay = officialCalendarSummaryGroups([
+  { ...loneEvent, registration_deadline_id: loneDeadline.id },
+  loneDeadline,
+]);
+assert.equal(linkedDisplay.length, 1);
+assert.equal(linkedDisplay[0].deadline, loneDeadline);
+assert.match(
+  read("javascripts/discourse/components/isbf-official-activity-summary.gjs"),
+  /officialCalendarSummaryGroups\(this\.args\.items\)/,
+  "Feed and detail summaries must use display grouping"
+);
+
 process.stdout.write(
-  "Official summary title and immutable multi-group contracts passed\n"
+  "Official summary title, single-deadline display and immutable editor relationships passed\n"
 );
