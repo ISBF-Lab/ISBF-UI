@@ -1298,7 +1298,10 @@ body:has(.isbf-v2-shell) tr.isbf-v2-topic > td.isbf-feed-card-cell {
   }
 }
 
-.isbf-feed-card__title + .isbf-feed-card__body {
+.isbf-feed-card
+  .isbf-feed-card__main
+  > .isbf-feed-card__title
+  + .isbf-feed-card__body {
   margin-block-start: 0;
 
   > .isbf-content-images > :first-child {
