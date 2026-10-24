@@ -299,6 +299,28 @@ export function officialCalendarGroups(items = []) {
   return groups.filter((group) => !linked.has(group.item));
 }
 
+export function officialCalendarSummaryGroups(items = []) {
+  const groups = officialCalendarGroups(items);
+  if (groups.length !== 2) {
+    return groups;
+  }
+  const event = groups.find((group) => group.isEvent);
+  const deadline = groups.find(
+    (group) => group.item.schedule_kind === "deadline"
+  );
+  if (
+    !event ||
+    !deadline ||
+    event.deadline ||
+    event.item.registration_deadline_id != null ||
+    event.item.registration_deadline_index != null
+  ) {
+    return groups;
+  }
+  // Keep this display fallback separate from editor groups and stored links.
+  return [{ ...event, deadline: deadline.item }];
+}
+
 function calendarEditorItem(item) {
   return {
     ...item,
