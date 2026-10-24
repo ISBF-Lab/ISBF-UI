@@ -207,11 +207,11 @@
 
 body:has(.isbf-v2-shell--topic) #main-outlet .isbf-official-topic-card {
   .isbf-topic-card__title {
-    margin-block: var(--isbf-v2-space-1) var(--isbf-v2-space-2);
+    margin-block: var(--isbf-v2-space-1) 0;
   }
 
   .cooked {
-    margin-block-start: 3px;
+    margin-block-start: 0;
 
     > :first-child {
       margin-block-start: 0;
