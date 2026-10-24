@@ -2933,11 +2933,13 @@ body:has(.isbf-v2-shell--bookmarks) {
       overflow-wrap: anywhere;
     }
 
-    .bio > :first-child {
+    .bio > :first-child,
+    .bio > div:not(.suspended, .silenced) > :first-child {
       margin-top: 0;
     }
 
-    .bio > :last-child {
+    .bio > :last-child,
+    .bio > div:not(.suspended, .silenced) > :last-child {
       margin-bottom: 0;
     }
 
