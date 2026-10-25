@@ -8,7 +8,7 @@ import pretender, {
   response,
 } from "discourse/tests/helpers/create-pretender";
 import formKit from "discourse/tests/helpers/form-kit-helper";
-import ISBFV2Calendar from "../../components/isbf-v2-calendar";
+import ISBFV2Calendar from "../../discourse/components/isbf-v2-calendar";
 
 module("ISBF | Integration | Component | ISBFV2Calendar", function (hooks) {
   setupRenderingTest(hooks, { stubRouter: true });

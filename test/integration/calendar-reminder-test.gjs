@@ -6,9 +6,9 @@ import pretender, {
   parsePostData,
   response,
 } from "discourse/tests/helpers/create-pretender";
-import ISBFCalendarEntryEditor from "../../components/isbf-calendar-entry-editor";
-import ISBFCalendarReminderDialog from "../../components/isbf-calendar-reminder-dialog";
-import ISBFCalendarReminderPicker from "../../components/isbf-calendar-reminder-picker";
+import ISBFCalendarEntryEditor from "../../discourse/components/isbf-calendar-entry-editor";
+import ISBFCalendarReminderDialog from "../../discourse/components/isbf-calendar-reminder-dialog";
+import ISBFCalendarReminderPicker from "../../discourse/components/isbf-calendar-reminder-picker";
 
 module("ISBF | Integration | calendar reminders", function (hooks) {
   setupRenderingTest(hooks);
