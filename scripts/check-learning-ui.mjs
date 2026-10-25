@@ -2018,7 +2018,7 @@ assert.match(
 );
 assert.match(
   learningStyles,
-  /\.isbf-learning-resource p\.isbf-learning-resource__credit\s*\{[^}]*margin-top: var\(--isbf-v2-space-2\);/
+  /\.isbf-learning-resource p\.isbf-learning-resource__credit\s*\{[^}]*margin: 0;[^}]*text-align: start;/
 );
 const reviewSource = read(
   "javascripts/discourse/components/reviewable-isbf-learning-course.gjs"
