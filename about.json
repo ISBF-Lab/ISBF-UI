@@ -7,7 +7,9 @@
   "theme_version": null,
   "minimum_discourse_version": null,
   "maximum_discourse_version": null,
-  "assets": {},
+  "assets": {
+    "icons-sprite": "assets/profile-navigation.svg"
+  },
   "color_schemes": {
     "ISBF Community Light": {
       "primary": "17202a",
