@@ -1,0 +1,355 @@
+.isbf-profile-navigation {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--isbf-v2-surface);
+}
+
+.isbf-profile-navigation .horizontal-overflow-nav {
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.isbf-profile-navigation .d-overflow-controls {
+  --profile-nav-track: var(--isbf-v2-surface);
+  position: relative;
+  isolation: isolate;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--isbf-v2-border);
+  border-radius: var(--isbf-v2-radius-pill);
+  background: var(--profile-nav-track);
+}
+
+.user-navigation.isbf-profile-navigation ul.nav-pills {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  gap: var(--isbf-v2-space-1);
+  inline-size: 100%;
+  max-inline-size: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--isbf-v2-space-1);
+  background: transparent;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 44px;
+}
+
+// Match Core's overflow-state specificity so list masks do not cover the capsule.
+// Native edge buttons provide the fade without creating a separate paint layer.
+.user-navigation.isbf-profile-navigation
+  .horizontal-overflow-nav
+  ul.nav-pills[data-d-scroll-axis="horizontal"][data-d-scroll-overflow] {
+  mask-image: none;
+}
+
+.user-navigation.isbf-profile-navigation ul.nav-pills > li {
+  flex: 1 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.isbf-profile-navigation ul.nav-pills > li[hidden] {
+  display: none;
+}
+
+.user-navigation.isbf-profile-navigation ul.nav-pills > li > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  gap: var(--isbf-v2-space-2);
+  margin: 0;
+  border: 0;
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: var(--isbf-v2-font-sm);
+  font-weight: var(--isbf-v2-weight-medium);
+  line-height: 1.4;
+  color: var(--primary-high);
+  background: transparent;
+}
+
+.isbf-profile-navigation ul.nav-pills > li > a > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--isbf-v2-space-2);
+}
+
+.isbf-profile-navigation.user-navigation-primary {
+  padding: var(--isbf-v2-space-2) var(--isbf-v2-space-4) var(--isbf-v2-space-1);
+}
+
+.isbf-profile-navigation.user-navigation-primary .d-overflow-controls {
+  --profile-nav-track: color-mix(
+    in srgb,
+    var(--isbf-v2-hover) 72%,
+    var(--isbf-v2-surface)
+  );
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--isbf-v2-text) 4%, transparent);
+}
+
+.isbf-profile-navigation.user-navigation-primary ul.nav-pills > li > a {
+  position: relative;
+  flex: 1;
+  min-inline-size: max-content;
+  min-block-size: 44px;
+  padding: var(--isbf-v2-space-2) var(--isbf-v2-space-3);
+  border-radius: var(--isbf-v2-radius-pill);
+}
+
+// Core hides these labels at mobile breakpoints; this variant keeps them visible.
+.new-user-wrapper
+  .user-navigation.isbf-profile-navigation.user-navigation-primary
+  ul.nav-pills
+  > li
+  > a
+  > span {
+  display: inline-flex;
+}
+
+.isbf-profile-navigation.user-navigation-primary
+  ul.nav-pills
+  > li
+  > a:has(> .isbf-profile-nav__icon)
+  .d-icon:not(.isbf-profile-nav__icon) {
+  display: none;
+}
+
+.isbf-profile-nav__icon {
+  display: none;
+}
+
+.isbf-profile-navigation.user-navigation-primary .isbf-profile-nav__icon {
+  display: block;
+  flex: 0 0 auto;
+  inline-size: 18px;
+  block-size: 18px;
+  margin: 0;
+  color: currentcolor;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.isbf-profile-navigation.user-navigation-primary ul.nav-pills > li > a.active {
+  color: var(--isbf-v2-accent-contrast);
+  background: var(--isbf-v2-accent);
+  font-weight: var(--isbf-v2-weight-bold);
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--isbf-v2-accent-contrast) 16%, transparent);
+}
+
+.isbf-profile-navigation.user-navigation-primary
+  ul.nav-pills
+  > li
+  > a.active
+  .isbf-profile-nav__icon {
+  color: var(--isbf-v2-accent-contrast);
+}
+
+.isbf-profile-navigation.user-navigation-primary ul.nav-pills > li > a::after {
+  display: none;
+}
+
+.isbf-profile-navigation .d-overflow-controls__btn.--left {
+  background: linear-gradient(
+    to right,
+    var(--profile-nav-track) 72%,
+    transparent
+  );
+}
+
+.isbf-profile-navigation .d-overflow-controls__btn.--right {
+  background: linear-gradient(
+    to left,
+    var(--profile-nav-track) 72%,
+    transparent
+  );
+}
+
+.isbf-profile-navigation.user-navigation-secondary {
+  align-items: center;
+  padding: var(--isbf-v2-space-2) var(--isbf-v2-space-4) var(--isbf-v2-space-3);
+  border-block-end: 1px solid var(--isbf-v2-border);
+}
+
+.isbf-profile-navigation.user-navigation-secondary .d-overflow-controls {
+  --profile-nav-track: color-mix(
+    in srgb,
+    var(--isbf-v2-hover) 68%,
+    var(--isbf-v2-surface)
+  );
+}
+
+.isbf-profile-navigation.user-navigation-secondary ul.nav-pills > li > a {
+  position: relative;
+  flex: 1;
+  min-block-size: 44px;
+  inline-size: max-content;
+  min-inline-size: 60px;
+  padding: var(--isbf-v2-space-2) var(--isbf-v2-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--isbf-v2-radius-pill);
+  color: var(--primary-high);
+  background: transparent;
+}
+
+.isbf-profile-navigation.user-navigation-secondary
+  ul.nav-pills
+  > li
+  > a
+  .d-icon {
+  display: none;
+}
+
+.isbf-profile-navigation.user-navigation-secondary
+  ul.nav-pills
+  > li
+  > a.active {
+  border-color: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 40%,
+    var(--isbf-v2-border)
+  );
+  color: var(--isbf-v2-accent);
+  background: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 14%,
+    var(--isbf-v2-surface)
+  );
+  font-weight: var(--isbf-v2-weight-bold);
+  box-shadow: none;
+}
+
+.isbf-profile-navigation.user-navigation-secondary
+  ul.nav-pills
+  > li
+  > a::after {
+  display: none;
+}
+
+.isbf-profile-nav__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1.5rem;
+  min-block-size: 1.5rem;
+  box-sizing: border-box;
+  padding-inline: var(--isbf-v2-space-1);
+  border-radius: var(--isbf-v2-radius-pill);
+  background: color-mix(
+    in srgb,
+    var(--isbf-v2-border) 48%,
+    var(--isbf-v2-surface)
+  );
+  color: var(--isbf-v2-text);
+  font-size: var(--isbf-v2-font-xs);
+  font-weight: var(--isbf-v2-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.isbf-profile-navigation.user-navigation-secondary
+  a.active
+  .isbf-profile-nav__count {
+  background: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 14%,
+    var(--isbf-v2-surface)
+  );
+  color: var(--isbf-v2-accent);
+}
+
+.isbf-profile-navigation ul.nav-pills > li > a:focus-visible {
+  outline: 3px solid var(--isbf-v2-focus-ring);
+  outline-offset: -3px;
+}
+
+.isbf-profile-navigation.user-navigation-primary
+  ul.nav-pills
+  > li
+  > a.active:focus-visible {
+  outline-color: var(--isbf-v2-accent-contrast);
+}
+
+@media (hover: hover) {
+  .isbf-profile-navigation.user-navigation-primary
+    ul.nav-pills
+    > li
+    > a:not(.active):hover,
+  .isbf-profile-navigation.user-navigation-secondary
+    ul.nav-pills
+    > li
+    > a:not(.active):hover {
+    color: var(--isbf-v2-text);
+    background: var(--isbf-v2-hover);
+  }
+}
+
+@media (forced-colors: active) {
+  .isbf-profile-navigation a.active {
+    outline: 2px solid Highlight;
+    outline-offset: -3px;
+  }
+}
+
+.isbf-profile-navigation .nav-pills > li > a > * {
+  position: relative;
+  z-index: 2;
+}
+
+.isbf-profile-nav__indicator {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--isbf-v2-accent);
+}
+
+.isbf-profile-nav__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--isbf-v2-accent);
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--isbf-v2-accent-contrast) 16%, transparent),
+    color-mix(in srgb, var(--isbf-v2-accent-contrast) 16%, transparent)
+  );
+  background-repeat: no-repeat;
+  background-position: 0 var(--profile-nav-indicator-top);
+  background-size: 100% 1px;
+}
+
+.isbf-profile-navigation.user-navigation-secondary
+  .isbf-profile-nav__indicator {
+  background: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 40%,
+    var(--isbf-v2-border)
+  );
+}
+
+.isbf-profile-navigation.user-navigation-secondary .isbf-profile-nav__fill {
+  background: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 14%,
+    var(--isbf-v2-surface)
+  );
+}
+
+.isbf-profile-navigation.--indicator-ready ul.nav-pills > li > a.active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.isbf-profile-navigation .d-overflow-controls__btn {
+  z-index: 4;
+}

@@ -1711,7 +1711,7 @@ body:has(.isbf-v2-shell--profile) {
     border-radius: 50%;
   }
 
-  #main-outlet .user-navigation {
+  #main-outlet .user-navigation:not(.isbf-profile-navigation) {
     border-bottom: 1px solid var(--isbf-v2-border);
   }
 
@@ -2038,3 +2038,5 @@ body:has(.isbf-v2-shell--bookmarks) {
 }
 
 @import "incoming-topics";
+@import "profile-navigation";
+@import "profile-content";
