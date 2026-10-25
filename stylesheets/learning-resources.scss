@@ -209,6 +209,13 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   }
 }
 
+.isbf-learning-resource__title-icon {
+  display: inline-block;
+  margin-inline-start: var(--isbf-v2-space-1);
+  color: var(--isbf-v2-accent);
+  font-size: var(--isbf-v2-font-md);
+}
+
 .isbf-learning-resource__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -254,12 +261,68 @@ body:has(.isbf-v2-shell--learning, .isbf-v2-shell--library) #main-outlet {
   outline-offset: 2px;
 }
 
-.isbf-learning-resource p.isbf-learning-resource__credit {
-  margin-top: var(--isbf-v2-space-2);
+.isbf-learning-resource__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--isbf-v2-space-3);
+  margin-top: var(--isbf-v2-space-3);
+}
+
+.isbf-learning-resource__details {
+  display: flex;
+  flex: 1 1 8rem;
+  flex-direction: column;
+  gap: var(--isbf-v2-space-1);
+  min-width: 0;
   color: var(--isbf-v2-muted);
   font-size: var(--isbf-v2-font-xs);
-  text-align: right;
   overflow-wrap: anywhere;
+}
+
+.isbf-learning-resource p.isbf-learning-resource__credit {
+  margin: 0;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.isbf-learning-resource__open {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--isbf-v2-space-2);
+  min-height: 44px;
+  margin-inline-start: auto;
+  padding: var(--isbf-v2-space-2) var(--isbf-v2-space-3);
+  border: 1px solid var(--isbf-v2-accent);
+  border-radius: var(--isbf-v2-radius-pill);
+  background: color-mix(
+    in srgb,
+    var(--isbf-v2-accent) 7%,
+    var(--isbf-v2-surface)
+  );
+  color: var(--isbf-v2-accent);
+  font-size: var(--isbf-v2-font-sm);
+  font-weight: var(--isbf-v2-weight-bold);
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:visited {
+    color: var(--isbf-v2-accent);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(
+      in srgb,
+      var(--isbf-v2-accent) 15%,
+      var(--isbf-v2-surface)
+    );
+    color: var(--isbf-v2-accent);
+    text-decoration: none;
+  }
 }
 
 .isbf-learning-resource__context {

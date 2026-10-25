@@ -91,6 +91,8 @@ en:
     learning_contributor_hint: "Up to 15 characters; leave blank to use your display name"
     learning_unknown_contributor: "Unknown"
     learning_contributor_credit: "Contributor: "
+    learning_view_resource: "View resource"
+    learning_view_resource_label: "View resource: %{title} (opens in a new tab)"
     learning_edit: "Edit resource"
     learning_save_changes: "Save changes"
     learning_edit_error: "Could not update the resource. Check the fields and try again."

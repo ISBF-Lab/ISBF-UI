@@ -123,6 +123,12 @@ export default class ISBFResourceItem extends Component {
     return this.links[0];
   }
 
+  get openLabel() {
+    return i18n(themePrefix("isbf_v2.learning_view_resource_label"), {
+      title: this.args.resource.title,
+    });
+  }
+
   get additionalLinks() {
     return this.args.resource.link_only ? [] : this.links;
   }
@@ -271,12 +277,16 @@ export default class ISBFResourceItem extends Component {
     <article class="isbf-learning-resource">
       <div class="isbf-learning-resource__header">
         <h3>{{#if this.titleUrl}}<a
+              aria-label={{this.openLabel}}
               href={{this.titleUrl}}
               rel="noopener noreferrer"
               target="_blank"
-            >{{@resource.title}}</a>{{else}}{{@resource.title}}{{/if}}</h3>
+            >{{@resource.title}}
+              <span
+                aria-hidden="true"
+                class="isbf-learning-resource__title-icon"
+              >↗</span></a>{{else}}{{@resource.title}}{{/if}}</h3>
         <div class="isbf-learning-resource__metadata">
-          <time datetime={{@resource.created_at}}>{{this.createdAtLabel}}</time>
           {{#if this.canDelete}}
             <DMenu
               @ariaLabel={{i18n "more"}}
@@ -374,9 +384,26 @@ export default class ISBFResourceItem extends Component {
               >{{url}}</a></li>{{/each}}
         </ul>
       {{/if}}
-      <p class="isbf-learning-resource__credit"><span>{{i18n
-            (themePrefix "isbf_v2.learning_contributor_credit")
-          }}</span>{{this.contributor}}</p>
+      <div class="isbf-learning-resource__footer">
+        <div class="isbf-learning-resource__details">
+          <time datetime={{@resource.created_at}}>{{this.createdAtLabel}}</time>
+          <p class="isbf-learning-resource__credit"><span>{{i18n
+                (themePrefix "isbf_v2.learning_contributor_credit")
+              }}</span>{{this.contributor}}</p>
+        </div>
+        {{#if this.titleUrl}}
+          <a
+            aria-label={{this.openLabel}}
+            class="isbf-learning-resource__open"
+            href={{this.titleUrl}}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>{{i18n (themePrefix "isbf_v2.learning_view_resource")}}</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+        {{/if}}
+      </div>
     </article>
   </template>
 }
