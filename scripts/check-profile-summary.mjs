@@ -7,9 +7,9 @@ const source = (path) =>
     /\r\n/g,
     "\n"
   );
-let nextId = 0;
 function component(path) {
   const text = source(path);
+  const initialization = text.match(/^let nextListId = \d+;$/m)?.[0] ?? "";
   const declaration = text.slice(
     text.indexOf("export default class"),
     text.indexOf("  <template>")
@@ -20,13 +20,12 @@ function component(path) {
   const body = declaration
     .replace("export default ", "")
     .replace(/^\s*@(tracked|action)\s*/gm, "");
-  return vm.runInNewContext(`${body}}\n${name}`, {
+  return vm.runInNewContext(`${initialization}\n${body}}\n${name}`, {
     Component: class {
       constructor(args) {
         this.args = args;
       }
     },
-    guidFor: () => `summary-section-${++nextId}`,
     themePrefix: (key) => key,
   });
 }
@@ -91,6 +90,11 @@ assert.equal(
   "User sections must not invent an activity link"
 );
 const remounted = new Section({ items });
+assert.equal(
+  new Set([first.listId, second.listId, remounted.listId]).size,
+  3,
+  "Remounting must not reuse an existing disclosure target"
+);
 assert.equal(
   remounted.expanded,
   false,
