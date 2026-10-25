@@ -1,6 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { fn } from "@ember/helper";
+import { concat, fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { scheduleOnce } from "@ember/runloop";
@@ -16,6 +16,7 @@ import { calendarMonthAnchor, calendarWindow } from "../lib/calendar-window";
 import { officialDateKey, officialOccursOn } from "../lib/official-calendar";
 import ISBFCalendarEntryEditor from "./isbf-calendar-entry-editor";
 import ISBFCalendarNoteEditor from "./isbf-calendar-note-editor";
+import ISBFCalendarReminderDialog from "./isbf-calendar-reminder-dialog";
 import ISBFCalendarSubscribe from "./isbf-calendar-subscribe";
 import ISBFCalendarUpdateDialog from "./isbf-calendar-update-dialog";
 
@@ -47,6 +48,7 @@ export default class ISBFV2Calendar extends Component {
   @tracked focusedEntryId = null;
   @tracked isLoading = false;
   @tracked loadError = false;
+  @tracked missingEntry = false;
   @tracked isCompact = false;
   @tracked mobileAnchorDay;
   @tracked mobileFocusDate = null;
@@ -188,7 +190,15 @@ export default class ISBFV2Calendar extends Component {
           this.#occursOn(item, this.selectedDate)
       )
       .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-      .map((item) => ({ ...item, isFocused: item.id === this.focusedEntryId }));
+      .map((item) => ({
+        ...item,
+        isFocused: item.id === this.focusedEntryId,
+        showReminder: Boolean(
+          this.site?.isbf_calendar?.reminders &&
+          (this.site.isbf_calendar.reminders.enabled ||
+            (item.reminder_mode && item.reminder_mode !== "none"))
+        ),
+      }));
   }
 
   get currentPendingUpdates() {
@@ -265,15 +275,21 @@ export default class ISBFV2Calendar extends Component {
       ) {
         return;
       }
+      this.missingEntry = false;
       this.#selectEntry(entry);
       await this.loadMonth();
       scheduleOnce("afterRender", this, this.#focusEntry);
       if (entry.needs_update) {
         this.reviewUpdate(entry);
       }
-    } catch {
-      if (!this.isDestroying) {
-        this.loadError = true;
+    } catch (error) {
+      if (
+        !this.isDestroying &&
+        request === this.#focusRequestNumber &&
+        actor === this.currentUser
+      ) {
+        this.missingEntry = error.jqXHR?.status === 404;
+        this.loadError = !this.missingEntry;
       }
     }
   }
@@ -468,6 +484,13 @@ export default class ISBFV2Calendar extends Component {
   }
 
   @action
+  editReminder(entry) {
+    this.modal.show(ISBFCalendarReminderDialog, {
+      model: { item: entry, entry, onChanged: this.entryUpdated },
+    });
+  }
+
+  @action
   editEntry(entry) {
     if (entry.source_item_id) {
       this.modal.show(ISBFCalendarNoteEditor, {
@@ -650,6 +673,9 @@ export default class ISBFV2Calendar extends Component {
         </section>
       {{/if}}
 
+      {{#if this.missingEntry}}<p role="status">{{i18n
+            (themePrefix "isbf_v2.reminder_entry_missing")
+          }}</p>{{/if}}
       <div class="isbf-v2-calendar__layout">
         <section aria-label={{this.monthLabel}} class="isbf-v2-calendar__month">
           <div class="isbf-v2-calendar__month-toolbar">
@@ -756,6 +782,39 @@ export default class ISBFV2Calendar extends Component {
                     @action={{fn this.reviewUpdate item}}
                     @label={{themePrefix "isbf_v2.schedule_review"}}
                   />{{/if}}
+                {{#if item.showReminder}}
+                  {{#if item.source_item_id}}
+                    <button
+                      class="isbf-calendar-reminder__row"
+                      type="button"
+                      {{on "click" (fn this.editReminder item)}}
+                    >
+                      <span>{{i18n
+                          (themePrefix "isbf_v2.reminder_label")
+                        }}</span><span>{{i18n
+                          (themePrefix
+                            (concat
+                              "isbf_v2.reminder_"
+                              (if item.reminder_mode item.reminder_mode "none")
+                            )
+                          )
+                        }}</span>
+                    </button>
+                  {{/if}}
+                {{/if}}
+                {{#unless item.source_item_id}}
+                  {{#if item.reminder_at}}
+                    <small class="isbf-calendar-reminder__summary">{{dIcon
+                        "bell"
+                      }}{{i18n (themePrefix "isbf_v2.reminder_label")}}
+                      ·
+                      {{i18n
+                        (themePrefix
+                          (concat "isbf_v2.reminder_" item.reminder_mode)
+                        )
+                      }}</small>
+                  {{/if}}
+                {{/unless}}
                 <div class="isbf-v2-calendar__item-actions">
                   {{#if item.source_url}}<a href={{item.source_url}}>{{i18n
                         (themePrefix "isbf_v2.schedule_source")

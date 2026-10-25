@@ -20,6 +20,7 @@ const dependencies = {
   default: Component,
   action() {},
   cached() {},
+  service() {},
   tracked() {},
   themePrefix: (key) => key,
   i18n: (key) => key,
@@ -33,24 +34,31 @@ const dependencies = {
 async function load(path) {
   const source = read(path)
     .replace(/<template>[\s\S]*?<\/template>/g, "")
+    .replace(/^\s*@service\s+\w+;\s*$/gm, "")
     .replace(/@(action|cached|tracked)\s+/g, "");
   const module = new vm.SourceTextModule(source);
-  await module.link(
-    (name) =>
-      new vm.SyntheticModule(Object.keys(dependencies), function () {
-        for (const [key, value] of Object.entries(dependencies)) {
-          this.setExport(
-            key,
-            name === "discourse-i18n" && key === "default"
-              ? { currentLocale: () => "zh_CN" }
-              : value
-          );
-        }
-        if (name.endsWith("d-unique-id")) {
-          this.setExport("default", dependencies.dUniqueId);
-        }
-      })
-  );
+  await module.link(async (name) => {
+    if (name === "../lib/calendar-reminder") {
+      const helper = new vm.SourceTextModule(
+        read("javascripts/discourse/lib/calendar-reminder.js")
+      );
+      await helper.link(() => {});
+      return helper;
+    }
+    return new vm.SyntheticModule(Object.keys(dependencies), function () {
+      for (const [key, value] of Object.entries(dependencies)) {
+        this.setExport(
+          key,
+          name === "discourse-i18n" && key === "default"
+            ? { currentLocale: () => "zh_CN" }
+            : value
+        );
+      }
+      if (name.endsWith("d-unique-id")) {
+        this.setExport("default", dependencies.dUniqueId);
+      }
+    });
+  });
   await module.evaluate();
   return module.namespace;
 }
@@ -242,4 +250,24 @@ for (const [, token] of editorCss.matchAll(/var\((--isbf-v2-[\w-]+)\s*\)/g)) {
 
 process.stdout.write(
   "Calendar entry source isolation, filters, location editor, retry and scoped layout checks passed."
+);
+
+const disabledEditor = new Editor();
+disabledEditor.site = { isbf_calendar: { reminders: { enabled: false } } };
+disabledEditor.args.model.entry = { id: 91, reminder_mode: "before_15m" };
+disabledEditor.reminderMode = "before_15m";
+assert.equal(disabledEditor.remindersVisible, true);
+respond = async () => ({});
+await disabledEditor.save(data);
+assert.equal(
+  Object.hasOwn(calls.at(-1)[1].data.entry, "reminder_mode"),
+  false,
+  "unrelated edits omit unchanged reminder while master disabled"
+);
+disabledEditor.reminderMode = "none";
+await disabledEditor.save(data);
+assert.equal(
+  calls.at(-1)[1].data.entry.reminder_mode,
+  "none",
+  "clearing remains supported while master disabled"
 );

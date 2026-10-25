@@ -6,7 +6,7 @@ import pretender, {
   parsePostData,
   response,
 } from "discourse/tests/helpers/create-pretender";
-import ISBFCalendarUpdateDialog from "../../discourse/components/isbf-calendar-update-dialog";
+import ISBFCalendarUpdateDialog from "../../components/isbf-calendar-update-dialog";
 
 module(
   "ISBF | Integration | Component | ISBFCalendarUpdateDialog",

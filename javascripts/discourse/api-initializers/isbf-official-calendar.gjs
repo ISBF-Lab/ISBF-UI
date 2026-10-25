@@ -26,12 +26,14 @@ export default apiInitializer((api) => {
     () =>
       class extends CustomNotification {
         get isCalendarChange() {
-          return this.notification.data.message === "isbf_calendar.changed";
+          return ["isbf_calendar.changed", "isbf_calendar.reminder"].includes(
+            this.notification.data.message
+          );
         }
 
         get description() {
           return this.isCalendarChange
-            ? i18n("notifications.isbf_calendar.changed", {
+            ? i18n(`notifications.${this.notification.data.message}`, {
                 topic_title: this.notification.data.topic_title,
               })
             : super.description;
