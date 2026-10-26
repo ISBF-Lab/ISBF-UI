@@ -96,6 +96,7 @@ RSpec.describe "Calendar reminders" do
     visit "/u/#{user.username_lower}/notifications"
     expect(page).to have_content("Synthetic reminder plan")
     find('a[href*="/isbf/calendar?entry_id="]').click
+    expect(page).to have_current_path("/isbf/calendar?entry_id=#{entry.id}")
     expect(page).to have_css(".isbf-v2-calendar__item", text: "Synthetic reminder plan")
   end
 end

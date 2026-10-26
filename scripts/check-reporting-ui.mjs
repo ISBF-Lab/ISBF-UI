@@ -44,6 +44,7 @@ class NativeFlag {
   constructor(_owner, args) {
     this.args = args;
   }
+
   onKeydown() {
     this.ordinaryShortcut = true;
   }
@@ -219,8 +220,8 @@ assert.equal(
 shown[1][1].model.setHidden();
 assert.equal(eligible.isbf_severe_report_pending, false);
 helper.rememberHiddenPost(22, services.appEvents, false);
-console.log(
-  "Severe validation, duplicate-submit protection, retry, native state retention, capability fallback and stale cooked-cache invalidation OK"
+process.stdout.write(
+  "Severe validation, duplicate-submit protection, retry, native state retention, capability fallback and stale cooked-cache invalidation OK\n"
 );
 
 let routeOverride;
@@ -238,8 +239,12 @@ const servicesByName = {
   },
 };
 const initializer = await load(
-  source("javascripts/discourse/api-initializers/isbf-reporting.gjs"),
+  source("javascripts/discourse/api-initializers/isbf-reporting.gjs").replace(
+    /@action\s+/g,
+    ""
+  ),
   {
+    "@ember/object": { action() {} },
     "discourse/lib/api": { apiInitializer: (callback) => callback },
     "../lib/report-post": {
       openPostReport: helper.openPostReport,
@@ -256,6 +261,11 @@ initializer.default({
   },
   modifyClass(name, definition) {
     assert.equal(name, "route:topic");
+    assert.equal(
+      typeof definition,
+      "function",
+      "Topic overrides use a class factory"
+    );
     routeOverride = definition;
   },
 });
@@ -274,24 +284,31 @@ assert.equal(
   }),
   false
 );
-assert.equal(Object.hasOwn(routeOverride, "showFlagTopic"), false);
 let nativeCalls = 0;
-const route = {
-  currentUser: null,
-  _super() {
+class NativeTopicRoute {
+  showFlags() {
     nativeCalls++;
     return "native";
-  },
-  modal: services.modal,
-};
-assert.equal(routeOverride.showFlags.call(route, eligible), "native");
-route.currentUser = { id: 5 };
+  }
+
+  showFlagTopic() {
+    return "native topic reporting";
+  }
+}
+const ReportingTopicRoute = routeOverride(NativeTopicRoute);
 assert.equal(
-  routeOverride.showFlags.call(route, { ...eligible, post_type: 3 }),
-  "native"
+  Object.hasOwn(ReportingTopicRoute.prototype, "showFlagTopic"),
+  false
 );
+const route = new ReportingTopicRoute();
+route.currentUser = null;
+route.modal = services.modal;
+assert.equal(route.showFlagTopic(), "native topic reporting");
+assert.equal(route.showFlags(eligible), "native");
+route.currentUser = { id: 5 };
+assert.equal(route.showFlags({ ...eligible, post_type: 3 }), "native");
 assert.equal(
-  routeOverride.showFlags.call(route, {
+  route.showFlags({
     ...eligible,
     topic: { archetype: "private_message" },
   }),
@@ -299,7 +316,7 @@ assert.equal(
 );
 assert.equal(nativeCalls, 3);
 settings.isbf_severe_reports_enabled = false;
-assert.equal(routeOverride.showFlags.call(route, eligible), undefined);
+assert.equal(route.showFlags(eligible), undefined);
 assert.equal(shown.at(-1)[0], SevereModal);
 assert.equal(shown.at(-1)[1].model.canSevereReport(), false);
 broadcast({ post_id: 22, hidden: true });
@@ -307,8 +324,8 @@ assert.equal(helper.isReportedHidden(22), true);
 assert.equal(eligible.isbf_severe_report_pending, true);
 broadcast({ post_id: 22, hidden: false });
 assert.equal(helper.isReportedHidden(22), false);
-console.log(
-  "Topic-button capability, guest/PM/system-event fallback, full-topic preservation and hide/restore broadcast OK"
+process.stdout.write(
+  "Topic-button capability, guest/PM/system-event fallback, full-topic preservation and hide/restore broadcast OK\n"
 );
 
 modal.args.model.canSevereReport = () => false;
@@ -320,6 +337,6 @@ modal.args.model.canSevereReport = () => true;
 modal.enterSevere();
 assert.equal(modal.severeReason, " 1234567890 ");
 assert.equal(modal.severeConfirmed, true);
-console.log(
-  "Shared ordinary modal when disabled, authoritative Site capability, native hide pending isolation and severe state recovery OK"
+process.stdout.write(
+  "Shared ordinary modal when disabled, authoritative Site capability, native hide pending isolation and severe state recovery OK\n"
 );
