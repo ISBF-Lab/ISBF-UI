@@ -5571,7 +5571,7 @@ body:has(.isbf-v2-shell) {
 
   &__date-row {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) minmax(82px, 0.5fr);
+    grid-template-columns: auto minmax(0, 1fr) minmax(128px, 0.5fr);
     align-items: center;
     gap: 8px;
     padding-block: 12px;
@@ -5602,6 +5602,7 @@ body:has(.isbf-v2-shell) {
       align-items: center;
       justify-content: center;
       height: 44px;
+      padding-inline: 8px;
       border-radius: 999px;
       font-size: 16px;
       line-height: 1.2;
