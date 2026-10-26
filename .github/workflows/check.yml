@@ -58,3 +58,11 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-alumni-review-nav.mjs
       - run: node --experimental-vm-modules scripts/check-calendar-entry-ui.mjs
       - run: node --experimental-vm-modules scripts/check-calendar-reminders.mjs
+      - name: Alumni identity batching and lifecycle
+        run: node --experimental-vm-modules scripts/check-alumni-identity.mjs
+      - name: Install isolated identity check tools
+        run: npm install --prefix "$RUNNER_TEMP/alumni-tools" --no-save --package-lock=false --no-audit --no-fund @discourse/lint-configs@3.7.0 eslint@10.6.0 prettier@3.8.1 stylelint@17.5.0 jsdom@26.1.0
+      - name: Alumni identity DOM scoping and account changes
+        run: node --experimental-vm-modules scripts/check-alumni-label-targets.mjs "$RUNNER_TEMP/alumni-tools"
+      - name: Alumni identity format and lint
+        run: node scripts/check-alumni-identity-style.mjs "$RUNNER_TEMP/alumni-tools"

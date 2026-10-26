@@ -11,6 +11,7 @@ import { getCurrentPushSubscription } from "discourse/lib/push-notifications";
 import { eq, or } from "discourse/truth-helpers";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import ISBFAlumniLabel from "./isbf-alumni-label";
 import ISBFV2AccountLinkModal from "./isbf-v2-account-link-modal";
 
 export default class ISBFV2AccountMenu extends Component {
@@ -46,7 +47,7 @@ export default class ISBFV2AccountMenu extends Component {
       return [];
     }
     return this.linkedAccounts.filter((link) =>
-      ["pending_target", "pending_admin", "approved"].includes(link.status),
+      ["pending_target", "pending_admin", "approved"].includes(link.status)
     );
   }
 
@@ -149,7 +150,7 @@ export default class ISBFV2AccountMenu extends Component {
     await this.#runRequest(async () => {
       const response = await ajax(
         `/isbf/account-switch/links/${link.id}/switch`,
-        { type: "POST" },
+        { type: "POST" }
       );
       if (!this.#destroyed) {
         window.location.assign(response.redirect_url || "/");
@@ -209,7 +210,7 @@ export default class ISBFV2AccountMenu extends Component {
     await this.#runRequest(async () => {
       const response = await ajax(
         `/isbf/account-switch/links/${link.id}/verify`,
-        { type: "POST", data },
+        { type: "POST", data }
       );
       if (!this.#destroyed) {
         window.location.assign(response.redirect_url || "/");
@@ -326,7 +327,9 @@ export default class ISBFV2AccountMenu extends Component {
             <img alt="" height="40" src={{this.avatarUrl}} width="40" />
             <span>
               <b>{{this.displayName}}</b>
-              <small>@{{this.currentUser.username}}</small>
+              <small>@{{this.currentUser.username}}<ISBFAlumniLabel
+                  @user={{this.currentUser}}
+                /></small>
             </span>
           </a>
         {{/unless}}
@@ -379,7 +382,9 @@ export default class ISBFV2AccountMenu extends Component {
                 />
                 <span>
                   <b>{{or link.account.name link.account.username}}</b>
-                  <small>@{{link.account.username}}</small>
+                  <small>@{{link.account.username}}<ISBFAlumniLabel
+                      @user={{link.account}}
+                    /></small>
                 </span>
                 {{#if (eq link.status "approved")}}
                   <button

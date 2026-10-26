@@ -2,6 +2,7 @@ en:
   theme_metadata:
     description: "ISBF campus community theme built on Discourse's native topic feed."
   isbf_v2:
+    alumni_identity: Alumni
     reminder_label: "Reminder"
     reminder_none: "No reminder"
     reminder_before_5m: "5 minutes before"

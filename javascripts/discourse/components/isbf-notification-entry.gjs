@@ -1,13 +1,14 @@
 import Component from "@glimmer/component";
+import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
-import { on } from "@ember/modifier";
 import { themePrefix } from "virtual:theme";
-import { i18n } from "discourse-i18n";
 import MenuItem from "discourse/components/user-menu/menu-item";
 import DRelativeDate from "discourse/ui-kit/d-relative-date";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
+import { i18n } from "discourse-i18n";
+import ISBFAlumniLabel from "./isbf-alumni-label";
 
 export default class ISBFNotificationEntry extends Component {
   @service siteSettings;
@@ -76,7 +77,9 @@ export default class ISBFNotificationEntry extends Component {
           >
             {{#if @entry.actor}}<span
                 class="isbf-notification-entry__name"
-              >{{this.displayName}}</span>
+              >{{this.displayName}}<ISBFAlumniLabel
+                  @user={{@entry.actor}}
+                /></span>
             {{/if}}
             <span>{{@entry.actionLabel}}</span>
           </a>

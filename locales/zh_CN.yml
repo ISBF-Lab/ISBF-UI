@@ -2,6 +2,7 @@ zh_CN:
   theme_metadata:
     description: "基于 Discourse 原生话题流的 ISBF 校园社区主题。"
   isbf_v2:
+    alumni_identity: 校友
     reminder_label: "提醒"
     reminder_none: "不提醒"
     reminder_before_5m: "提前 5 分钟"

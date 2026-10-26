@@ -28,6 +28,7 @@ import {
   postCardTitle,
 } from "../lib/post-card-helpers";
 import { isReportedHidden, openPostReport } from "../lib/report-post";
+import ISBFAlumniLabel from "./isbf-alumni-label";
 import { ISBFCareersSalary } from "./isbf-careers-card";
 import ISBFHomePinDialog from "./isbf-home-pin-dialog";
 import { ISBFMarketplacePrice } from "./isbf-marketplace-card";
@@ -695,7 +696,9 @@ export default class ISBFV2FeedCard extends Component {
           <a
             class="isbf-feed-card__username"
             href={{this.profileUrl}}
-          >@{{@topic.creator.username}}</a>
+          >@{{@topic.creator.username}}<ISBFAlumniLabel
+              @user={{@topic.creator}}
+            /></a>
           <span aria-hidden="true">·</span>
           <a
             class="isbf-feed-card__time"
