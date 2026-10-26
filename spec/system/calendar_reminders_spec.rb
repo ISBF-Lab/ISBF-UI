@@ -2,7 +2,7 @@
 
 RSpec.describe "Calendar reminders" do
   let!(:theme) { upload_theme }
-  fab!(:user) { Fabricate(:user, trust_level: 3) }
+  fab!(:user) { Fabricate(:user, trust_level: 3, approved: true) }
 
   before do
     SiteSetting.isbf_calendar_reminders_enabled = true
@@ -89,7 +89,9 @@ RSpec.describe "Calendar reminders" do
     expect(page).to have_no_css(".isbf-calendar-entry-editor")
     entry = IsbfCalendar::Entry.find_by!(user: user, title: "Synthetic reminder plan")
     expect(entry.reminder_mode).to eq("before_15m")
-    IsbfCalendar::Reminders.process!(entry, now: entry.reminder_at + 1.second)
+    expect(entry.reminder_processed_at).to be_nil
+    expect(entry.reminder_at).to be > Time.current
+    freeze_time(entry.reminder_at + 1.second) { Jobs::IsbfCalendarSendReminders.new.execute({}) }
     expect(Notification.where(user: user, notification_type: Notification.types[:custom]).count).to eq(1)
     visit "/u/#{user.username_lower}/notifications"
     expect(page).to have_content("Synthetic reminder plan")
