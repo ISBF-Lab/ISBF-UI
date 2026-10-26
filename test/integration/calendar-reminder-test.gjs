@@ -98,7 +98,7 @@ module("ISBF | Integration | calendar reminders", function (hooks) {
     assert
       .dom('.isbf-calendar-reminder-dialog input[type="text"]')
       .doesNotExist();
-    await click(".isbf-calendar-reminder-dialog .d-modal__footer .btn-default");
+    await click(".isbf-calendar-reminder-dialog__cancel");
     assert.strictEqual(requests, 0);
   });
 

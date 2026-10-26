@@ -172,6 +172,7 @@ export default class ISBFCalendarReminderDialog extends Component {
       </:body>
       <:footer>
         <DButton
+          class="isbf-calendar-reminder-dialog__cancel"
           @action={{this.cancel}}
           @disabled={{this.saving}}
           @label={{themePrefix "isbf_v2.calendar_cancel"}}

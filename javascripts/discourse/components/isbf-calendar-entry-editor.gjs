@@ -238,7 +238,7 @@ export default class ISBFCalendarEntryEditor extends Component {
               @type="input-text"
               @validation="required"
               as |field|
-            ><field.Control maxlength="120" /></form.Field>
+            ><field.Control autofocus maxlength="120" /></form.Field>
             <form.Field
               @disabled={{this.saving}}
               @format="full"

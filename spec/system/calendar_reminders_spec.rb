@@ -39,6 +39,7 @@ RSpec.describe "Calendar reminders" do
               return { left: rect.left, top: rect.top, width: rect.width, height: rect.height,
                 radius: getComputedStyle(el).borderTopLeftRadius,
                 viewportWidth: innerWidth, viewportHeight: innerHeight,
+                contentWidth: document.documentElement.clientWidth,
                 overflow: document.documentElement.scrollWidth > innerWidth + 1 };
             })()
           JS
@@ -51,7 +52,7 @@ RSpec.describe "Calendar reminders" do
             expect(geometry["radius"]).to eq("0px")
           else
             expect(geometry["width"]).to be <= 561
-            expect(geometry["left"]).to be_within(2).of((geometry["viewportWidth"] - geometry["width"]) / 2)
+            expect(geometry["left"]).to be_within(2).of((geometry["contentWidth"] - geometry["width"]) / 2)
           end
           folder = Rails.root.join("tmp/isbf-reminder-results/screenshots")
           FileUtils.mkdir_p(folder)
