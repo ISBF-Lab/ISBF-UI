@@ -5448,6 +5448,7 @@ body:has(.isbf-v2-shell) {
 .isbf-calendar-entry-editor {
   .d-modal__container {
     width: min(560px, calc(100vw - 32px));
+    margin-inline: auto;
     background: var(--isbf-v2-background);
     color: var(--isbf-v2-text);
   }
@@ -5610,6 +5611,13 @@ body:has(.isbf-v2-shell) {
         text-align: center;
       }
     }
+  }
+}
+
+@media (width > 600px) {
+  body:not(.admin-interface) .d-modal.isbf-calendar-entry-editor {
+    align-items: center;
+    justify-content: center;
   }
 }
 

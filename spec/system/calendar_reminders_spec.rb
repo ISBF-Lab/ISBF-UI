@@ -51,7 +51,7 @@ RSpec.describe "Calendar reminders" do
             expect(geometry["radius"]).to eq("0px")
           else
             expect(geometry["width"]).to be <= 561
-            expect(geometry["left"]).to be > 0
+            expect(geometry["left"]).to be_within(2).of((geometry["viewportWidth"] - geometry["width"]) / 2)
           end
           folder = Rails.root.join("tmp/isbf-reminder-results/screenshots")
           FileUtils.mkdir_p(folder)
