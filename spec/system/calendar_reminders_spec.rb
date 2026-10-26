@@ -36,10 +36,11 @@ RSpec.describe "Calendar reminders" do
             (() => {
               const el = document.querySelector('.isbf-calendar-entry-editor .d-modal__container');
               const rect = el.getBoundingClientRect();
+              const layout = el.closest('.d-modal').getBoundingClientRect();
               return { left: rect.left, top: rect.top, width: rect.width, height: rect.height,
                 radius: getComputedStyle(el).borderTopLeftRadius,
                 viewportWidth: innerWidth, viewportHeight: innerHeight,
-                contentWidth: document.documentElement.clientWidth,
+                layoutLeft: layout.left, layoutWidth: layout.width,
                 overflow: document.documentElement.scrollWidth > innerWidth + 1 };
             })()
           JS
@@ -52,7 +53,7 @@ RSpec.describe "Calendar reminders" do
             expect(geometry["radius"]).to eq("0px")
           else
             expect(geometry["width"]).to be <= 561
-            expect(geometry["left"]).to be_within(2).of((geometry["contentWidth"] - geometry["width"]) / 2)
+            expect(geometry["left"]).to be_within(2).of(geometry["layoutLeft"] + (geometry["layoutWidth"] - geometry["width"]) / 2)
           end
           folder = Rails.root.join("tmp/isbf-reminder-results/screenshots")
           FileUtils.mkdir_p(folder)
