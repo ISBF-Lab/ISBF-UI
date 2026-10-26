@@ -2,17 +2,18 @@ import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { concat } from "@ember/helper";
 import { action } from "@ember/object";
-import { guidFor } from "@ember/object/internals";
 import { LinkTo } from "@ember/routing";
 import { themePrefix } from "virtual:theme";
 import UserSummarySection from "discourse/components/user-summary-section";
 import DButton from "discourse/ui-kit/d-button";
 import { i18n } from "discourse-i18n";
 
+let nextListId = 0;
+
 export default class ISBFProfileSummarySection extends Component {
   @tracked expanded = false;
 
-  listId = `isbf-summary-items-${guidFor(this)}`;
+  listId = `isbf-summary-items-${++nextListId}`;
 
   get canExpand() {
     return this.items.length > 3;

@@ -1,6 +1,7 @@
 import Component from "@glimmer/component";
 import { cached, tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
+import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import Form from "discourse/components/form";
 import { ajax } from "discourse/lib/ajax";
@@ -9,13 +10,45 @@ import DButton from "discourse/ui-kit/d-button";
 import DModal from "discourse/ui-kit/d-modal";
 import dUniqueId from "discourse/ui-kit/helpers/d-unique-id";
 import { i18n } from "discourse-i18n";
+import {
+  browserTimezone,
+  compatibleReminder,
+  personalStartsAt,
+} from "../lib/calendar-reminder";
+import ISBFCalendarReminderPicker from "./isbf-calendar-reminder-picker";
 
 export default class ISBFCalendarEntryEditor extends Component {
+  @service site;
+
+  @tracked reminderMode = this.args.model.entry?.reminder_mode || "none";
+
   @tracked error = false;
   @tracked saving = false;
 
   formId = dUniqueId();
   titleId = dUniqueId();
+
+  get remindersEnabled() {
+    return this.site?.isbf_calendar?.reminders?.enabled;
+  }
+
+  get remindersVisible() {
+    const original = this.args.model.entry?.reminder_mode;
+    return (
+      this.remindersEnabled ||
+      Boolean(
+        this.site?.isbf_calendar?.reminders && original && original !== "none"
+      )
+    );
+  }
+
+  get remindersUnavailable() {
+    return !this.remindersEnabled;
+  }
+
+  get timezone() {
+    return this.args.model.entry?.reminder_timezone || browserTimezone();
+  }
 
   get title() {
     return i18n(
@@ -53,6 +86,18 @@ export default class ISBFCalendarEntryEditor extends Component {
       endDate: end.slice(0, 10),
       endTime: end.slice(11) || "10:00",
     };
+  }
+
+  @action
+  onFormSet(name, value) {
+    if (name === "allDay") {
+      this.reminderMode = compatibleReminder(this.reminderMode, value);
+    }
+  }
+
+  @action
+  setReminder(mode) {
+    this.reminderMode = mode;
   }
 
   @action
@@ -96,6 +141,7 @@ export default class ISBFCalendarEntryEditor extends Component {
       this.error = true;
       return;
     }
+    const mode = compatibleReminder(this.reminderMode, data.allDay);
     this.saving = true;
     const entry = this.args.model.entry;
     try {
@@ -111,6 +157,13 @@ export default class ISBFCalendarEntryEditor extends Component {
               starts_at: startsAt,
               ends_at: endsAt,
               all_day: data.allDay,
+              ...(this.remindersEnabled ||
+              (this.remindersVisible && mode === "none")
+                ? {
+                    reminder_mode: mode,
+                    reminder_timezone: this.timezone,
+                  }
+                : {}),
             },
           },
         }
@@ -172,6 +225,7 @@ export default class ISBFCalendarEntryEditor extends Component {
         <Form
           id={{this.formId}}
           @data={{this.formData}}
+          @onSet={{this.onFormSet}}
           @onSubmit={{this.save}}
           as |form data|
         >
@@ -184,7 +238,7 @@ export default class ISBFCalendarEntryEditor extends Component {
               @type="input-text"
               @validation="required"
               as |field|
-            ><field.Control maxlength="120" /></form.Field>
+            ><field.Control autofocus maxlength="120" /></form.Field>
             <form.Field
               @disabled={{this.saving}}
               @format="full"
@@ -250,6 +304,17 @@ export default class ISBFCalendarEntryEditor extends Component {
                 ><field.Control /></form.Field>{{/unless}}
             </div>
           </section>
+          {{#if this.remindersVisible}}
+            <ISBFCalendarReminderPicker
+              @allDay={{data.allDay}}
+              @disabled={{this.saving}}
+              @mode={{this.reminderMode}}
+              @onChange={{this.setReminder}}
+              @startsAt={{personalStartsAt data}}
+              @timezone={{this.timezone}}
+              @unavailable={{this.remindersUnavailable}}
+            />
+          {{/if}}
           <section class="isbf-calendar-entry-editor__group">
             <form.Field
               @disabled={{this.saving}}

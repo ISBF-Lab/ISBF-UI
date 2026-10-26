@@ -12,11 +12,13 @@ import {
   officialTimeLabel,
 } from "../lib/official-calendar";
 import { isOfficialCalendarPost } from "../lib/official-topic-scope";
+import ISBFCalendarReminderDialog from "./isbf-calendar-reminder-dialog";
 import ISBFOfficialActivitySummary from "./isbf-official-activity-summary";
 
 export default class ISBFOfficialCalendarItems extends Component {
   @service appEvents;
   @service currentUser;
+  @service modal;
   @service router;
   @service site;
 
@@ -120,6 +122,24 @@ export default class ISBFOfficialCalendarItems extends Component {
       return;
     }
     if (this._busyId || item.added || item.cancelled) {
+      return;
+    }
+    if (this.site?.isbf_calendar?.reminders?.enabled) {
+      this.modal.show(ISBFCalendarReminderDialog, {
+        model: {
+          item,
+          postId: this.post?.id,
+          onChanged: (entry) =>
+            this.appEvents.trigger("isbf:calendar-entry-changed", entry),
+          onRefreshed: (post) => {
+            if (!this.isDestroying && this.post?.id === post.id) {
+              this._refreshedPostId = post.id;
+              this._refreshedItems = post[OFFICIAL_CALENDAR_FIELD] ?? [];
+              this._refreshedCampuses = post.isbf_official_campuses ?? null;
+            }
+          },
+        },
+      });
       return;
     }
     const request = ++this.#requestGeneration;

@@ -130,7 +130,7 @@ async function harness(
   const dependencies = {
     "@glimmer/component": { default: Component },
     "@glimmer/tracking": { tracked: null },
-    "@ember/helper": { fn: null },
+    "@ember/helper": { concat: null, fn: null },
     "@ember/modifier": { on: null },
     "@ember/object": { action: null },
     "@ember/runloop": { scheduleOnce() {} },
@@ -165,6 +165,7 @@ async function harness(
       officialOccursOn,
       officialTimeLabel: () => "",
     },
+    "./isbf-calendar-reminder-dialog": { default: null },
     "./isbf-calendar-note-editor": { default: null },
     "./isbf-calendar-entry-editor": { default: null },
     "./isbf-calendar-subscribe": { default: null },

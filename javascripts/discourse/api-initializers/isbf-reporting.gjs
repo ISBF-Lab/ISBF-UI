@@ -1,3 +1,4 @@
+import { action } from "@ember/object";
 import { apiInitializer } from "discourse/lib/api";
 import {
   openPostReport,
@@ -32,24 +33,27 @@ export default apiInitializer((api) => {
       )
   );
 
-  api.modifyClass("route:topic", {
-    pluginId: "isbf-severe-reporting",
-
-    showFlags(post) {
-      if (
-        !this.currentUser ||
-        post.post_type !== 1 ||
-        post.topic?.archetype === "private_message"
-      ) {
-        return this._super(...arguments);
+  api.modifyClass(
+    "route:topic",
+    (Superclass) =>
+      class extends Superclass {
+        @action
+        showFlags(post) {
+          if (
+            !this.currentUser ||
+            post.post_type !== 1 ||
+            post.topic?.archetype === "private_message"
+          ) {
+            return super.showFlags(...arguments);
+          }
+          return openPostReport({
+            post,
+            modal: this.modal,
+            siteSettings,
+            site,
+            appEvents,
+          });
+        }
       }
-      return openPostReport({
-        post,
-        modal: this.modal,
-        siteSettings,
-        site,
-        appEvents,
-      });
-    },
-  });
+  );
 });

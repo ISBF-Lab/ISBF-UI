@@ -57,3 +57,4 @@ jobs:
       - run: node --experimental-vm-modules scripts/check-review-queue.mjs
       - run: node --experimental-vm-modules scripts/check-alumni-review-nav.mjs
       - run: node --experimental-vm-modules scripts/check-calendar-entry-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-calendar-reminders.mjs
