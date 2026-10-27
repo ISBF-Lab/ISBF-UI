@@ -18,7 +18,7 @@ export default apiInitializer((api) => {
     api.renderInOutlet(outlet, ISBFAlumniNativeLabel);
   }
   for (const outlet of [
-    "full-page-search-below-search-header",
+    "full-page-search-below-results",
     "search-menu-results-type-top",
   ]) {
     api.renderInOutlet(outlet, ISBFAlumniSearchLabels);

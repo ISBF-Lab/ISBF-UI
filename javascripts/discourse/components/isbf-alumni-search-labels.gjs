@@ -1,6 +1,7 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { action } from "@ember/object";
+import { action, get } from "@ember/object";
+import { getOwner } from "@ember/owner";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import didUpdate from "@ember/render-modifiers/modifiers/did-update";
 import { cancel, scheduleOnce } from "@ember/runloop";
@@ -32,7 +33,8 @@ export default class ISBFAlumniSearchLabels extends Component {
         ? args.resultType.results
         : EMPTY_USERS;
     }
-    return args.model?.users || EMPTY_USERS;
+    const controller = getOwner(this).lookup("controller:full-page-search");
+    return get(controller, "model.users") || EMPTY_USERS;
   }
 
   @action

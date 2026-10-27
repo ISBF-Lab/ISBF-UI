@@ -30,7 +30,7 @@
 ## 已实现范围与扩展机制
 
 - 自有共享帖子卡片（首页、官方、组队、市场等使用同一组件）、帖子及回复账号行、通知演员、校友目录及当前／关联账号文字区已接入共享标签。
-- 原生资料、卡片及 DUserInfo 用户行使用 user-post-names、user-card-after-username、after-user-name；搜索使用 full-page-search-below-search-header 与 search-menu-results-type-top。
+- 原生资料、卡片及 DUserInfo 用户行使用 user-post-names、user-card-after-username、after-user-name；搜索使用 full-page-search-below-results 与 search-menu-results-type-top。
 - 原生出口仅管理新增标签，通过 Glimmer in-element 渲染到该出口局部的现有 username 节点。没有搬动原生节点、全页扫描或 MutationObserver；按模型、姓名偏好、结果集合及长度变化重新定位，销毁时由 Glimmer 清理。
 - 身份读取仅针对正整数真实用户 ID；已挂载用户共享请求，单批最多100个，未挂载数据释放。导航和恢复前台重新读取，无轮询；失败不当作非成员长期缓存，账号切换使旧请求失效。
 
@@ -46,3 +46,5 @@
 - 新增原生主题系统测试，使用真实校友插件、GroupUser、原生页面与用户卡片，覆盖390、430、600、601、1024、1440px及亮暗模式、访客／普通用户和成员移除。由插件原有联合 CI 在隔离环境执行；Core 依赖版本和既有 Secret 不变。
 - 本机缺少 Ruby/Bundler 与完整 Discourse，RSpec／真实原生页面的结果以实际 CI 为准；未做 iPhone 真机检查。
 - 本次禁止部署；不连接生产服务器、不读取部署密码、不修改线上主题、角色、配置或数据。
+
+完整搜索连接器挂在结果子树内：Core 先更新模型、再结束 searching；页头插槽可能过早定位到空列表。结果插槽随真实结果挂载，并从原生 full-page-search 控制器读取当前用户模型，避免轮询和新增观察器。

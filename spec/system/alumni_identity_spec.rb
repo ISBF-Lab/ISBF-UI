@@ -68,9 +68,8 @@ RSpec.describe "Alumni identity labels" do
           expect(page).to have_no_css("#{pending_result} .isbf-alumni-label")
 
           visit member_topic.url
-          expect(page).to have_css("#post_1 .isbf-feed-card__username .isbf-alumni-label", text: "校友", count: 1)
-          expect(page).to have_no_css("#post_1 .topic-avatar .isbf-alumni-label", visible: :all)
-
+          expect(page).to have_css("[data-post-number='1'] .isbf-feed-card__username .isbf-alumni-label", text: "校友", count: 1)
+          expect(page).to have_no_css("[data-post-number='1'] .topic-avatar .isbf-alumni-label", visible: :all)
         end
       end
     end
@@ -93,12 +92,14 @@ RSpec.describe "Alumni identity labels" do
   end
 
   it "shows identity in the native card after clicking the topic account" do
+    page.current_window.resize_to(1440, 900)
     sign_in(ordinary)
     visit member_topic.url
-    find("#post_1 .isbf-feed-card__username").click
-    expect(page).to have_css("#user-card .username .isbf-alumni-label", text: "校友", count: 1)
-    expect(page).to have_no_css("#user-card .avatar .isbf-alumni-label", visible: :all)
+    find("[data-post-number='1'] .isbf-feed-card__username").click
+    expect(page).to have_css(".user-card.show .username .isbf-alumni-label", text: "校友", count: 1)
+    expect(page).to have_no_css(".user-card.show .avatar .isbf-alumni-label", visible: :all)
   end
+
   it "shows the same member and nonmember distinction to guests" do
     page.current_window.resize_to(1440, 900)
     visit "/latest"
