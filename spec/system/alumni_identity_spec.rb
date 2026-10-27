@@ -20,7 +20,7 @@ RSpec.describe "Alumni identity labels" do
     SiteSetting.isbf_alumni_group_name = alumni_group.name
     alumni_group.add(member)
     member.upsert_custom_fields(IsbfAlumni::VISIBLE_FIELD => "false")
-    IsbfAlumni::Application.create!(email: applicant.email, user: applicant, status: "pending")
+    IsbfAlumni::Application.create!(email: applicant.email, user: applicant, status: "pending", email_verified_at: Time.current)
   end
 
   def expect_feed_identities
@@ -71,9 +71,6 @@ RSpec.describe "Alumni identity labels" do
           expect(page).to have_css("#post_1 .isbf-feed-card__username .isbf-alumni-label", text: "校友", count: 1)
           expect(page).to have_no_css("#post_1 .topic-avatar .isbf-alumni-label", visible: :all)
 
-          folder = Rails.root.join("tmp/isbf-alumni-identity-results/screenshots")
-          FileUtils.mkdir_p(folder)
-          page.save_screenshot(folder.join("topic-#{width}-#{mode}.png"))
         end
       end
     end
