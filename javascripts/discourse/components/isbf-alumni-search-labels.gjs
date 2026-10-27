@@ -6,10 +6,7 @@ import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import didUpdate from "@ember/render-modifiers/modifiers/did-update";
 import { cancel, scheduleOnce } from "@ember/runloop";
 import { alumniUserId } from "../lib/alumni-identities";
-import {
-  observeSearchUsers,
-  searchAlumniTargets,
-} from "../lib/alumni-label-targets";
+import { searchAlumniTargets } from "../lib/alumni-label-targets";
 import ISBFAlumniLabel from "./isbf-alumni-label";
 
 const EMPTY_USERS = Object.freeze([]);
@@ -18,11 +15,9 @@ export default class ISBFAlumniSearchLabels extends Component {
   @tracked targets = [];
 
   #anchor;
-  #observer;
   #scheduled;
 
   willDestroy() {
-    this.#observer?.disconnect();
     cancel(this.#scheduled);
     super.willDestroy(...arguments);
   }
@@ -45,7 +40,6 @@ export default class ISBFAlumniSearchLabels extends Component {
   @action
   inserted(element) {
     this.#anchor = element;
-    this.#observer = observeSearchUsers(element, this.dropdown, this.schedule);
     this.schedule();
   }
 

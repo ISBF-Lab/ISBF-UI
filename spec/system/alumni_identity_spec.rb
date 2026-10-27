@@ -3,9 +3,9 @@
 RSpec.describe "Alumni identity labels" do
   let!(:theme) { upload_theme }
   fab!(:alumni_group) { Fabricate(:group, name: "alumni") }
-  fab!(:member) { Fabricate(:user, username: "alumnilabel_member", active: true, approved: true) }
-  fab!(:ordinary) { Fabricate(:user, username: "alumnilabel_ordinary", active: true, approved: true) }
-  fab!(:applicant) { Fabricate(:user, username: "alumnilabel_pending", active: true, approved: true) }
+  fab!(:member) { Fabricate(:user, username: "alumnilabel_member", name: "Alumnilabel Member", active: true, approved: true) }
+  fab!(:ordinary) { Fabricate(:user, username: "alumnilabel_ordinary", name: "Alumnilabel Ordinary", active: true, approved: true) }
+  fab!(:applicant) { Fabricate(:user, username: "alumnilabel_pending", name: "Alumnilabel Pending", active: true, approved: true) }
   fab!(:member_topic) { Fabricate(:topic, user: member) }
   fab!(:ordinary_topic) { Fabricate(:topic, user: ordinary) }
   fab!(:pending_topic) { Fabricate(:topic, user: applicant) }
@@ -15,12 +15,17 @@ RSpec.describe "Alumni identity labels" do
 
   before do
     SiteSetting.login_required = false
+    SiteSetting.enable_names = true
     SiteSetting.default_locale = "zh_CN"
     SiteSetting.isbf_alumni_enabled = true
     SiteSetting.isbf_alumni_group_name = alumni_group.name
     alumni_group.add(member)
     member.upsert_custom_fields(IsbfAlumni::VISIBLE_FIELD => "false")
     IsbfAlumni::Application.create!(email: applicant.email, user: applicant, status: "pending", email_verified_at: Time.current)
+    with_search_indexer_enabled do
+      [member, ordinary, applicant].each { |user| SearchIndexer.index(user, force: true) }
+    end
+    expect(UserSearchData.where(user_id: [member.id, ordinary.id, applicant.id]).count).to eq(3)
   end
 
   def expect_feed_identities
@@ -79,8 +84,8 @@ RSpec.describe "Alumni identity labels" do
           expect(page).to have_no_css("#{pending_result} .isbf-alumni-label")
 
           visit member_topic.url
-          expect(page).to have_css("[data-post-number='1'] .isbf-feed-card__username .isbf-alumni-label", text: "校友", count: 1)
-          expect(page).to have_no_css("[data-post-number='1'] .topic-avatar .isbf-alumni-label", visible: :all)
+          expect(page).to have_css(".isbf-post-card-header .isbf-feed-card__username .isbf-alumni-label", text: "校友", count: 1)
+          expect(page).to have_no_css(".topic-avatar .isbf-alumni-label", visible: :all)
         end
       end
     end
@@ -106,9 +111,9 @@ RSpec.describe "Alumni identity labels" do
     page.current_window.resize_to(1440, 900)
     sign_in(ordinary)
     visit member_topic.url
-    find("[data-post-number='1'] .isbf-feed-card__username").click
+    find(".isbf-post-card-header .isbf-feed-card__username").click
     expect(page).to have_css(".user-card.show .username .isbf-alumni-label", text: "校友", count: 1)
-    expect(page).to have_no_css(".user-card.show .avatar .isbf-alumni-label", visible: :all)
+    expect(page).to have_no_css(".user-card.show .user-card-avatar .isbf-alumni-label", visible: :all)
   end
 
   it "shows the same member and nonmember distinction to guests" do

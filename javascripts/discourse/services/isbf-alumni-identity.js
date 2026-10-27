@@ -5,7 +5,7 @@ import AlumniIdentities, { alumniUserId } from "../lib/alumni-identities";
 
 export default class IsbfAlumniIdentity extends Service {
   @service currentUser;
-  @service site;
+  @service siteSettings;
 
   @tracked memberships = new Map();
 
@@ -43,7 +43,7 @@ export default class IsbfAlumniIdentity extends Service {
   }
 
   get enabled() {
-    return this.site.isbf_alumni?.enabled === true;
+    return this.siteSettings.isbf_alumni_enabled === true;
   }
 
   isMember(user) {

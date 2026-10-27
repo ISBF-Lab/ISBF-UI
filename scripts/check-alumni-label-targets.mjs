@@ -28,8 +28,7 @@ const targetsModule = new vm.SourceTextModule(
 );
 await targetsModule.link(() => {});
 await targetsModule.evaluate();
-const { nativeAlumniTarget, observeSearchUsers, searchAlumniTargets } =
-  targetsModule.namespace;
+const { nativeAlumniTarget, searchAlumniTargets } = targetsModule.namespace;
 for (const id of ["profile", "card", "info"]) {
   const anchor = document.getElementById(`${id}-anchor`);
   const target = nativeAlumniTarget(anchor);
@@ -74,41 +73,13 @@ assert.equal(
   0
 );
 
-const resultRoot = searchAnchor.closest(".search-results");
-const rows = resultRoot.querySelector(".user-items");
-rows.remove();
-let notifications = 0;
-const observer = observeSearchUsers(searchAnchor, false, () => notifications++);
-assert.ok(observer);
-assert.equal(searchAlumniTargets(searchAnchor, [user], false).length, 0);
-resultRoot.append(rows);
-await new Promise((done) => setImmediate(done));
-assert.equal(notifications, 1, "delayed native rows trigger a local refresh");
-assert.equal(searchAlumniTargets(searchAnchor, [user], false).length, 1);
-const label = document.createElement("span");
-label.className = "isbf-alumni-label";
-label.textContent = "校友";
-replacement.append(label);
-await new Promise((done) => setImmediate(done));
-assert.equal(
-  notifications,
-  1,
-  "inserting our own label never loops back into locating"
-);
-observer.disconnect();
-rows.remove();
-await new Promise((done) => setImmediate(done));
-assert.equal(notifications, 1, "destroying the owner stops observation");
-assert.equal(
-  observeSearchUsers(document.getElementById("avatar-anchor"), false, () => {}),
-  null
-);
 const pending = [];
 const actor = { id: 1 };
 class Service {
   constructor() {
     this.currentUser = actor;
     this.site = { isbf_alumni: { enabled: true } };
+    this.siteSettings = { isbf_alumni_enabled: true };
   }
 
   willDestroy() {
@@ -164,6 +135,12 @@ await tick();
 pending.shift().resolve({ memberships: { 12: true } });
 await tick();
 assert.equal(identity.isMember(userId), true);
+delete identity.site.isbf_alumni;
+assert.equal(
+  identity.isMember(userId),
+  true,
+  "basic site bootstrap needs no geography data for identity labels"
+);
 identity.unwatch(12);
 assert.equal(
   identity.isMember(userId),
@@ -190,7 +167,7 @@ await tick();
 pending.shift().resolve({ memberships: { 12: false } });
 await tick();
 assert.equal(identity.isMember(userId), false);
-identity.site.isbf_alumni.enabled = false;
+identity.siteSettings.isbf_alumni_enabled = false;
 identity.refresh();
 await tick();
 assert.equal(pending.length, 0, "disabled feature sends no requests");
