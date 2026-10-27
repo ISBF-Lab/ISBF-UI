@@ -12,6 +12,7 @@ import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { alumniConfig, alumniLocation, alumniRegions } from "../lib/alumni";
+import ISBFAlumniLabel from "./isbf-alumni-label";
 import ISBFAlumniMap from "./isbf-alumni-map";
 import ISBFAlumniProfile from "./isbf-alumni-profile";
 
@@ -371,7 +372,9 @@ export default class ISBFAlumni extends Component {
           >
             {{#each this.directoryUsers key="id" as |user|}}
               <article class="isbf-alumni__person">
-                <a href={{user.href}}>{{user.display_name}}</a>
+                <a href={{user.href}}>{{user.display_name}}<ISBFAlumniLabel
+                    @user={{user}}
+                  /></a>
                 {{#if (or user.location user.industry)}}
                   <div class="isbf-alumni__meta">
                     {{#if user.location}}<span>{{user.location}}</span>{{/if}}

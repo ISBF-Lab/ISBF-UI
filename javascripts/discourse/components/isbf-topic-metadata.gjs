@@ -3,6 +3,7 @@ import { service } from "@ember/service";
 import DUserLink from "discourse/ui-kit/d-user-link";
 import { postCardTitle } from "../lib/post-card-helpers";
 import { isFeedStylePost } from "../lib/topic-card-scope";
+import ISBFAlumniLabel from "./isbf-alumni-label";
 
 export default class ISBFTopicMetadata extends Component {
   @service router;
@@ -26,7 +27,9 @@ export default class ISBFTopicMetadata extends Component {
           class="isbf-feed-card__username"
           @user={{@outletArgs.post.user}}
         >
-          @{{@outletArgs.post.username}}
+          @{{@outletArgs.post.username}}<ISBFAlumniLabel
+            @user={{@outletArgs.post.user}}
+          />
         </DUserLink>
       </div>
       {{#if this.title}}
