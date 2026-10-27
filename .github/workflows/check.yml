@@ -15,8 +15,54 @@ jobs:
           node-version: 22
       - run: node --experimental-vm-modules scripts/check-calendar-ui.mjs
       - run: node --experimental-vm-modules scripts/check-notifications-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-recent-discussions.mjs
       - run: node --experimental-vm-modules scripts/check-post-card-helpers.mjs
       - run: node --experimental-vm-modules scripts/check-topic-card-ui.mjs
       - run: node --experimental-vm-modules scripts/check-view-tracker.mjs
       - run: node --experimental-vm-modules scripts/check-composer-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-composer-model-extensions.mjs
       - run: node --experimental-vm-modules scripts/check-explore-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-reporting-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-sidebar-more-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-official-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-official-catalog.mjs
+      - run: node --experimental-vm-modules scripts/check-official-composer-layout.mjs
+      - run: node --experimental-vm-modules scripts/check-official-time-title.mjs
+      - run: node scripts/check-official-publish-entry.mjs
+      - run: node --experimental-vm-modules scripts/check-learning-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-library-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-alumni-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-alumni-distribution.mjs
+      - run: node --experimental-vm-modules scripts/check-alumni-map-labels.mjs
+      - run: node --experimental-vm-modules scripts/check-account-menu-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-marketplace-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-teamup-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-careers-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-workbench-topic-pages.mjs
+      - run: node --experimental-vm-modules scripts/check-content-images.mjs
+      - run: node scripts/check-profile-ui.mjs
+      - run: node scripts/check-profile-summary.mjs
+      - run: node --experimental-vm-modules scripts/check-topic-pinning-ui.mjs
+      - run: node scripts/check-topic-detail-pinning-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-solved-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-poll-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-poll-display.mjs
+      - run: node --experimental-vm-modules scripts/check-official-activity-summary.mjs
+      - run: node --experimental-vm-modules scripts/check-official-feed-detail.mjs
+      - run: node --experimental-vm-modules scripts/check-back-navigation-init.mjs
+      - run: node --experimental-vm-modules scripts/check-official-mobile-composer.mjs
+      - run: node --experimental-vm-modules scripts/check-calendar-subscription.mjs
+      - run: node --experimental-vm-modules scripts/check-calendar-five-weeks.mjs
+      - run: node --experimental-vm-modules scripts/check-review-shell.mjs
+      - run: node --experimental-vm-modules scripts/check-review-queue.mjs
+      - run: node --experimental-vm-modules scripts/check-alumni-review-nav.mjs
+      - run: node --experimental-vm-modules scripts/check-calendar-entry-ui.mjs
+      - run: node --experimental-vm-modules scripts/check-calendar-reminders.mjs
+      - name: Alumni identity batching and lifecycle
+        run: node --experimental-vm-modules scripts/check-alumni-identity.mjs
+      - name: Install isolated identity check tools
+        run: npm install --prefix "$RUNNER_TEMP/alumni-tools" --no-save --package-lock=false --no-audit --no-fund @discourse/lint-configs@3.7.0 eslint@10.6.0 prettier@3.8.1 stylelint@17.5.0 jsdom@26.1.0
+      - name: Alumni identity DOM scoping and account changes
+        run: node --experimental-vm-modules scripts/check-alumni-label-targets.mjs "$RUNNER_TEMP/alumni-tools"
+      - name: Alumni identity format and lint
+        run: node scripts/check-alumni-identity-style.mjs "$RUNNER_TEMP/alumni-tools"

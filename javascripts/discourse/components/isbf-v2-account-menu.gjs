@@ -1,38 +1,51 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { fn } from "@ember/helper";
+import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
 import logout from "discourse/lib/logout";
 import { getCurrentPushSubscription } from "discourse/lib/push-notifications";
+import { eq, or } from "discourse/truth-helpers";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import ISBFAlumniLabel from "./isbf-alumni-label";
+import ISBFV2AccountLinkModal from "./isbf-v2-account-link-modal";
 
 export default class ISBFV2AccountMenu extends Component {
   @service currentUser;
   @service dialog;
+  @service modal;
   @service site;
 
+  @tracked canLinkAccounts = false;
+  @tracked canSwitchAccounts = false;
   @tracked errorMessage;
   @tracked isBusy = false;
-  @tracked isLinkFormOpen = false;
   @tracked isOpen = false;
   @tracked linkedAccounts = [];
   @tracked password = "";
-  @tracked requestedUsername = "";
   @tracked secondFactorMethod = "1";
   @tracked secondFactorToken = "";
   @tracked verificationLinkId;
 
+  #destroyed = false;
+  #loadGeneration = 0;
   #rootElement;
 
   willDestroy() {
     super.willDestroy(...arguments);
+    this.#destroyed = true;
+    this.#loadGeneration++;
     this.#removeDocumentListeners();
   }
 
   get activeLinks() {
+    if (!this.canSwitchAccounts) {
+      return [];
+    }
     return this.linkedAccounts.filter((link) =>
       ["pending_target", "pending_admin", "approved"].includes(link.status)
     );
@@ -53,6 +66,7 @@ export default class ISBFV2AccountMenu extends Component {
   @action
   closeMenu() {
     this.isOpen = false;
+    this.#loadGeneration++;
     this.#resetForms();
     this.#removeDocumentListeners();
   }
@@ -70,25 +84,6 @@ export default class ISBFV2AccountMenu extends Component {
     ) {
       await this.#signOut();
     }
-  }
-
-  @action
-  async createLink(event) {
-    event.preventDefault();
-    const username = this.requestedUsername.trim();
-    if (!username) {
-      return;
-    }
-
-    await this.#runRequest(async () => {
-      await ajax("/isbf/account-switch/links", {
-        type: "POST",
-        data: { username },
-      });
-      this.requestedUsername = "";
-      this.isLinkFormOpen = false;
-      await this.#loadAccounts();
-    });
   }
 
   @action
@@ -144,6 +139,9 @@ export default class ISBFV2AccountMenu extends Component {
 
   @action
   async switchAccount(link) {
+    if (!this.canSwitchAccounts || this.isBusy || this.#destroyed) {
+      return;
+    }
     if (!link.device_authorized) {
       this.selectVerification(link);
       return;
@@ -154,15 +152,19 @@ export default class ISBFV2AccountMenu extends Component {
         `/isbf/account-switch/links/${link.id}/switch`,
         { type: "POST" }
       );
-      window.location.assign(response.redirect_url || "/");
+      if (!this.#destroyed) {
+        window.location.assign(response.redirect_url || "/");
+      }
     });
   }
 
   @action
-  toggleLinkForm() {
-    this.errorMessage = null;
-    this.isLinkFormOpen = !this.isLinkFormOpen;
-    this.verificationLinkId = null;
+  openLinkModal() {
+    if (!this.canLinkAccounts || this.#destroyed) {
+      return;
+    }
+    this.closeMenu();
+    this.modal.show(ISBFV2AccountLinkModal);
   }
 
   @action
@@ -184,11 +186,6 @@ export default class ISBFV2AccountMenu extends Component {
   }
 
   @action
-  updateRequestedUsername(event) {
-    this.requestedUsername = event.target.value;
-  }
-
-  @action
   updateSecondFactorMethod(event) {
     this.secondFactorMethod = event.target.value;
   }
@@ -201,6 +198,9 @@ export default class ISBFV2AccountMenu extends Component {
   @action
   async verifyAndSwitch(link, event) {
     event.preventDefault();
+    if (!this.canSwitchAccounts || this.isBusy || this.#destroyed) {
+      return;
+    }
     const data = {
       password: this.password,
       second_factor_method: this.secondFactorMethod,
@@ -212,7 +212,9 @@ export default class ISBFV2AccountMenu extends Component {
         `/isbf/account-switch/links/${link.id}/verify`,
         { type: "POST", data }
       );
-      window.location.assign(response.redirect_url || "/");
+      if (!this.#destroyed) {
+        window.location.assign(response.redirect_url || "/");
+      }
     });
   }
 
@@ -225,11 +227,24 @@ export default class ISBFV2AccountMenu extends Component {
   }
 
   async #loadAccounts() {
+    const generation = ++this.#loadGeneration;
+    this.canLinkAccounts = false;
+    this.canSwitchAccounts = false;
+    this.linkedAccounts = [];
     try {
       const response = await ajax("/isbf/account-switch/accounts");
+      if (this.#destroyed || generation !== this.#loadGeneration) {
+        return;
+      }
+      this.canLinkAccounts = response.can_link_accounts === true;
+      this.canSwitchAccounts = response.can_switch_accounts === true;
       this.linkedAccounts = response.links || [];
     } catch (error) {
-      if (error?.jqXHR?.status !== 404) {
+      if (
+        !this.#destroyed &&
+        generation === this.#loadGeneration &&
+        error?.jqXHR?.status !== 404
+      ) {
         this.errorMessage = this.#errorText(error);
       }
     }
@@ -242,22 +257,27 @@ export default class ISBFV2AccountMenu extends Component {
 
   #resetForms() {
     this.errorMessage = null;
-    this.isLinkFormOpen = false;
     this.password = "";
-    this.requestedUsername = "";
     this.secondFactorToken = "";
     this.verificationLinkId = null;
   }
 
   async #runRequest(callback) {
+    if (this.isBusy || this.#destroyed) {
+      return;
+    }
     this.errorMessage = null;
     this.isBusy = true;
     try {
       await callback();
     } catch (error) {
-      this.errorMessage = this.#errorText(error);
+      if (!this.#destroyed) {
+        this.errorMessage = this.#errorText(error);
+      }
     } finally {
-      this.isBusy = false;
+      if (!this.#destroyed) {
+        this.isBusy = false;
+      }
     }
   }
 
@@ -288,7 +308,11 @@ export default class ISBFV2AccountMenu extends Component {
   <template>
     {{#if this.currentUser}}
       <div
-        class={{if @mobile "isbf-v2-account-menu isbf-v2-account-menu--mobile" "isbf-v2-account-menu isbf-v2-account-menu--side"}}
+        class={{if
+          @mobile
+          "isbf-v2-account-menu isbf-v2-account-menu--mobile"
+          "isbf-v2-account-menu isbf-v2-account-menu--side"
+        }}
         {{on "focusin" this.openMenu}}
         {{on "focusout" this.onFocusOut}}
         {{on "mouseenter" this.openMenu}}
@@ -303,7 +327,9 @@ export default class ISBFV2AccountMenu extends Component {
             <img alt="" height="40" src={{this.avatarUrl}} width="40" />
             <span>
               <b>{{this.displayName}}</b>
-              <small>@{{this.currentUser.username}}</small>
+              <small>@{{this.currentUser.username}}<ISBFAlumniLabel
+                  @user={{this.currentUser}}
+                /></small>
             </span>
           </a>
         {{/unless}}
@@ -356,7 +382,9 @@ export default class ISBFV2AccountMenu extends Component {
                 />
                 <span>
                   <b>{{or link.account.name link.account.username}}</b>
-                  <small>@{{link.account.username}}</small>
+                  <small>@{{link.account.username}}<ISBFAlumniLabel
+                      @user={{link.account}}
+                    /></small>
                 </span>
                 {{#if (eq link.status "approved")}}
                   <button
@@ -427,28 +455,8 @@ export default class ISBFV2AccountMenu extends Component {
               </div>
             {{/each}}
 
-            {{#if this.isLinkFormOpen}}
-              <form
-                class="isbf-v2-account-menu__link-form"
-                {{on "submit" this.createLink}}
-              >
-                <label>
-                  {{i18n (themePrefix "isbf_v2.account_username")}}
-                  <input
-                    autocomplete="username"
-                    placeholder={{i18n (themePrefix "isbf_v2.account_username_placeholder")}}
-                    required
-                    type="text"
-                    value={{this.requestedUsername}}
-                    {{on "input" this.updateRequestedUsername}}
-                  />
-                </label>
-                <button disabled={{this.isBusy}} type="submit">
-                  {{i18n (themePrefix "isbf_v2.send_link_request")}}
-                </button>
-              </form>
-            {{else}}
-              <button type="button" {{on "click" this.toggleLinkForm}}>
+            {{#if this.canLinkAccounts}}
+              <button type="button" {{on "click" this.openLinkModal}}>
                 {{i18n (themePrefix "isbf_v2.link_account")}}
               </button>
             {{/if}}

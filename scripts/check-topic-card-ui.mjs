@@ -84,6 +84,8 @@ const common = {
   fn() {},
   getOwner() {},
   secondaryMenuFor,
+  pinningMeta: (value) => value?.isbf_home_pinning,
+  saveHomePin() {},
   compactNumber: (number) => (number ? String(number) : ""),
   openQuotedRepost: async (options) => {
     quoteOptions = options;
@@ -124,6 +126,51 @@ const More = (await componentModule("components/isbf-topic-more.gjs")).default;
 assert.equal(More.extraControls(), true);
 assert.equal(More.shouldRender(), true);
 
+const editCalls = [];
+const nativeButtonActions = {
+  otherAction: () => "unchanged",
+  editPost(...args) {
+    assert.equal(this, nativeButtonActions, "Native action receiver retained");
+    editCalls.push(args);
+  },
+};
+const editMenu = new More({ buttonActions: nativeButtonActions });
+let closeEditMenu;
+editMenu.registerMenu({
+  close: () =>
+    new Promise((resolve) => {
+      closeEditMenu = resolve;
+    }),
+});
+assert.equal(
+  editMenu.buttonActions.otherAction,
+  nativeButtonActions.otherAction
+);
+const nativeEditArgs = { postId: 305 };
+const pendingEdit = editMenu.editPost(nativeEditArgs);
+await editMenu.editPost(nativeEditArgs);
+assert.equal(editCalls.length, 0, "Editing waits for menu dismissal");
+closeEditMenu();
+await pendingEdit;
+assert.equal(editCalls.length, 1, "Repeated clicks open editor once");
+assert.equal(editCalls[0][0], nativeEditArgs);
+const destroyedEdit = editMenu.editPost(nativeEditArgs);
+editMenu.isDestroying = true;
+closeEditMenu();
+await destroyedEdit;
+assert.equal(editCalls.length, 1, "Destroyed menu cannot open editor");
+const failedMenu = new More({ buttonActions: nativeButtonActions });
+failedMenu.registerMenu({
+  close: async () => {
+    throw new Error("close failed");
+  },
+});
+await assert.rejects(() => failedMenu.editPost(), /close failed/);
+assert.equal(editCalls.length, 1, "Failed menu close cannot open editor");
+failedMenu.registerMenu({ close: async () => {} });
+await failedMenu.editPost(nativeEditArgs);
+assert.equal(editCalls.length, 2, "Menu close failure permits retry");
+
 const transformers = new Map();
 const outlets = [];
 const router = { currentURL: path };
@@ -139,6 +186,12 @@ await initializer.link((name) => {
   }
   if (name.endsWith("/topic-card-scope")) {
     return scope;
+  }
+  if (name.endsWith("/isbf-solved-action")) {
+    return synthetic({ default: () => class NativeSolvedWrapper {} });
+  }
+  if (name.endsWith("/isbf-solved-summary")) {
+    return synthetic({ default: class SolvedSummary {} });
   }
   if (name.endsWith("/isbf-topic-actions")) {
     return synthetic(Object.fromEntries(Object.entries(actions)));
@@ -158,6 +211,9 @@ await initializer.evaluate();
 initializer.namespace.default({
   container: {
     lookup: (name) => {
+      if (name === "service:site-settings") {
+        return { solved_enabled: true };
+      }
       assert.equal(name, "service:router");
       return router;
     },
@@ -168,7 +224,10 @@ initializer.namespace.default({
   registerValueTransformer: (name, callback) =>
     transformers.set(name, callback),
 });
-assert.deepEqual(outlets, [["wrapper", "post-metadata", Metadata]]);
+assert.equal(outlets.length, 2);
+assert.deepEqual(outlets[0], ["wrapper", "post-metadata", Metadata]);
+assert.equal(outlets[1][0], "after");
+assert.equal(outlets[1][1], "post-content-cooked-html");
 
 class SimpleDAG {
   nodes = new Map();
@@ -395,6 +454,6 @@ assert.match(
   actionSource,
   /\{\{#if this\.isFirstPost\}\}[\s\S]*?\{\{else\}\}\s*<PostMenuBookmarkButton[\s\S]*?@buttonActions=\{\{@buttonActions\}\}/
 );
-console.log(
-  "Topic card guards, native menu retention, primary order, quote target and bookmark delegation OK"
+process.stdout.write(
+  "Topic card guards, native menu retention, primary order, quote target and bookmark delegation OK\n"
 );

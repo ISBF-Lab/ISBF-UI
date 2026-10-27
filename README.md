@@ -6,15 +6,17 @@
 
 - 左侧导航新增“日历 / 工作台”，手机底栏增加日历并启用工作台入口。
 - 日历提供月视图、每日列表、个人行程与社区活动筛选。个人行程依赖独立的 [ISBF-Calendar](https://github.com/ISBF-Lab/ISBF-Calendar) 插件；社区活动读取 Discourse Events 的活动话题。
-- 工作台以组件网格展示规划中的校园服务，所有卡片均标记“即将开放”且不可点击。
+- 工作台以组件网格展示校园服务；尚未开放的卡片标记“即将开放”，校友网络仅在 ISBF-Alumni 插件和原生“校友”组可用时显示为可点击入口。
+- 校友网络使用插件提供的同源地图、目录和个人资料接口；成员自愿公开资料后才会出现在登录用户可见的目录中。
 - 普通动态仍使用正文优先的 Discourse Composer；“校园活动”分类的活动发布保留原生事件 Composer 的标题与活动字段。
 
 ## 部署顺序
 
-先安装 `ISBF-Calendar` 插件并迁移数据库，再启用站点已有的 Discourse Events 插件、创建“校园活动”分类并设置其发布权限。随后导入此主题，并把分类 ID、分类路径写入 `calendar_category_id`、`calendar_category_path` 主题设置。功能部署前不要把带日历导航的主题单独设为默认主题。
+先安装 ISBF-Calendar 插件并迁移数据库，再启用站点已有的 Discourse Events 插件、创建“校园活动”分类并设置其发布权限。随后导入此主题，并配置 calendar_category_id、calendar_category_path 主题设置。功能部署前不要把带日历导航的主题单独设为默认主题。
+
+校友网络启用前，先部署 ISBF-Alumni 插件、创建 slug 为 alumni 且显示名为“校友”的普通权限组，再启用插件。插件不会自动创建组或修改组权限。
 
 主题的简体中文和英文文案随 Discourse 站点或用户语言切换。首页“最新”映射 `/latest`，“官方”映射现有官方分类；工作台不展示虚构数据。
-
 
 ## 统一发布编辑器
 
@@ -24,3 +26,27 @@
 - 分类中的事件发布、私信主题及首帖编辑继续使用其原生标题要求。没有新增接口、数据库表或 Core 修改。
 
 检查：`node --experimental-vm-modules scripts/check-composer-ui.mjs`，以及仓库现有主题检查。
+
+## 左栏更多与反馈
+
+- 桌面与紧凑左栏在个人资料下方提供“更多”，使用原生 DMenu 向上展开设置、反馈和加入我们；访客设置入口使用原生登录流程。手机导航保持原有入口。
+- `feedback_category_id` 指向当前用户可见的真实反馈分类。该分类复用首页发布栏、帖子卡片和分页；发布预选分类，发帖权限仍由 Core 校验。
+- `join_us_description` 配置纯文本招募说明和联系方式；留空显示“招募信息筹备中”。
+
+检查：`node --experimental-vm-modules scripts/check-sidebar-more-ui.mjs`。
+
+## 审核页与待处理提醒
+
+`/review` 及子页面复用主页左栏、页头和手机底部导航，内容保留原生审核列表、详情、筛选和操作；实际 `/admin` 布局保持原生。
+
+桌面与手机审核入口统一使用当前用户的 `can_review`，共享原生 `/review/count.json` 状态。有待处理事项时按钮为红色，全部处理后恢复蓝色，不显示数量。通过原生审核计数事件、页面导航及返回前台刷新，合并重复请求；失败保留上次确认状态，账号变化和销毁时丢弃旧响应，不增加定时轮询。
+
+检查：`node --experimental-vm-modules scripts/check-review-shell.mjs` 和 `node --experimental-vm-modules scripts/check-review-queue.mjs`。
+
+### 校友审核入口
+
+审核页顶部常驻“全部审核／校友审核”筛选导航，手机无需展开“选项”即可进入。使用 Theme API 的 `top-notices` outlet 接入原生审核列表，不替换审核模板或审批流程；通过原生 `type=ReviewableIsbfAlumni` 筛选，空队列时仍可进入。
+
+仅 `can_review` 为真且具有服务端 `academy_moderator_permissions.review_alumni` 权限的账号（或原生 admin 开发者）显示入口。“全部审核”显式清空类型；两个入口返回待处理状态。账号或路由变化时重新计算显示状态，不新增计数请求；后台现有“审核校友”开关及服务端权限校验保持不变。
+
+检查：`node --experimental-vm-modules scripts/check-alumni-review-nav.mjs`。生产只读确认，不提交申请、发送邮件或进行审批；未使用开发者会话代替普通管理员验收。

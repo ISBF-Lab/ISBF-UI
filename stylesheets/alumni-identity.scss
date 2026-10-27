@@ -1,0 +1,12 @@
+.isbf-alumni-label {
+  margin-inline-start: var(--isbf-v2-space-1);
+  color: var(--isbf-v2-muted);
+  font-size: var(--isbf-v2-font-xs);
+  font-weight: 400;
+  line-height: inherit;
+  white-space: nowrap;
+
+  &[hidden] {
+    display: none;
+  }
+}

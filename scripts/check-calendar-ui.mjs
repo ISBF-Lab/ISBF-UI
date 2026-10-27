@@ -1,4 +1,5 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import assert from "node:assert/strict";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -74,14 +75,20 @@ function checkDirectory(dir) {
     }
 
     const js = source
+      .replace(
+        /export default <template>[\s\S]*?<\/template>/g,
+        "export default null;"
+      )
+      .replace(/=\s*<template>[\s\S]*?<\/template>/g, "= null")
       .replace(/<template>[\s\S]*?<\/template>/g, "")
-      .replace(/@(service|tracked|action)\s+/g, "")
-      .replace(/@(computed|alias)\([^)]*\)\s*/g, "");
-    new vm.SourceTextModule(js, { identifier: path });
+      .replace(/@(service|tracked|cached|action|bind)\s+/g, "")
+      .replace(/@(service|computed|alias)\([^)]*\)\s*/g, "");
+    const module = new vm.SourceTextModule(js, { identifier: path });
+    assert.equal(module.status, "unlinked");
   }
 }
 
 checkDirectory(fileURLToPath(new URL("javascripts/discourse", root)));
-console.log(
-  "Theme metadata, localization, template blocks and JavaScript syntax OK"
+process.stdout.write(
+  "Theme metadata, localization, template blocks and JavaScript syntax OK\n"
 );
