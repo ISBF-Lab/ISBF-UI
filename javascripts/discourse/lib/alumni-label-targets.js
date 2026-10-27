@@ -30,3 +30,30 @@ export function searchAlumniTargets(anchor, users, dropdown) {
     return target?.isConnected ? [{ user, target }] : [];
   });
 }
+
+export function observeSearchUsers(anchor, dropdown, changed) {
+  const root = anchor.closest(
+    dropdown ? ".search-result-user" : ".search-results"
+  );
+  if (!root) {
+    return null;
+  }
+  const selector =
+    ".fps-user-item, .user-items, .search-link, .user-titles, .username";
+  const observer = new root.ownerDocument.defaultView.MutationObserver(
+    (records) => {
+      const changedUsers = records.some((record) =>
+        [...record.addedNodes, ...record.removedNodes].some(
+          (node) =>
+            node.nodeType === 1 &&
+            (node.matches(selector) || node.querySelector(selector))
+        )
+      );
+      if (changedUsers) {
+        changed();
+      }
+    }
+  );
+  observer.observe(root, { childList: true, subtree: true });
+  return observer;
+}

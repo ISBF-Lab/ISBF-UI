@@ -61,6 +61,17 @@ RSpec.describe "Alumni identity labels" do
           member_result = ".fps-user-item[data-user-card='#{member.username}'] .username"
           ordinary_result = ".fps-user-item[data-user-card='#{ordinary.username}'] .username"
           pending_result = ".fps-user-item[data-user-card='#{applicant.username}'] .username"
+          expect(page).to have_css(member_result, text: member.username)
+          expect(page).to have_css(".isbf-alumni-search-labels", visible: :all)
+          expect(page.evaluate_script(<<~JS)).to eq(true)
+            require("discourse/lib/get-owner").getOwnerWithFallback()
+              .lookup("service:isbf-alumni-identity").enabled;
+          JS
+          expect(page.evaluate_script(<<~JS)).to eq(true)
+            require("discourse/lib/get-owner").getOwnerWithFallback()
+              .lookup("controller:full-page-search").get("model.users")
+              .some((user) => Number(user.id) === #{member.id});
+          JS
           expect(page).to have_css("#{member_result} .isbf-alumni-label", text: "校友", count: 1)
           expect(page).to have_css(ordinary_result)
           expect(page).to have_css(pending_result)

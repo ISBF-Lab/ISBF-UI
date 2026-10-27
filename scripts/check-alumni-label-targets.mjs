@@ -14,7 +14,7 @@ const dom = new JSDOM(`<main>
   <div class="names"><div class="names__primary full-name">Name</div><span class="username names__secondary">member</span><span id="card-anchor"></span></div>
   <div class="name-line"><a><span class="username">member</span></a><span id="info-anchor"></span></div>
   <div class="avatar-only"><a data-user-card="member"><img></a><span id="avatar-anchor"></span></div>
-  <section class="search-advanced"><span id="search-anchor"></span><div class="user-items"><a class="fps-user-item" data-user-card="Member"><img><div class="user-titles"><span class="username">Member</span></div></a></div></section>
+  <section class="search-advanced"><div class="search-results"><span id="search-anchor"></span><div class="user-items"><a class="fps-user-item" data-user-card="Member"><img><div class="user-titles"><span class="username">Member</span></div></a></div></div></section>
   <section class="search-advanced"><div class="user-items"><a class="fps-user-item" data-user-card="Member"><div class="user-titles"><span class="username">other section</span></div></a></div></section>
   <section class="search-result-user"><span id="dropdown-anchor"></span><ul class="list"><li><a class="search-link" href="/u/Member"><img><div class="user-titles"><span class="username">Member</span></div></a></li></ul></section>
 </main>`);
@@ -28,7 +28,8 @@ const targetsModule = new vm.SourceTextModule(
 );
 await targetsModule.link(() => {});
 await targetsModule.evaluate();
-const { nativeAlumniTarget, searchAlumniTargets } = targetsModule.namespace;
+const { nativeAlumniTarget, observeSearchUsers, searchAlumniTargets } =
+  targetsModule.namespace;
 for (const id of ["profile", "card", "info"]) {
   const anchor = document.getElementById(`${id}-anchor`);
   const target = nativeAlumniTarget(anchor);
@@ -46,7 +47,7 @@ assert.equal(firstTarget.user, user);
 assert.equal(firstTarget.target.textContent, "Member");
 assert.equal(
   firstTarget.target.closest(".search-advanced"),
-  searchAnchor.parentElement
+  searchAnchor.closest(".search-advanced")
 );
 assert.equal(
   searchAlumniTargets(searchAnchor, [{ ...user, username: "absent" }], false)
@@ -73,6 +74,35 @@ assert.equal(
   0
 );
 
+const resultRoot = searchAnchor.closest(".search-results");
+const rows = resultRoot.querySelector(".user-items");
+rows.remove();
+let notifications = 0;
+const observer = observeSearchUsers(searchAnchor, false, () => notifications++);
+assert.ok(observer);
+assert.equal(searchAlumniTargets(searchAnchor, [user], false).length, 0);
+resultRoot.append(rows);
+await new Promise((done) => setImmediate(done));
+assert.equal(notifications, 1, "delayed native rows trigger a local refresh");
+assert.equal(searchAlumniTargets(searchAnchor, [user], false).length, 1);
+const label = document.createElement("span");
+label.className = "isbf-alumni-label";
+label.textContent = "校友";
+replacement.append(label);
+await new Promise((done) => setImmediate(done));
+assert.equal(
+  notifications,
+  1,
+  "inserting our own label never loops back into locating"
+);
+observer.disconnect();
+rows.remove();
+await new Promise((done) => setImmediate(done));
+assert.equal(notifications, 1, "destroying the owner stops observation");
+assert.equal(
+  observeSearchUsers(document.getElementById("avatar-anchor"), false, () => {}),
+  null
+);
 const pending = [];
 const actor = { id: 1 };
 class Service {
