@@ -50,12 +50,51 @@ module("ISBF | Integration | Component | ResourceCatalog", function (hooks) {
       .exists("editing uses the shared modal container");
   });
 
-  test("the sidebar exposes one add entry only to administrators", async function (assert) {
+  test("saving a library category keeps the draft on denial and retries the rename", async function (assert) {
+    this.entry = { id: "category-a", name: "考研" };
+    const requests = [];
+    const savedSelections = [];
+    this.onSaved = (_result, categoryId) => savedSelections.push(categoryId);
+    pretender.put("/isbf/library/categories/category-a", (request) => {
+      const name = new URLSearchParams(request.requestBody).get("name");
+      requests.push(name);
+      if (requests.length === 1) {
+        return response(403, { errors: ["没有权限保存分类"] });
+      }
+      return response({ success: true, grade: { ...this.entry, name } });
+    });
+    await render(
+      <template>
+        <LearningDirectoryEditor
+          @entry={{this.entry}}
+          @kind="grade"
+          @library={{true}}
+          @onClose={{this.onClose}}
+          @onSaved={{this.onSaved}}
+        />
+      </template>
+    );
+
+    const editor = ".isbf-learning-directory-editor";
+    const name = `${editor} input[name="name"]`;
+    const save = `${editor} button[type="submit"]`;
+    await fillIn(name, "考研备考");
+    await click(save);
+    assert.dom(`${editor} [role="alert"]`).hasText("没有权限保存分类");
+    assert.dom(name).hasValue("考研备考");
+    assert.deepEqual(savedSelections, []);
+
+    await click(save);
+    assert.deepEqual(requests, ["考研备考", "考研备考"]);
+    assert.deepEqual(savedSelections, ["category-a"]);
+  });
+
+  test("the sidebar exposes directory actions only to directory managers", async function (assert) {
     this.page = {
       parents: this.grades,
       grade: 1,
       courseItems: [{ id: "course-a", name: "已有课程" }],
-      canAddDirectories: false,
+      canManageDirectories: false,
       changeGrade() {},
       selectCourse() {},
       openAddDialog() {},
@@ -64,12 +103,14 @@ module("ISBF | Integration | Component | ResourceCatalog", function (hooks) {
     assert
       .dom(".isbf-learning__add-course")
       .doesNotExist("members have no add entry");
-    this.set("page", { ...this.page, canAddDirectories: true });
+    assert.dom(".isbf-learning__edit-grade").doesNotExist();
+    this.set("page", { ...this.page, canManageDirectories: true });
+    assert.dom(".isbf-learning__edit-grade").exists();
     assert
       .dom(".isbf-learning__add-course")
       .hasText(
         i18n(themePrefix("isbf_v2.resource_add")),
-        "administrators see Add"
+        "directory managers see Add"
       );
     assert
       .dom(".isbf-resource-parent .d-icon-plus")

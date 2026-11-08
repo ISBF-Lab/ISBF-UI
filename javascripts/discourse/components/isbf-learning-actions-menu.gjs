@@ -33,7 +33,7 @@ export default class ISBFLearningActionsMenu extends Component {
     >
       <:content as |menu|>
         <DDropdownMenu as |dropdown|>
-          {{#if @page.canManageResources}}
+          {{#if @page.canManageDirectories}}
             {{#unless @page.myContributions}}
               {{#unless @page.searching}}
                 {{#if @page.selectedCourse}}

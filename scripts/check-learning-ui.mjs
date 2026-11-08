@@ -1790,7 +1790,7 @@ page.openCourseDialog();
 assert.equal(
   page.showCourseDialog,
   false,
-  "Only administrators can open the add form"
+  "Only directory managers can open the add form"
 );
 page.courseSubmitted({ success: true, pending: true }, 2);
 assert.equal(page.coursePending, false);
@@ -1809,14 +1809,17 @@ page.currentUser = {
   academy_moderator_permissions: { manage_resources: true },
 };
 page.site.isbf_learning.course_requests = false;
+assert.equal(
+  page.canManageDirectories,
+  false,
+  "Managing resources does not grant directory management"
+);
+assert.equal(page.canSubmitCourses, false);
+page.currentUser = {
+  academy_moderator_permissions: { manage_resource_catalogs: true },
+};
 assert.equal(page.canSubmitCourses, true);
 assert.equal(page.courseActionLabel, "isbf_v2.learning_add_course");
-assert.equal(
-  page.canAddDirectories,
-  false,
-  "Delegated managers do not see the administrator add entry"
-);
-page.currentUser = { admin: true };
 page.openAddDialog();
 assert.equal(page.showAddDialog, true);
 page.openCourseDialog();
@@ -1832,6 +1835,7 @@ await new Promise(setImmediate);
 listRequests.length = 0;
 page.courses = [{ id: courseId, grade: 1, name: "Economics" }];
 page.selectedCourseId = courseId;
+page.currentUser = { admin: true };
 page.share();
 page.resourceSubmitted({ success: true, pending: true });
 assert.equal(page.sharePending, true);

@@ -15,7 +15,7 @@ export default <template>
           @value={{@page.grade}}
         />
       </div>
-      {{#if @page.canManageResources}}<DButton
+      {{#if @page.canManageDirectories}}<DButton
           class="btn-flat isbf-learning__edit-grade"
           @action={{@page.editGrade}}
           @icon="pencil"
@@ -65,7 +65,7 @@ export default <template>
         {{/each}}
       </nav>
     {{/if}}
-    {{#if @page.canAddDirectories}}<DButton
+    {{#if @page.canManageDirectories}}<DButton
         class="btn-flat isbf-learning__add-course"
         @action={{@page.openAddDialog}}
         @icon="plus"

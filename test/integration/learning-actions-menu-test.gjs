@@ -12,7 +12,7 @@ module(
       this.page = {
         config: { link_sharing: true },
         resources: [],
-        canManageResources: true,
+        canManageDirectories: true,
         canManageCollectionForm: true,
         selectedCourse: { id: "micro", name: "微观经济学" },
         shareLabel: "分享资料",
@@ -59,7 +59,7 @@ module(
     });
 
     test("members keep sharing outside the contributions menu", async function (assert) {
-      this.page.canManageResources = false;
+      this.page.canManageDirectories = false;
       this.page.canManageCollectionForm = false;
       this.page.shareDisabled = true;
       this.page.myContributions = true;

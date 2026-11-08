@@ -122,14 +122,18 @@ export default class ISBFResourcePage extends Component {
     return !this.grade;
   }
 
-  get canAddDirectories() {
-    return this.currentUser?.admin === true;
+  get canManageDirectories() {
+    return (
+      this.currentUser?.admin === true ||
+      this.currentUser?.academy_moderator_permissions
+        ?.manage_resource_catalogs === true
+    );
   }
 
   get categoryActionLabel() {
     return i18n(
       themePrefix(
-        this.canManageCourses
+        this.canManageDirectories
           ? "isbf_v2.library_add_category"
           : "isbf_v2.library_request_category"
       )
@@ -141,13 +145,6 @@ export default class ISBFResourcePage extends Component {
       themePrefix(
         this.isLibrary ? "isbf_v2.library_search" : "isbf_v2.learning_search"
       )
-    );
-  }
-
-  get canManageCourses() {
-    return Boolean(
-      this.currentUser?.admin ||
-      this.currentUser?.academy_moderator_permissions?.manage_resources
     );
   }
 
@@ -180,12 +177,12 @@ export default class ISBFResourcePage extends Component {
   get canSubmitCourses() {
     return Boolean(
       this.currentUser &&
-      this.canSubmitResources &&
       (this.isLibrary || this.grade !== null) &&
-      (this.canManageCourses ||
-        (this.isLibrary
-          ? this.config?.catalog_requests
-          : this.config?.course_requests) === true)
+      (this.canManageDirectories ||
+        (this.canSubmitResources &&
+          (this.isLibrary
+            ? this.config?.catalog_requests
+            : this.config?.course_requests) === true))
     );
   }
 
@@ -193,10 +190,10 @@ export default class ISBFResourcePage extends Component {
     return i18n(
       themePrefix(
         this.isLibrary
-          ? this.canManageCourses
+          ? this.canManageDirectories
             ? "isbf_v2.library_add_group"
             : "isbf_v2.library_request_group"
-          : this.canManageCourses
+          : this.canManageDirectories
             ? "isbf_v2.learning_add_course"
             : "isbf_v2.learning_request_course"
       )
@@ -393,7 +390,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   editCourse(course) {
-    if (this.canManageResources) {
+    if (this.canManageDirectories) {
       this.#courseTrigger = document.activeElement;
       this.editingDirectory = { kind: "course", entry: course };
     }
@@ -402,7 +399,7 @@ export default class ISBFResourcePage extends Component {
   @action
   editGrade() {
     const entry = this.parents.find((parent) => parent.id === this.grade);
-    if (this.canManageResources && entry) {
+    if (this.canManageDirectories && entry) {
       this.#courseTrigger = document.activeElement;
       this.editingDirectory = {
         kind: "grade",
@@ -419,7 +416,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   deleteDirectory() {
-    if (this.canManageResources && this.editingDirectory) {
+    if (this.canManageDirectories && this.editingDirectory) {
       this.deletingDirectory = this.editingDirectory;
       this.editingDirectory = null;
     }
@@ -449,7 +446,7 @@ export default class ISBFResourcePage extends Component {
   @action
   openAddDialog() {
     if (
-      !this.canAddDirectories ||
+      !this.canManageDirectories ||
       this.showAddDialog ||
       this.showCourseDialog
     ) {
@@ -467,7 +464,7 @@ export default class ISBFResourcePage extends Component {
 
   @action
   openCourseDialog(kind = "group") {
-    if (!this.canAddDirectories || this.showCourseDialog) {
+    if (!this.canManageDirectories || this.showCourseDialog) {
       return;
     }
     this.directoryKind = typeof kind === "string" ? kind : "group";
