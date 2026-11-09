@@ -65,6 +65,8 @@ const Page = componentClass("isbf-resource-page", {
   clearTimeout,
   setTimeout,
   document: { activeElement: { focus() {} } },
+  get: (object, path) =>
+    path.split(".").reduce((value, key) => value?.[key], object),
   ajax: (url, options) =>
     new Promise((resolve, reject) =>
       requests.push({ url, options, resolve, reject })
@@ -91,7 +93,9 @@ assert.equal(
   false,
   "Members cannot open category creation"
 );
-page.currentUser = { admin: true };
+page.currentUser = {
+  academy_moderator_permissions: { manage_resource_catalogs: true },
+};
 page.openAddDialog();
 assert.equal(page.showAddDialog, true);
 page.openCourseDialog("category");
@@ -100,7 +104,18 @@ page.courseSubmitted({ success: true, pending: true }, null);
 assert.equal(page.categories.length, 0);
 assert.equal(page.coursePending, true);
 assert.equal(page.categoryActionLabel, "isbf_v2.library_add_category");
-page.categories = [{ id: "parent", name: "分类" }];
+page.openAddDialog();
+page.openCourseDialog("category");
+page.courseSubmitted({ success: true, pending: false }, "parent");
+assert.equal(page.grade, "parent", "The first category becomes selected");
+assert.equal(page.coursePending, false);
+assert.equal(requests.at(-1).url, "/isbf/library/categories");
+requests.at(-1).resolve({ categories: [{ id: "parent", name: "分类" }] });
+await new Promise(setImmediate);
+assert.equal(requests.at(-1).url, "/isbf/library/groups");
+requests.at(-1).resolve({ groups: [] });
+await new Promise(setImmediate);
+assert.equal(page.categories[0].id, "parent");
 page.courses = [{ id: "group", name: "分组", category_id: "parent" }];
 page.changeGrade("parent");
 assert.deepEqual(plain(requests.at(-1).options.data), {
@@ -348,7 +363,7 @@ for (const library of [false, true]) {
   permissionPage.currentUser = academyUser;
   permissionPage.courses = [{ id: "group", grade: 1, category_id: "parent" }];
   permissionPage.selectedCourseId = "group";
-  assert.equal(permissionPage.canManageCourses, true);
+  assert.equal(permissionPage.canManageDirectories, false);
   assert.equal(permissionPage.canSubmitResources, false);
   assert.equal(permissionPage.canSubmitCourses, false);
   assert.equal(permissionPage.shareDisabled, true);
@@ -358,12 +373,19 @@ for (const library of [false, true]) {
   );
   assert.equal(permissionPage.canSubmitResources, true);
   assert.equal(permissionPage.canSubmitCourses, true);
+  permissionPage.currentUser = {
+    academy_moderator_role: true,
+    academy_moderator_permissions: { manage_resource_catalogs: true },
+  };
+  assert.equal(permissionPage.canManageDirectories, true);
+  assert.equal(permissionPage.canManageResources, false);
+  assert.equal(permissionPage.canManageCollectionForm, false);
   permissionPage.currentUser = { moderator: true };
-  assert.equal(permissionPage.canManageCourses, false);
+  assert.equal(permissionPage.canManageDirectories, false);
   permissionPage.currentUser = { admin: true, academy_moderator_role: true };
   permissionPage.site.categories[0].canCreateTopic = false;
   assert.equal(permissionPage.canSubmitResources, true);
-  assert.equal(permissionPage.canManageCourses, true);
+  assert.equal(permissionPage.canManageDirectories, true);
 
   const permissionItem = new Item({
     library,
@@ -410,7 +432,7 @@ for (const library of [false, true]) {
 const pageSource = read(
   "javascripts/discourse/components/isbf-resource-page.gjs"
 );
-assert.match(pageSource, /this.currentUser &&\s*this.canSubmitResources &&/);
+assert.match(pageSource, /this.canSubmitResources &&/);
 for (const name of ["isbf-resource-page", "isbf-resource-item"]) {
   assert.match(
     read(`javascripts/discourse/components/${name}.gjs`),

@@ -80,7 +80,15 @@ page.currentUser = {
   academy_moderator_permissions: { manage_resources: true },
 };
 page.editCourse(page.courses[0]);
+assert.equal(page.editingDirectory, null);
+page.currentUser = {
+  academy_moderator_permissions: { manage_resource_catalogs: true },
+};
+page.editCourse(page.courses[0]);
 assert.equal(page.editingDirectory.entry.id, "course-a");
+page.deleteDirectory();
+assert.equal(page.deletingDirectory.entry.id, "course-a");
+page.closeDirectoryDeletion();
 page.closeDirectoryEditor();
 page.currentUser = {};
 page.editCourse(page.courses[0]);
@@ -89,6 +97,53 @@ assert.equal(
   null,
   "ordinary users cannot invoke course editing"
 );
+
+const directoryUpdates = [];
+let directoryUpdateDenied = true;
+const DirectoryEditor = componentClass("isbf-learning-directory-editor", {
+  ajax: async (url, options) => {
+    directoryUpdates.push({ url, options });
+    if (directoryUpdateDenied) {
+      throw Object.assign(new Error("Directory update denied"), {
+        jqXHR: { responseJSON: { errors: ["没有权限保存分类"] } },
+      });
+    }
+    return { success: true };
+  },
+});
+const savedDirectories = [];
+const libraryCategory = new DirectoryEditor({
+  entry: { id: "category-a", name: "考研" },
+  library: true,
+  kind: "grade",
+  onSaved: (_response, id) => savedDirectories.push(id),
+});
+const newCategoryName = { name: "考研备考" };
+await libraryCategory.save(newCategoryName);
+assert.equal(libraryCategory.error, "没有权限保存分类");
+assert.equal(libraryCategory.saving, false);
+assert.deepEqual(savedDirectories, []);
+directoryUpdateDenied = false;
+await libraryCategory.save(newCategoryName);
+assert.equal(libraryCategory.error, null);
+assert.deepEqual(savedDirectories, ["category-a"]);
+for (const update of directoryUpdates) {
+  assert.equal(update.url, "/isbf/library/categories/category-a");
+  assert.equal(update.options.type, "PUT");
+  assert.deepEqual(update.options.data, newCategoryName);
+}
+
+const courseEditor = new DirectoryEditor({
+  entry: { id: "course-a", name: "微观经济学", grade: 1 },
+  kind: "course",
+  onSaved: (_response, grade) => savedDirectories.push(grade),
+});
+const courseChanges = { name: "中级微观经济学", grade: "2" };
+await courseEditor.save(courseChanges);
+assert.equal(directoryUpdates.at(-1).url, "/isbf/learning/courses/course-a");
+assert.equal(directoryUpdates.at(-1).options.type, "PUT");
+assert.deepEqual(directoryUpdates.at(-1).options.data, courseChanges);
+assert.deepEqual(savedDirectories, ["category-a", 2]);
 
 const lookupRequests = [];
 const Dialog = componentClass("isbf-learning-management-dialog", {
@@ -137,5 +192,5 @@ assert.equal(
 );
 assert.match(read("locales/zh_CN.yml"), /你也想分享学习资料？/);
 process.stdout.write(
-  "Contribution switching, stale results, management permissions, student selection and WPS destination OK\n"
+  "Contribution switching, directory updates and retry, management permissions, student selection and WPS destination OK\n"
 );

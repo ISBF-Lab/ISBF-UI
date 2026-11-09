@@ -196,7 +196,10 @@ module(
     setupRenderingTest(hooks, { stubRouter: true });
 
     hooks.beforeEach(function () {
-      this.currentUser.set("admin", true);
+      this.currentUser.setProperties({
+        admin: false,
+        academy_moderator_permissions: { manage_resource_catalogs: true },
+      });
       this.entry = { id: "course-a", name: "课程" };
       this.kind = "course";
       this.onClose = () => {};
@@ -304,7 +307,7 @@ module(
         .doesNotExist("a stale plan must be reconfirmed from step one");
       this.currentUser.setProperties({
         admin: false,
-        academy_moderator_permissions: { manage_resources: false },
+        academy_moderator_permissions: { manage_resources: true },
       });
       await settled();
       assert.dom(".isbf-learning-directory-deletion__confirm").isDisabled();

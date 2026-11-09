@@ -1,6 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { action, get } from "@ember/object";
+import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import { ajax } from "discourse/lib/ajax";
@@ -32,10 +32,10 @@ export default class ISBFLearningDirectoryDeletion extends Component {
   }
 
   get canManage() {
-    return Boolean(
-      this.currentUser &&
-      (get(this.currentUser, "admin") ||
-        get(this.currentUser, "academy_moderator_permissions.manage_resources"))
+    return (
+      this.currentUser?.admin === true ||
+      this.currentUser?.academy_moderator_permissions
+        ?.manage_resource_catalogs === true
     );
   }
 
